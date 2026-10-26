@@ -60,3 +60,17 @@
 
 .screen-stage.quiz-display .screen-quiz-option.is-wrong{background:#fff0e7;border-color:#d55637;color:#8a311d}
 .screen-memo-option.is-wrong{border-color:#df9599;background:#fff0f0;color:#a64e5a}
+
+/* Projection-board readability: larger labels and clearer answer text on distant screens. */
+.screen-kicker{font-size:17px}
+.screen-mode{font-size:20px;padding:11px 19px}
+.screen-team{font-size:26px}
+.screen-hint{font-size:21px!important}
+.screen-footer{font-size:16px}
+.screen-quiz-question{font-size:clamp(41px,7.3vw,85px)!important}
+.screen-quiz-option{font-size:clamp(21px,3vw,34px)}
+.screen-quiz-score span{font-size:20px}
+.screen-quiz-board-heading{font-size:30px}
+.screen-quiz-board-heading small{font-size:18px}
+.screen-memory-tile small{font-size:clamp(10px,1vw,14px)}
+@media(max-width:700px){.screen-kicker{font-size:14px}.screen-mode{font-size:17px}.screen-team{font-size:21px}.screen-hint{font-size:17px!important}.screen-footer{font-size:12px}.screen-quiz-question{font-size:37px!important}.screen-quiz-option{font-size:19px}.screen-memory-tile small{font-size:9px}}
