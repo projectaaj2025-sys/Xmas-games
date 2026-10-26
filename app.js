@@ -338,7 +338,7 @@
     if(kind==='music'){openMusicLibrary();return;}
     if (kind==='memo') { memoryState={...createContest(),pairs:12,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:false,asked:0,circlePlayers:[],activePlayerId:'',round:1}; renderGuess(); }
-    if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,finished:false}; renderCroc(); }
+    if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,finished:false}; renderCroc(); }
     if (kind==='quiz') { const teams=createContest('teams',2); quizState={...teams,active:Math.floor(Math.random()*2),questions:window.QUIZ_QUESTIONS||[],used:[],selected:null,selectedOption:null,revealed:false,answerResult:null,finished:false}; renderQuiz(); }
     if (kind==='crossword') { crosswordState={puzzleIndex:0,values:{},checked:false,solved:{},message:'Выбери подсказку и вписывай по одной букве в клетку.'}; renderCrossword(); publish({game:'idle',revealed:false,instruction:'Новогодний кроссворд открыт на основном устройстве.'}); }
   }
@@ -547,14 +547,19 @@
       return `<button class="croc-task ${i===s.task?'selected':''} ${blocked?'round-blocked':''}" data-task="${i}" ${blocked?'disabled':''}><span class="task-number">${i+1}</span><span class="task-icon">${item.method.icon}</span><span class="task-description"><b>${escapeHtml(item.word)}</b><small>${item.method.name} · ${blocked?'уже не выбирается в этом раунде':`ход на ${i+1} клет${i===0?'ку':i<4?'ки':'ок'}`}</small></span><span class="task-arrow">${i===s.task?'●':'›'}</span></button>`;
     }).join('');
     const progress=s.track.map(pos=>`${pos}/29`).join(' · ');
-    body.innerHTML=`${contestMarkup(s)}<div class="croc-layout"><section class="croc-main"><div class="croc-active-card"><div class="croc-card-top"><span class="card-label">КАРТА ${String(s.card+1).padStart(2,'0')} / 100</span><span class="croc-card-back-mark">❄</span></div><div class="croc-card-header"><span class="croc-card-question">?</span><div><b>Верхняя карта колоды</b><small>Выберите слово и способ объяснения</small></div></div><div class="task-mode">${task.method.icon} ${task.method.name} · СЛОВО ${s.task+1}</div><div class="croc-word-art">${task.emoji}</div><div class="current-word ${s.revealed?'visible':''}">${s.revealed?escapeHtml(task.word):'Слово скрыто'}</div><p class="task-hint">${s.revealed?escapeHtml(task.method.hint):'Слово видно только ведущему. Для участников используйте отдельный экран.'}</p><div class="timer-line"><span class="hourglass-label">⏳ Песочные часы · 60 секунд</span><span id="crocTimer" class="timer-display">${fmtTime(s.remaining)}</span><button id="timerStart" class="soft-button">${s.timer?'Пауза':'Перевернуть часы'}</button></div><div class="task-actions"><button class="solid-button" id="crocShow">${s.revealed?'Слово открыто':'Показать слово ведущему'}</button><button class="soft-button" id="crocScreen">${screenCount?'Показать участникам':'На экран участникам'}</button><button class="soft-button" id="crocCorrect">Угадали ✓</button><button class="soft-button" id="crocSkip">Не угадали ↻</button></div></div>${s.finished?`<div class="win-panel croc-win">🏁 ${escapeHtml(s.names[s.active])} достигает финиша и побеждает! <button class="soft-button" id="crocAgain">Новая партия</button></div>`:''}<div class="board-wrap"><div class="board-heading"><b>Игровое поле</b><span>Раунд ${s.round} · позиции: ${progress}</span></div><div class="board-track">${board}</div></div></section><aside class="croc-side"><div class="side-title">ЛИЦЕВАЯ СТОРОНА КАРТЫ · 5 СЛОВ</div><div class="task-list">${cardRows}</div><div class="deck-status"><span>🂠 В колоде <b>${s.drawPile.length}</b></span><span>♻ В сбросе <b>${s.discardPile.length}</b></span></div><div class="components-note"><b>Комплект по референсу:</b><br>6 цветных фишек · 100 карточек по 5 слов · песочные часы на 60 секунд · поле с дорожкой от старта до финиша.</div><details class="croc-rules"><summary>Правила игры</summary><p>Разделитесь на команды по 2–3 человека, выберите фишки и жребием определите первый ход. В свой ход игрок команды берёт верхнюю карту, выбирает одно из пяти слов и объясняет его указанным способом, пока пересыпается песок. Если слово угадали, команда двигается вперёд на столько клеток, под каким номером было слово; карта отправляется в сброс. Если не угадали, фишка остаётся на месте, а карта возвращается вниз колоды. В этом раунде нельзя повторно выбирать слово, которое уже не удалось объяснить, но можно выбрать другие слова с этой карты. После хода очередь переходит по часовой стрелке. Побеждает команда, первой достигшая финиша.</p></details></aside></div>`;
+    const cardMarkup=s.cardHidden?'':`<div class="croc-active-card"><div class="croc-card-top"><span class="card-label">КАРТА ${String(s.card+1).padStart(2,'0')} / 100</span><span class="croc-card-back-mark">❄</span></div><div class="croc-card-header"><span class="croc-card-question">?</span><div><b>Верхняя карта колоды</b><small>Выберите слово и способ объяснения</small></div></div><div class="task-mode">${task.method.icon} ${task.method.name} · СЛОВО ${s.task+1}</div><div class="croc-word-art">${task.emoji}</div><div class="current-word ${s.revealed?'visible':''}">${s.revealed?escapeHtml(task.word):'Слово скрыто'}</div><p class="task-hint">${s.revealed?escapeHtml(task.method.hint):'Слово видно только ведущему. Для участников используйте отдельный экран.'}</p><div class="timer-line"><span class="hourglass-label">⏳ Песочные часы · 60 секунд</span><span id="crocTimer" class="timer-display">${fmtTime(s.remaining)}</span><button id="timerStart" class="soft-button">${s.timer?'Пауза':'Перевернуть часы'}</button></div><div class="task-actions"><button class="solid-button" id="crocShow">${s.revealed?'Слово открыто':'Показать слово ведущему'}</button><button class="soft-button" id="crocScreen">${screenCount?'Показать участникам':'На экран участникам'}</button><button class="soft-button" id="crocCorrect">Угадали ✓</button><button class="soft-button" id="crocSkip">Не угадали ↻</button></div></div>`;
+    const winMarkup=s.finished?`<div class="win-panel croc-win">🏁 ${escapeHtml(s.names[s.active])} достигает финиша и побеждает! <button class="soft-button" id="crocAgain">Новая партия</button></div>`:'';
+    const boardMarkup=`<div class="board-wrap"><div class="board-heading"><b>Игровое поле</b><span>Раунд ${s.round} · позиции: ${progress}</span></div><div class="board-track">${board}</div></div>`;
+    const sideMarkup=s.cardHidden?'':`<aside class="croc-side"><div class="side-title">ЛИЦЕВАЯ СТОРОНА КАРТЫ · 5 СЛОВ</div><div class="task-list">${cardRows}</div><div class="deck-status"><span>🂠 В колоде <b>${s.drawPile.length}</b></span><span>♻ В сбросе <b>${s.discardPile.length}</b></span></div><div class="components-note"><b>Комплект по референсу:</b><br>6 цветных фишек · 100 карточек по 5 слов · песочные часы на 60 секунд · поле с дорожкой от старта до финиша.</div><details class="croc-rules"><summary>Правила игры</summary><p>Разделитесь на команды по 2–3 человека, выберите фишки и жребием определите первый ход. В свой ход игрок команды берёт верхнюю карту, выбирает одно из пяти слов и объясняет его указанным способом, пока пересыпается песок. Если слово угадали, команда двигается вперёд на столько клеток, под каким номером было слово; карта отправляется в сброс. Если не угадали, фишка остаётся на месте, а карта возвращается вниз колоды. В этом раунде нельзя повторно выбирать слово, которое уже не удалось объяснить, но можно выбрать другие слова с этой карты. После хода очередь переходит по часовой стрелке. Побеждает команда, первой достигшей финиша.</p></details></aside>`;
+    body.innerHTML=`${contestMarkup(s)}<div class="croc-projection-bar"><button class="soft-button" id="crocCardView" aria-pressed="${s.cardHidden}">${s.cardHidden?'Показать карточку с заданиями':'Скрыть карточку с заданиями'}</button>${s.cardHidden?`<span class="croc-hidden-status">❄ Поле для проектора · ход: ${escapeHtml(s.names[s.active])} · таймер приостановлен</span>`:`<span class="croc-hidden-status">Спрячьте слова, когда выводите поле на экран</span>`}</div><div class="croc-layout ${s.cardHidden?'board-only':''}"><section class="croc-main">${cardMarkup}${winMarkup}${boardMarkup}</section>${sideMarkup}</div>`;
     bindContest(s,()=>{if(s.timer)clearInterval(s.timer);s.timer=null;s.remaining=60;s.finished=false;s.roundBlocked={};s.turnsInRound=0;renderCroc();});
-    if(s.finished){['#crocShow','#crocScreen','#timerStart','#crocCorrect','#crocSkip'].forEach(id=>{const el=$(id);if(el)el.disabled=true;});document.querySelectorAll('[data-task]').forEach(el=>el.disabled=true);$('#crocAgain').addEventListener('click',()=>{if(s.timer)clearInterval(s.timer);s.timer=null;s.scores=Array(s.names.length).fill(0);s.track=Array(s.names.length).fill(0);s.active=Math.floor(Math.random()*s.names.length);s.round=1;s.turnsInRound=0;s.roundBlocked={};s.drawPile=shuffle(Array.from({length:100},(_,i)=>i));s.discardPile=[];s.card=s.drawPile.shift();s.task=0;s.finished=false;s.remaining=60;s.revealed=false;renderCroc();});}
-    $('#crocShow').addEventListener('click',()=>{s.revealed=!s.revealed;renderCroc();publishCroc(s.revealed);});
-    $('#crocScreen').addEventListener('click',()=>{s.revealed=true;renderCroc();publishCroc(true);notify('Слово выведено на отдельный экран.');});
-    $('#timerStart').addEventListener('click',toggleCrocTimer);
-    $('#crocCorrect').addEventListener('click',()=>completeCrocTask(true));
-    $('#crocSkip').addEventListener('click',()=>completeCrocTask(false));
+    if(s.finished){['#crocShow','#crocScreen','#timerStart','#crocCorrect','#crocSkip'].forEach(id=>{const el=$(id);if(el)el.disabled=true;});document.querySelectorAll('[data-task]').forEach(el=>el.disabled=true);$('#crocAgain').addEventListener('click',()=>{if(s.timer)clearInterval(s.timer);s.timer=null;s.scores=Array(s.names.length).fill(0);s.track=Array(s.names.length).fill(0);s.active=Math.floor(Math.random()*s.names.length);s.round=1;s.turnsInRound=0;s.roundBlocked={};s.drawPile=shuffle(Array.from({length:100},(_,i)=>i));s.discardPile=[];s.card=s.drawPile.shift();s.task=0;s.finished=false;s.remaining=60;s.revealed=false;s.cardHidden=false;renderCroc();});}
+    $('#crocCardView').addEventListener('click',()=>{if(!s.cardHidden&&s.timer){clearInterval(s.timer);s.timer=null;}s.cardHidden=!s.cardHidden;renderCroc();});
+    $('#crocShow')?.addEventListener('click',()=>{s.revealed=!s.revealed;renderCroc();publishCroc(s.revealed);});
+    $('#crocScreen')?.addEventListener('click',()=>{s.revealed=true;renderCroc();publishCroc(true);notify('Слово выведено на отдельный экран.');});
+    $('#timerStart')?.addEventListener('click',toggleCrocTimer);
+    $('#crocCorrect')?.addEventListener('click',()=>completeCrocTask(true));
+    $('#crocSkip')?.addEventListener('click',()=>completeCrocTask(false));
     document.querySelectorAll('[data-task]').forEach(button=>button.addEventListener('click',()=>{if(button.disabled)return;if(s.timer)clearInterval(s.timer);s.timer=null;s.task=Number(button.dataset.task);s.revealed=false;s.remaining=60;renderCroc();publishCroc(false);}));
     publishCroc(s.revealed);
   }
@@ -587,13 +592,22 @@
     russianPlaylists:[
       {title:'Новогоднее караоке · русские песни',url:'https://www.youtube.com/playlist?list=PLBLLjqJ3RibTB4bTqBMeVTj3ZRFiZrOYk',kind:'Караоке-плейлист'},
       {title:'Детские новогодние песни-караоке',url:'https://www.youtube.com/playlist?list=PL7nI-G4MMmoyUw0S_5sV0CIDZlZ2uZ0c7',kind:'Семейная подборка'},
-      {title:'Новогодние песни для детей',url:'https://www.youtube.com/playlist?list=PLcY6sOZibNcaRr56chAwlp_EXUuevSmxL',kind:'Спокойные знакомые песни'}
+      {title:'Новогодние песни для детей',url:'https://www.youtube.com/playlist?list=PLcY6sOZibNcaRr56chAwlp_EXUuevSmxL',kind:'Спокойные знакомые песни'},
+      {title:'Семейный новогодний плейлист · YouTube Music',url:'https://music.youtube.com/playlist?list=PLulPt1Ujpd5Oex7JA_GcWCU_VlTRhD1RB',kind:'Дополнение к любимой семейной подборке'}
     ],
     internationalPlaylists:[
       {title:'Christmas Karaoke Classics · Sing King',url:'https://www.youtube.com/playlist?list=PL8D4Iby0Bmm8OmcAYdZxiDl5igLVwFQ1J',kind:'Last Christmas, Santa Tell Me и другие хиты'},
       {title:'International Christmas Songs',url:'https://www.youtube.com/playlist?list=PLbZapce87T0eV_C4t_08WNYP2UrHr_q-E',kind:'Песни на разных языках'},
       {title:'Старые рождественские песни и джазовая классика',url:'https://www.youtube.com/playlist?list=PLK32o61rCfWHCOhi5AqIPqSlLX0Q3zTLK',kind:'Винтажная музыка для праздничного вечера'},
       {title:'Новогодние хиты и песни',url:'https://www.youtube.com/playlist?list=PL9Sagspadk-4pJwDSuNpPJQ63JF9NWPe0',kind:'Праздничный плейлист'}
+    ],
+    winterMixes:[
+      {title:'Новогодние песни · лучшие песни на Новый год',url:'https://youtu.be/JDMBY5TBaGY',kind:'Русская праздничная подборка · 55 минут'},
+      {title:'Лучшие новогодние песни · танцевальный сборник',url:'https://youtu.be/V32O3THLKTg',kind:'Танцевальные хиты · 1 час'},
+      {title:'The best Christmas songs · 1 hour',url:'https://youtu.be/zw0xIbiw8fo',kind:'Зарубежная рождественская классика · 24 песни'}
+    ],
+    sharedPlaylists:[
+      {title:'Merry Christmas 2025–2026 · полный плейлист',url:'https://www.youtube.com/playlist?list=PLZV0XspKK3fdUTw1xBgW4HtmkdngA-iGp',kind:'Все видео в одной подборке · 56 видео на YouTube'}
     ]
   };
   function crosswordLayout(puzzle){
@@ -614,12 +628,28 @@
     return{entries,cells,rows,cols};
   }
   function crosswordMusicMarkup(){
-    const lists=[['СЕМЕЙНОЕ КАРАОКЕ',crosswordMusic.familyKaraoke],['ЗАРУБЕЖНЫЕ ХИТЫ · КАРАОКЕ',crosswordMusic.worldKaraoke],['РУССКИЕ ПЛЕЙЛИСТЫ',crosswordMusic.russianPlaylists],['ЗАРУБЕЖНОЕ И КЛАССИКА',crosswordMusic.internationalPlaylists]];
-    return `<section class="crossword-music"><div class="crossword-music-head"><span>🎶</span><div><b>Музыкальная пауза</b><small>Семейные песни, зарубежные хиты и классика · ссылки откроются на YouTube</small></div></div><div class="crossword-music-columns">${lists.map(([heading,items])=>`<div class="crossword-music-group"><h4>${heading}</h4>${items.map(item=>`<a class="crossword-music-link" href="${item.url}" target="_blank" rel="noopener noreferrer"><span class="music-play">▶</span><span><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.kind)}</small></span><i>↗</i></a>`).join('')}</div>`).join('')}</div></section>`;
+    const lists=[
+      ['СЕМЕЙНОЕ КАРАОКЕ',crosswordMusic.familyKaraoke],
+      ['ЗАРУБЕЖНЫЕ ХИТЫ · КАРАОКЕ',crosswordMusic.worldKaraoke],
+      ['РУССКИЕ ПЛЕЙЛИСТЫ',crosswordMusic.russianPlaylists],
+      ['ЗАРУБЕЖНОЕ И КЛАССИКА',crosswordMusic.internationalPlaylists],
+      ['НОВОГОДНИЕ СБОРНИКИ',crosswordMusic.winterMixes],
+      ['ЕЩЁ БОЛЬШЕ РОЖДЕСТВЕНСКОГО',crosswordMusic.sharedPlaylists]
+    ];
+    const links=lists.map(([heading,items])=>`<div class="crossword-music-group"><h4>${heading}</h4>${items.map(item=>`<a class="crossword-music-link" href="${item.url}" target="_blank" rel="noopener noreferrer"><span class="music-play">▶</span><span><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.kind)}</small></span><i>↗</i></a>`).join('')}</div>`).join('');
+    return `<section class="crossword-music"><div class="crossword-music-head"><span>🎶</span><div><b>Музыкальная пауза</b><small>Семейные песни, зарубежные хиты, праздничные сборники и полный плейлист · ссылки откроются на YouTube</small></div></div><div class="full-playlist-panel"><div><b>Весь плейлист Merry Christmas 2025–2026</b><a href="https://www.youtube.com/playlist?list=PLZV0XspKK3fdUTw1xBgW4HtmkdngA-iGp" target="_blank" rel="noopener noreferrer">Открыть на YouTube ↗</a></div><iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=PLZV0XspKK3fdUTw1xBgW4HtmkdngA-iGp&amp;rel=0" title="Merry Christmas 2025–2026 — полный музыкальный плейлист" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div><div class="crossword-music-columns">${links}</div></section>`;
   }
   function openMusicLibrary(){
-    const body=commonFrame('Новогоднее караоке и музыка','ВКЛЮЧАЙ И ПОДПЕВАЙ','Семейные песни, зарубежные хиты и классика — выбери настроение для праздника.','music-screen');
+    const body=commonFrame('Новогоднее караоке и музыка','ВКЛЮЧАЙ И ПОДПЕВАЙ','Семейные песни, зарубежные хиты, полный рождественский плейлист и танцевальные сборники.','music-screen');
     body.innerHTML=crosswordMusicMarkup();
+  }
+  const warmupVideos=[
+    {title:'X-mas New Year Immersive Interactive Warm-Up',url:'https://youtu.be/LLXGMDf7fS4',length:'2:53',kind:'Следуй за движениями и разогрейся перед игрой',symbol:'⚡'},
+    {title:'Иммерсивное видео · Новогоднее',url:'https://youtu.be/YtT3Sz_uyc8',length:'интерактивное видео',kind:'Новогодняя разминка от Daniel Sfilms',symbol:'❄'}
+  ];
+  function openWarmupLibrary(){
+    const body=commonFrame('Новогодние разминки','ВСТАЁМ И ПОВТОРЯЕМ ДВИЖЕНИЯ','Включите короткое интерактивное видео перед играми — повторяйте движения вместе с экраном.','warmup-screen');
+    body.innerHTML=`<section class="warmup-library"><div class="warmup-grid">${warmupVideos.map((video,index)=>`<a class="warmup-video-card warmup-video-${index+1}" href="${video.url}" target="_blank" rel="noopener noreferrer"><div class="warmup-video-art"><span>${video.symbol}</span><i>▶</i></div><div class="warmup-video-info"><small>${escapeHtml(video.length)}</small><h3>${escapeHtml(video.title)}</h3><p>${escapeHtml(video.kind)}</p><b>Открыть разминку ↗</b></div></a>`).join('')}</div><p class="warmup-note">Видео откроется на YouTube в новой вкладке. Проверьте звук и освободите немного места для движений.</p></section>`;
   }
   function renderCrossword(){
     const s=crosswordState,puzzles=window.CROSSWORD_PUZZLES||[],puzzle=puzzles[s.puzzleIndex];if(!puzzle)return;
@@ -734,6 +764,6 @@
     },{passive:true});
   }
   makeSnow();connectSync();
-  $('#musicOpen').addEventListener('click',openMusicLibrary);
+  $('#warmupOpen').addEventListener('click',openWarmupLibrary);
   $('#snowToggle').addEventListener('click',()=>{const layer=$('.snow-layer');const on=layer.style.display!=='none';layer.style.display=on?'none':'block';$('#snowToggle').innerHTML=`${on?'☼':'❄'} <span>${on?'Снегопад выкл.':'Снег идёт'}</span>`;});
 })();
