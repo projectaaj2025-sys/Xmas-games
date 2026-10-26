@@ -27,11 +27,11 @@
 
   const aiCardArt = {
     'Ёлка':'assets/tree-card.webp','Подарок':'assets/gift-card.webp','Снеговик':'assets/snowman-card.webp','Олень':'assets/reindeer-card.webp','Северный олень':'assets/reindeer-card.webp',
-    'Варежки':'assets/mittens-card.webp','Снежинка':'assets/snowflake-card.webp','Санки':'assets/sled-card.webp','Колокольчик':'assets/bell-card.webp','Мандарин':'assets/mandarin-card.webp',
-    'Снегирь':'assets/bullfinch-card.webp','Щелкунчик':'assets/nutcracker-card.webp','Снегурочка':'assets/snowmaiden-card.webp','Дед Мороз':'assets/dedmoroz-card.webp','Зимняя сова':'assets/memo-snowy-owl-card.webp','Пряничный человечек':'assets/tarantinki-gingerbread-card.webp','Имбирный пряник':'assets/tarantinki-gingerbread-card.webp','Имбирное печенье':'assets/tarantinki-gingerbread-card.webp','Печенье':'assets/tarantinki-gingerbread-card.webp','Белый медведь':'assets/polar-bear-card.webp','Пингвин':'assets/penguin-card.webp','Снежный шар':'assets/snow-globe-card.webp','Салат оливье':'assets/olivier-salad-card.webp','Фонарик':'assets/winter-lantern-card.webp','Письмо':'assets/letter-to-santa-card.webp','Иней':'assets/frost-window-card.webp','Мишура':'assets/festive-garland-card.webp','Ёлочная игрушка':'assets/ornament-card.webp','Мороз':'assets/blizzard-card.webp','Морозный узор':'assets/frost-window-card.webp','Ёлочный шар':'assets/ornament-card.webp','Гирлянда':'assets/festive-garland-card.webp','Зайчик':'assets/winter-bunny-card.webp','Заяц':'assets/winter-bunny-card.webp','Свеча':'assets/winter-candle-card.webp','Какао':'assets/cocoa-mug-card.webp','Сапожок':'assets/christmas-stocking-card.webp','Рождественский носок':'assets/christmas-stocking-card.webp','Ёлочная шишка':'assets/pine-cone-card.webp','Звезда':'assets/golden-star-card.webp','Полярная звезда':'assets/golden-star-card.webp','Рождественская звезда':'assets/golden-star-card.webp','Сосулька':'assets/icicle-card.webp','Ледяная сосулька':'assets/icicle-card.webp','Лыжи':'assets/skier-card.webp','Лыжник':'assets/skier-card.webp','Снегоступы':'assets/snowshoes-card.webp','Северное сияние':'assets/northern-lights-card.webp','Снежная крепость':'assets/snow-fort-card.webp','Снежный шарф':'assets/winter-scarf-card.webp','Тёплый шарф':'assets/winter-scarf-card.webp','Хлопушка':'assets/party-popper-card.webp','Подарочная лента':'assets/gift-ribbon-card.webp','Шапка':'assets/winter-hat-card.webp','Варежка':'assets/mittens-card.webp','Снегокат':'assets/sled-card.webp','Коньки':'assets/ice-skates-card.webp','Леденец':'assets/peppermint-lollipop-card.webp','Снежный ком':'assets/snowball-card.webp','Зимний сапог':'assets/winter-boot-card.webp','Валенки':'assets/winter-boot-card.webp','Чайник':'assets/teapot-card.webp','Лошадка-качалка':'assets/rocking-horse-card.webp','Письмо Деду Морозу':'assets/letter-to-santa-card.webp','Метель':'assets/blizzard-card.webp','Камин':'assets/fireplace-card.webp','Рождественский венок':'assets/christmas-wreath-card.webp','Подарочная коробка':'assets/gift-box-card.webp','Рождественский ангел':'assets/christmas-angel-card.webp'
+    'Варежки':'assets/mittens-card.webp','Сани':'assets/sled-card.webp','Снежинка':'assets/snowflake-card.webp','Санки':'assets/sled-card.webp','Колокольчик':'assets/bell-card.webp','Мандарин':'assets/mandarin-card.webp',
+    'Снегирь':'assets/bullfinch-card.webp','Щелкунчик':'assets/nutcracker-card.webp','Снегурочка':'assets/snowmaiden-card.webp','Дед Мороз':'assets/dedmoroz-card.webp','Снежная сова':'assets/memo-snowy-owl-card.webp','Зимняя сова':'assets/memo-snowy-owl-card.webp','Сова':'assets/memo-snowy-owl-card.webp','Пряничный человечек':'assets/tarantinki-gingerbread-card.webp','Имбирный пряник':'assets/tarantinki-gingerbread-card.webp','Имбирное печенье':'assets/tarantinki-gingerbread-card.webp','Печенье':'assets/tarantinki-gingerbread-card.webp','Белый медведь':'assets/polar-bear-card.webp','Пингвин':'assets/penguin-card.webp','Снежный шар':'assets/snow-globe-card.webp','Салат оливье':'assets/olivier-salad-card.webp','Фонарик':'assets/winter-lantern-card.webp','Носок у камина':'assets/christmas-stocking-card.webp','Письмо':'assets/letter-to-santa-card.webp','Иней':'assets/frost-window-card.webp','Мишура':'assets/festive-garland-card.webp','Ёлочная игрушка':'assets/ornament-card.webp','Мороз':'assets/blizzard-card.webp','Морозный узор':'assets/frost-window-card.webp','Ёлочный шар':'assets/ornament-card.webp','Гирлянда':'assets/festive-garland-card.webp','Зайчик':'assets/winter-bunny-card.webp','Заяц':'assets/winter-bunny-card.webp','Свеча':'assets/winter-candle-card.webp','Какао':'assets/cocoa-mug-card.webp','Сапожок':'assets/christmas-stocking-card.webp','Рождественский носок':'assets/christmas-stocking-card.webp','Сосновая шишка':'assets/pine-cone-card.webp','Звезда':'assets/golden-star-card.webp','Полярная звезда':'assets/golden-star-card.webp','Рождественская звезда':'assets/golden-star-card.webp','Сосулька':'assets/icicle-card.webp','Ледяная сосулька':'assets/icicle-card.webp','Лыжи':'assets/skier-card.webp','Лыжник':'assets/skier-card.webp','Снегоступы':'assets/snowshoes-card.webp','Северное сияние':'assets/northern-lights-card.webp','Снежная крепость':'assets/snow-fort-card.webp','Шарф':'assets/winter-scarf-card.webp','Снежный шарф':'assets/winter-scarf-card.webp','Тёплый шарф':'assets/winter-scarf-card.webp','Хлопушка':'assets/party-popper-card.webp','Подарочная лента':'assets/gift-ribbon-card.webp','Шапка':'assets/winter-hat-card.webp','Варежка':'assets/mittens-card.webp','Снегокат':'assets/sled-card.webp','Коньки':'assets/ice-skates-card.webp','Леденец':'assets/peppermint-lollipop-card.webp','Снежный ком':'assets/snowball-card.webp','Зимний сапог':'assets/winter-boot-card.webp','Валенки':'assets/winter-boot-card.webp','Чайник':'assets/teapot-card.webp','Лошадка-качалка':'assets/rocking-horse-card.webp','Письмо Деду Морозу':'assets/letter-to-santa-card.webp','Метель':'assets/blizzard-card.webp','Камин':'assets/fireplace-card.webp','Рождественский венок':'assets/christmas-wreath-card.webp','Подарочная коробка':'assets/gift-box-card.webp','Рождественский ангел':'assets/christmas-angel-card.webp'
   };
   const memoryDeck = [
-    ['Ёлка','🎄'],['Подарок','🎁'],['Снеговик','⛄'],['Олень','🦌'],['Варежки','🧤'],['Снежинка','❄️'],['Санки','🛷'],['Колокольчик','🔔'],['Ёлочный шар','🔴'],['Имбирный пряник','🍪'],['Звезда','⭐'],['Мандарин','🍊'],['Сапожок','🧦'],['Свеча','🕯️'],['Сосулька','🧊'],['Зайчик','🐇'],['Коньки','⛸️'],['Снежный шар','🔮'],['Гирлянда','💡'],['Снегирь','🐦'],['Леденец','🍭'],['Щелкунчик','🪆'],['Подарочная лента','🎀'],['Фонарик','🏮'],['Пингвин','🐧'],['Шапка','🧢'],['Снежный ком','⚪'],['Зимний сапог','🥾'],['Чайник','🫖'],['Какао','☕'],['Печенье','🍪'],['Полярная звезда','🌟'],['Лошадка-качалка','🧸'],['Письмо Деду Морозу','✉️'],['Северное сияние','🌌'],['Белый медведь','🐻‍❄️'],['Ёлочная шишка','🌰'],['Снежная крепость','🏰'],['Метель','🌨️'],['Камин','🔥'],['Снегоступы','🎿'],['Хлопушка','🎉'],['Рождественский венок','🌿'],['Северный олень','🦌'],['Тёплый шарф','🧣'],['Лыжи','🎿'],['Зимняя сова','🦉'],['Подарочная коробка','📦'],['Морозный узор','❄️'],['Рождественский носок','🧦']
+    ['Ёлка','🎄'],['Подарок','🎁'],['Снеговик','⛄'],['Олень','🦌'],['Варежки','🧤'],['Снежинка','❄️'],['Санки','🛷'],['Колокольчик','🔔'],['Ёлочный шар','🔴'],['Имбирный пряник','🍪'],['Звезда','⭐'],['Мандарин','🍊'],['Сапожок','🧦'],['Свеча','🕯️'],['Сосулька','🧊'],['Зайчик','🐇'],['Коньки','⛸️'],['Снежный шар','🔮'],['Гирлянда','💡'],['Снегирь','🐦'],['Леденец','🍭'],['Щелкунчик','🪆'],['Подарочная лента','🎀'],['Фонарик','🏮'],['Пингвин','🐧'],['Шапка','🧢'],['Снежный ком','⚪'],['Зимний сапог','🥾'],['Чайник','🫖'],['Какао','☕'],['Печенье','🍪'],['Полярная звезда','🌟'],['Лошадка-качалка','🧸'],['Письмо Деду Морозу','✉️'],['Северное сияние','🌌'],['Белый медведь','🐻‍❄️'],['Сосновая шишка','🌰'],['Снежная крепость','🏰'],['Метель','🌨️'],['Камин','🔥'],['Снегоступы','🎿'],['Хлопушка','🎉'],['Рождественский венок','🌿'],['Северный олень','🦌'],['Тёплый шарф','🧣'],['Лыжи','🎿'],['Снежная сова','🦉'],['Подарочная коробка','📦'],['Морозный узор','❄️'],['Рождественский носок','🧦']
   ].map(([name, emoji], design) => ({ name, emoji, design:design%6, image: aiCardArt[name] || '' }));
 
 
@@ -47,7 +47,7 @@
     {name:'Колокольчик',emoji:'🔔',image:'assets/memo-photo-chimes.webp'},
     {name:'Имбирное печенье',emoji:'🍪',image:'assets/memo-photo-gingerbread.webp'},
     {name:'Снеговик',emoji:'⛄',image:'assets/memo-photo-snowman.webp'},
-    {name:'Ёлочная шишка',emoji:'🌰',image:'assets/memo-photo-pinecone.webp'},
+    {name:'Сосновая шишка',emoji:'🌰',image:'assets/memo-photo-pinecone.webp'},
     {name:'Фейерверк',emoji:'🎆',image:'assets/memo-photo-fireworks.webp'},
     {name:'Варежки',emoji:'🧤',image:'assets/memo-photo-mittens.webp'},
     {name:'Салат оливье',emoji:'🥗',image:'assets/memo-photo-olivier.webp'},
@@ -63,7 +63,7 @@
     {name:'Шапка',emoji:'🧢',image:'assets/memo-photo-hat.webp'},
     {name:'Хлопушка',emoji:'🎉',image:'assets/memo-photo-cracker.webp'},
     {name:'Снежный шар',emoji:'🔮',image:'assets/memo-photo-snowglobe.webp'},
-    {name:'Бенгальский огонь',emoji:'✨',image:'assets/memo-photo-sparklers.webp'},
+    {name:'Бенгальские огни',emoji:'✨',image:'assets/memo-photo-sparklers.webp'},
     {name:'Звезда на ёлке',emoji:'⭐',image:'assets/memo-photo-star.webp'},
     {name:'Рождественский венок',emoji:'🌿',image:'assets/memo-photo-wreath.webp'},
     {name:'Самовар',emoji:'🫖',image:'assets/memo-photo-samovar.webp'},
@@ -80,7 +80,7 @@
     {name:'Чайник',emoji:'🫖',image:'assets/memo-photo-teapot.webp'},
     {name:'Игрушечный паровозик',emoji:'🚂',image:'assets/memo-photo-toytrain.webp'},
     {name:'Праздничная площадь',emoji:'🏙️',image:'assets/memo-photo-citysquare.webp'},
-    {name:'Хвоя и пряности',emoji:'🌿',image:'assets/memo-photo-cinnamon.webp'},
+    {name:'Хвоя и корица',emoji:'🌿',image:'assets/memo-photo-cinnamon.webp'},
     {name:'Семейный ужин',emoji:'🍽️',image:'assets/memo-photo-familytable.webp'},
     {name:'Бумажная гирлянда',emoji:'🎊',image:'assets/memo-photo-paperchain.webp'},
     {name:'Новогодняя ярмарка',emoji:'🎪',image:'assets/memo-photo-market.webp'},
@@ -197,72 +197,44 @@
   ];
 
   const guessDeck = [
-    ['Снегурочка','В старой сказке у зимы есть юная спутница.','Её цвет чаще напоминает лёд, чем пламя.','👸🏻'],
-    ['Снеговик','Сугробу иногда помогают стать чуть более человечным.','Его нос обычно найдётся на кухне.','⛄'],
-    ['Ёлка','Она собирает под собой шёпот упаковочной бумаги.','Зимой в доме появляется аромат леса.','🎄'],
-    ['Олень','В северной сказке он знает дорогу лучше навигатора.','В небе его след оставляют не самолёты.','🦌'],
-    ['Мандарин','Чистишь — и аромат приходит раньше гостей.','На праздничном столе этот запах часто открывает вечер.','🍊'],
-    ['Снежинка','Ни один из миллионов экземпляров не повторяет другой.','Она исчезает от тепла, почти не оставляя следа.','❄️'],
-    ['Подарок','Снаружи загадка, внутри обещание.','Его сначала перевязывают, а потом развязывают.','🎁'],
-    ['Дед Мороз','В декабре многие ждут гостя, который приходит без приглашения.','Его появление часто сопровождает хруст упаковки.','🎅🏻'],
-    ['Варежка','У неё есть отдельная компания для одного пальца.','Становится нужной, когда ладони хотят задержать тепло.','🧤'],
-    ['Санки','Им не нужен мотор, чтобы спуск был быстрым.','По снегу они оставляют две длинные линии.','🛷'],
-    ['Снегирь','На белом фоне у него есть маленькое красное пятно.','Он особенно заметен, когда ветви оголены.','🐦'],
-    ['Ёлочный шар','Он ловит огоньки и отражает комнату вверх ногами.','На ветке держится осторожнее, чем кажется.','🔴'],
-    ['Сосулька','Зимой дом иногда отращивает прозрачные клыки.','В солнечный полдень она начинает отвечать каплями.','🧊'],
-    ['Белый медведь','Его адрес не перепутаешь с жаркой страной.','Белое на нём — не праздничный костюм.','🐻‍❄️'],
-    ['Щелкунчик','Он стоит неподвижно, но в сказке умеет защищать.','Его имя связано с зимним угощением в скорлупе.','🪆'],
-    ['Колокольчик','Его легко услышать, но трудно спутать с хлопком.','Маленький звон иногда сообщает, что кто-то приближается.','🔔'],
-    ['Пряничный человечек','Он пахнет кухней, но может оказаться украшением.','На его лице часто рисуют улыбку белым.','🍪'],
-    ['Пингвин','Его лучший костюм всегда при нём.','Крылья помогают ему, хотя в небо он не уходит.','🐧'],
-    ['Снежный шар','Внутри маленький мир, который умеет устраивать бурю.','Чтобы он заволновался, достаточно встряхнуть.','🔮'],
-    ['Гирлянда','Она превращает темноту в пунктир.','Её распутывают дольше, чем выбирают.','💡'],
-    ['Заяц','Его следы иногда похожи на короткую загадку.','Длинные уши выдают его даже в сказке.','🐇'],
-    ['Ледяная сосулька','Она появляется там, где талая вода встречает холод.','Её острый кончик направлен к земле.','🧊'],
-    ['Лыжник','Две длинные линии помогают ему быстро идти по склону.','В руках у него пара тонких помощников.','🎿'],
-    ['Северное сияние','Ночное небо иногда устраивает тихое представление.','Его цвета не включаются выключателем.','🌌'],
-    ['Какао','Чашка согревает руки раньше, чем настроение.','Шоколадный запах часто приходит вместе с паром.','☕'],
-    ['Хлопушка','Праздничный сюрприз начинается с короткого звука.','Её начинка разлетается в разные стороны.','🎉'],
-    ['Рождественский носок','Он ждёт сюрприза, хотя в нём не ходят гулять.','У камина ему обычно выделяют место.','🧦'],
-    ['Салат оливье','Его собирают маленькими кубиками и ставят в центр застолья.','Горошек в нём встречается с майонезом.','🥗'],
-    ['Снежный шарф','Он становится длиннее, когда его разворачивают.','Хорошо знаком с ветром и шеей.','🧣'],
-    ['Ёлочная шишка','Она падает с хвойных, но зимой попадает в украшения.','Её чешуйки напоминают маленькие веера.','🌰'],
-    ['Фонарик','Он несёт собственный кусочек света.','В темноте его удобно держать за рукоять.','🏮'],
-    ['Зимняя сова','Она замечает движение почти бесшумно.','В ночной сказке её глаза видны раньше крыльев.','🦉'],
-    ['Рождественская звезда','Её образ ищут высоко над праздничным деревом.','Она связана с древней историей пути и света.','🌟'],
-    ['Морозный узор','Утром стекло может показать работу невидимого художника.','Его рисунок исчезает, когда в комнате теплеет.','❄️'],
-    ['Имбирное печенье','В нём пряность появляется раньше сладости.','Иногда его украшают тонкими белыми линиями.','🍪'],
-    ['Подарочная лента','Она делает коробку наряднее, не открывая её.','Часто заканчивается двумя петлями.','🎀'],
-    ['Валенки','В них шаги становятся мягче, а холод — дальше.','Их делают из свалянной шерсти.','🥾'],
-    ['Шапка','Её надевают прежде, чем выйти навстречу ветру.','Верх головы благодарит за неё в мороз.','🧢'],
-    ['Письмо Деду Морозу','На бумаге можно оставить желание, которое пока держат в секрете.','У адресата этого послания есть привычка приходить зимой.','✉️'],
-    ['Иней','Он оставляет серебро на ветках, не используя кисть.','Появляется ночью и отступает при тепле.','❄️'],
-    ['Мишура','Она шуршит, блестит и редко лежит ровно.','Её любят накидывать поверх хвои.','✨'],
-    ['Ёлочная игрушка','Она проводит праздник на высоте ветки.','В коробке её лучше хранить мягко.','🔴'],
-    ['Хоровод','Тут важно двигаться по кругу и не потерять соседей.','Праздничная песня помогает держать шаг.','💃'],
-    ['Мороз','Его присутствие узнают по дыханию в воздухе.','Он умеет рисовать на стекле, не беря кисть.','🥶'],
-    ['Календарь','Он делит ожидание на клеточки.','Последняя страница года приходит с особенным чувством.','📆']
-  ].map(([name, hint1, hint2, emoji], design) => ({ name, hint1, hint2, emoji, design:design%6, image:aiCardArt[name] || '' }));
+    ['Снегурочка','👸🏻'],['Снеговик','⛄'],['Ёлка','🎄'],['Олень','🦌'],['Мандарин','🍊'],
+    ['Снежинка','❄️'],['Подарок','🎁'],['Дед Мороз','🎅🏻'],['Варежки','🧤'],['Сани','🛷'],
+    ['Снегирь','🐦'],['Ёлочный шар','🔴'],['Сосулька','🧊'],['Белый медведь','🐻‍❄️'],['Щелкунчик','🪆'],
+    ['Колокольчик','🔔'],['Пряничный человечек','🍪'],['Пингвин','🐧'],['Снежный шар','🔮'],['Гирлянда','💡'],
+    ['Заяц','🐇'],['Коньки','⛸️'],['Лыжник','🎿'],['Северное сияние','🌌'],['Какао','☕'],
+    ['Хлопушка','🎉'],['Носок у камина','🧦'],['Салат оливье','🥗'],['Тёплый шарф','🧣'],['Сосновая шишка','🌰'],
+    ['Фонарик','🏮'],['Сова','🦉'],['Рождественская звезда','🌟'],['Морозный узор','❄️'],['Имбирное печенье','🍪'],
+    ['Подарочная лента','🎀'],['Валенки','🥾'],['Шапка','🧢'],['Письмо Деду Морозу','✉️'],['Иней','❄️'],
+    ['Мишура','✨'],['Ёлочная игрушка','🔴'],['Хоровод','💃'],['Мороз','🥶'],['Календарь','📆']
+  ].map(([name, emoji], design) => ({ name, emoji, design:design%6, image:aiCardArt[name] || '' }));
 
   const prompts = [
-    ['Ёлка','🎄'],['Дед Мороз','🎅🏻'],['Снегурочка','👸🏻'],['Снеговик','⛄'],['Северный олень','🦌'],['Снежинка','❄️'],['Подарок под ёлкой','🎁'],['Мандарин','🍊'],['Варежки','🧤'],['Санки','🛷'],
-    ['Кататься на коньках','⛸️'],['Лепить снеговика','☃️'],['Играть в снежки','❄️'],['Наряжать ёлку','🎄'],['Загадывать желание','🌠'],['Открывать подарок','🎁'],['Петь у ёлки','🎵'],['Танцевать хоровод','💃'],['Пить горячее какао','☕'],['Печь пряники','🍪'],
-    ['Снегирь на ветке','🐦'],['Белый медведь','🐻‍❄️'],['Пингвин на льдине','🐧'],['Заяц в сугробе','🐇'],['Лиса зимой','🦊'],['Сова в лесу','🦉'],['Щелкунчик','🪆'],['Пряничный человечек','🍪'],['Лесной гном','🧝'],['Снежная королева','👑'],
-    ['Сосулька на крыше','🧊'],['Северное сияние','🌌'],['Метель за окном','🌨️'],['Скрипучий снег','❄️'],['Замёрзшее озеро','🧊'],['Смешивать салат оливье','🥗'],['Зимний лес','🌲'],['Полярная звезда','🌟'],['Снежная крепость','🏰'],['Следы на снегу','🐾'],
-    ['Завязывать шарф','🧣'],['Надевать коньки','⛸️'],['Скользить на лыжах','🎿'],['Ехать на снегокате','🛷'],['Стряхивать снег с шапки','🧢'],['Отогревать ладони','👐'],['Чистить мандарин','🍊'],['Зажигать бенгальский огонь','✨'],['Звонить в колокольчик','🔔'],['Заворачивать подарок','🎀'],
-    ['Рождественский венок','🌿'],['Адвент-календарь','📅'],['Свеча на окне','🕯️'],['Рождественская звезда','⭐'],['Ангел на ёлке','👼'],['Письмо Деду Морозу','✉️'],['Праздничный носок','🧦'],['Имбирный домик','🏠'],['Семейный ужин','🍽️'],['Новогодний фейерверк','🎆'],
-    ['Подарочная коробка','📦'],['Хлопушка с конфетти','🎉'],['Ёлочный шар','🔴'],['Гирлянда огоньков','💡'],['Мишура','✨'],['Леденец-посох','🍭'],['Снежный шар','🔮'],['Музыкальная шкатулка','🎶'],['Камин и чулок','🔥'],['Рождественская открытка','💌'],
-    ['Морозное дыхание','🥶'],['Снежный ангел','👼'],['Потерянная варежка','🧤'],['Ветер качает ёлку','🌬️'],['Олень в упряжке','🦌'],['Дед Мороз в дымоходе','🎅🏻'],['Пингвин катается','🐧'],['Медведь ложится спать','🐻'],['Белка прячет орешки','🐿️'],['Кот играет с мишурой','🐈'],
-    ['Хоровод вокруг ёлки','🎄'],['Снежная карусель','🎠'],['Снежки летят в цель','🎯'],['Катание с ледяной горки','🛷'],['Прогулка в метель','🌨️'],['Поиск подарка','🔍'],['Упаковка сюрприза','🎁'],['Сборка снеговика','⛄'],['Сушка мокрых варежек','🧤'],['Зимний пикник','🧺'],
-    ['Тёплый плед','🧶'],['Запах хвои','🌲'],['Морозный узор на окне','❄️'],['Колокольный звон','🔔'],['Искры бенгальского огня','✨'],['Тихая рождественская ночь','🌙'],['Снежная поляна','🏔️'],['Резной ледяной фонарь','🏮'],['Сани с подарками','🛷'],['Новогоднее чудо','✨']
-  ].map(([word, emoji], i) => ({ word, emoji, category: ['Сказочные герои','Зимние забавы','Праздничные предметы','Животные','Зимняя природа'][Math.floor(i / 20)] }));
-  const methods = [
-    { name: 'Слова', icon: '💬', hint: 'Объясни словами, не называя само слово и его однокоренные.' },
-    { name: 'Вопросы', icon: '❔', hint: 'Помоги команде догадаться, задавая наводящие вопросы.' },
-    { name: 'Рисунок', icon: '✏️', hint: 'Нарисуй подсказку. Не пиши буквы и цифры.' },
-    { name: 'Пантомима', icon: '🙌', hint: 'Покажи слово движениями, не произнося ни звука.' },
-    { name: 'Песня', icon: '🎵', hint: 'Напой мелодию или спой, не произнося загаданное слово.' }
-  ];
+    // Персонажи и животные
+    ['Дед Мороз','🎅🏻'],['Снегурочка','👸🏻'],['Снеговик','⛄'],['Северный олень','🦌'],['Снегирь','🐦'],
+    ['Заяц','🐇'],['Белый медведь','🐻‍❄️'],['Пингвин','🐧'],['Лиса','🦊'],['Белка','🐿️'],
+    ['Сова','🦉'],['Волк','🐺'],['Щелкунчик','🪆'],['Пряничный человечек','🍪'],['Лесной гном','🧝'],
+    ['Снежная королева','👑'],['Ангел','👼'],['Кот у ёлки','🐈'],['Лошадка-качалка','🧸'],['Чудеса','✨'],
+    // Украшения и подарки
+    ['Ёлка','🎄'],['Ёлочная игрушка','🔴'],['Ёлочный шар','🔴'],['Звезда на ёлке','⭐'],['Гирлянда','💡'],
+    ['Мишура','✨'],['Хлопушка','🎉'],['Бенгальские огни','✨'],['Фейерверк','🎆'],['Рождественский венок','🌿'],
+    ['Колокольчик','🔔'],['Свеча','🕯️'],['Подсвечник','🕯️'],['Снежный шар','🔮'],['Фонарик','🏮'],
+    ['Открытка','💌'],['Подарочная коробка','📦'],['Подарочная лента','🎀'],['Подарок','🎁'],['Календарь','📆'],
+    // Угощения
+    ['Мандарин','🍊'],['Салат оливье','🥗'],['Какао','☕'],['Горячий чай','🍵'],['Самовар','🫖'],
+    ['Чайник','🫖'],['Имбирное печенье','🍪'],['Пряник','🍪'],['Пряничный домик','🏠'],['Леденец-трость','🍭'],
+    ['Конфеты','🍬'],['Варенье','🫙'],['Торт','🍰'],['Яблоки','🍎'],['Орехи','🌰'],
+    ['Мёд','🍯'],['Корица','🪵'],['Мармелад','🍬'],['Пирог','🥧'],['Сухофрукты','🍇'],
+    // Одежда и зимние забавы
+    ['Сани','🛷'],['Коньки','⛸️'],['Лыжи','🎿'],['Снегокат','🛷'],['Ледянка','🛷'],
+    ['Каток','⛸️'],['Горка','🛝'],['Валенки','🥾'],['Варежки','🧤'],['Шапка','🧢'],
+    ['Шарф','🧣'],['Пуховик','🧥'],['Зимний сапог','🥾'],['Ушанка','🧢'],['Плед','🧶'],
+    ['Снегоступы','🥾'],['Снежки','⚪'],['Снежный ком','⚪'],['Снежный ангел','👼'],['Хоровод','💃'],
+    // Зима и природа
+    ['Снежинка','❄️'],['Снегопад','🌨️'],['Сугроб','☃️'],['Метель','🌨️'],['Иней','❄️'],
+    ['Мороз','🥶'],['Сосулька','🧊'],['Лёд','🧊'],['Северное сияние','🌌'],['Полярная звезда','🌟'],
+    ['Зимний лес','🌲'],['Снежная поляна','🏔️'],['Следы на снегу','🐾'],['Замёрзшее озеро','🧊'],['Морозный узор','❄️'],
+    ['Ледяной фонарь','🏮'],['Северный полюс','🧭'],['Сосновая шишка','🌰'],['Камин','🔥'],['Снежная туча','☁️']
+  ].map(([word, emoji], i) => ({ word, emoji, category: ['Персонажи и животные','Украшения и подарки','Угощения','Одежда и зимние забавы','Зима и природа'][Math.floor(i / 20)] }));
   const pawnChoices = ['🎅🏻','🦌','⛄','🎄','🧝','🐧','🐻‍❄️','🎁','🍊','🧤','🛷','🔔'];
   const crocPawnChoices = [
     {id:'blue',name:'Синяя',color:'#2586cc'}, {id:'violet',name:'Фиолетовая',color:'#8c55ab'},
@@ -447,11 +419,11 @@
   function renderGuess() {
     const s=guessState;
     const isCircle=s.playMode==='circle';
-    const description=isCircle?'Все подключаются телефонами: у каждого своя карточка, скрытая на его ходу. Остальные участники видят её и помогают вопросами.':'Участник стоит спиной к общему экрану, остальные видят карточку и отвечают на вопросы «да» или «нет».';
+    const description=isCircle?'Все участники подключаются со своих телефонов. У каждого своя карточка; на своём ходу игрок не видит её, а остальные отвечают на его вопросы.':'Угадывающий стоит спиной к общей доске. Остальные видят карточку и отвечают на вопросы «да» или «нет».';
     const body=commonFrame('Новогодние тарантинки','КТО ТЫ? УЗНАЙ С ПОМОЩЬЮ ВОПРОСОВ',description,'guess-screen');
     const card=guessDeck[s.index];
     const picker=`<section class="card-choice"><div class="picker-title">ВЫБЕРИ ОДНУ ИЗ ${guessDeck.length} КАРТОЧЕК</div><div class="guess-picker">${guessDeck.map((item,i)=>`<button class="guess-pick card-style-${item.design} ${i===s.index?'selected':''}" data-guess="${i}" title="${escapeHtml(item.name)}"><span class="guess-pick-number">${String(i+1).padStart(2,'0')}</span><span class="guess-pick-season">НОВЫЙ ГОД</span><span class="guess-pick-art">${item.image?`<img src="${item.image}" alt="">`:item.emoji}</span><span class="guess-pick-name">${escapeHtml(item.name)}</span><span class="guess-pick-flourish">✦ ❄ ✦</span></button>`).join('')}</div><button class="soft-button" id="guessRandom">Случайная карточка ✨</button></section>`;
-    body.innerHTML=`${guessModeMarkup()}${isCircle?renderGuessCircleMarkup():`${contestMarkup(s)}<div class="guess-layout"><section class="guess-panel"><div class="guess-box"><div class="guess-label">КАРТОЧКА ${String(s.index+1).padStart(2,'0')} · СЛОВО ДЛЯ ОСТАЛЬНЫХ</div><div class="guess-board-status ${s.screenVisible?'is-shown':'is-hidden'}">${s.screenVisible?'❄ Карточка показана на общей доске':'🔒 Карточка скрыта на общей доске'}</div><div class="secret-card card-style-${card.design}"><span class="secret-card-label">НОВОГОДНЯЯ КАРТОЧКА · ${String(s.index+1).padStart(2,'0')}</span>${s.visible?`<span class="secret-emoji">${card.image?`<img src="${card.image}" alt="${escapeHtml(card.name)}">`:card.emoji}</span><span class="secret-word">${escapeHtml(card.name)}</span>`:'<span class="secret-hidden">?</span>'}</div><p class="guess-hint">${s.visible?`Подсказка ведущему: ${escapeHtml(card.hint1)}<br>${escapeHtml(card.hint2)}`:'Участник становится спиной к общему экрану. Остальные видят карточку и задают наводящие вопросы.'}</p><div class="guess-actions"><button class="solid-button" id="guessScreen" aria-pressed="${s.screenVisible}">${s.screenVisible?'Скрыть карточку с доски':'Показать карточку на доске'}</button><button class="soft-button" id="guessLocal">${s.visible?'Скрыть карточку у ведущего':'Показать ведущему'}</button><button class="soft-button" id="guessQuestion">Вопрос задан · ${s.asked}</button><button class="soft-button" id="guessCorrect">Угадали! +1 🎉</button></div></div><div class="guess-caption">Участник у доски задаёт вопросы, пока не догадается, кто он или что он.</div></section>${picker}</div>`}`;
+    body.innerHTML=`${guessModeMarkup()}${isCircle?renderGuessCircleMarkup():`${contestMarkup(s)}<div class="guess-layout"><section class="guess-panel"><div class="guess-box"><div class="guess-label">КАРТОЧКА ${String(s.index+1).padStart(2,'0')} · СЛОВО ДЛЯ ОСТАЛЬНЫХ</div><div class="guess-board-status ${s.screenVisible?'is-shown':'is-hidden'}">${s.screenVisible?'❄ Карточка показана на общей доске':'🔒 Карточка скрыта на общей доске'}</div><div class="secret-card card-style-${card.design}"><span class="secret-card-label">НОВОГОДНЯЯ КАРТОЧКА · ${String(s.index+1).padStart(2,'0')}</span>${s.visible?`<span class="secret-emoji">${card.image?`<img src="${card.image}" alt="${escapeHtml(card.name)}">`:card.emoji}</span><span class="secret-word">${escapeHtml(card.name)}</span>`:'<span class="secret-hidden">?</span>'}</div><p class="guess-hint">${s.visible?'Карточка открыта ведущему для проверки.':'Угадывающий стоит спиной к доске; карточку видят остальные участники.'}</p><div class="guess-actions"><button class="solid-button" id="guessScreen" aria-pressed="${s.screenVisible}">${s.screenVisible?'Скрыть карточку с доски':'Показать карточку на доске'}</button><button class="soft-button" id="guessLocal">${s.visible?'Скрыть карточку у ведущего':'Показать ведущему'}</button><button class="soft-button" id="guessQuestion">Вопрос задан · ${s.asked}</button><button class="soft-button" id="guessCorrect">Угадали! +1 🎉</button></div></div><div class="guess-caption">Участник у доски задаёт вопросы, пока не угадает, что изображено на карточке.</div></section>${picker}</div>`}`;
     body.querySelectorAll('[data-guess-mode]').forEach(button=>button.addEventListener('click',()=>{const mode=button.dataset.guessMode;if(mode!==s.playMode){s.playMode=mode;if(mode==='circle')syncCirclePlayers(connectedPlayers);else renderGuess();}}));
     if(isCircle){bindGuessCircle();publishGuessCircle();return;}
     bindContest(s,renderGuess);
@@ -467,7 +439,7 @@
     const s=guessState,players=s.circlePlayers||[],active=players.find(player=>player.id===s.activePlayerId);
     const inviteUrl=appPageUrl(`player.html?room=${roomCode}`);
     const rows=players.length?players.map((player,index)=>`<div class="circle-player ${player.id===s.activePlayerId?'is-active':''}"><span class="circle-player-number">${index+1}</span><b>${escapeHtml(player.name)}</b><span class="circle-turn">${player.id===s.activePlayerId?'УГАДЫВАЕТ':'В КРУГУ'}</span><strong>${player.score||0} ★</strong></div>`).join(''):'<div class="circle-empty">Пока никто не подключился. Покажи QR или отправь адрес вместе с кодом комнаты.</div>';
-    return `<div class="guess-circle-layout"><section class="circle-host-panel"><div class="circle-round-label">ТЕЛЕФОННЫЙ КРУГ · РАУНД ${s.round||1}</div><h3>${active?`${escapeHtml(active.name)} угадывает`: 'Подключи участников'}</h3><p>${active?'Остальные участники откроют его или её карточку на своих телефонах. Угадывающий видит только экран «не подглядывай».':'Игроки вводят имена и получают случайные зимние карточки. Для локальной игры подключите устройства к одной Wi-Fi сети.'}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа в телефонный круг" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение по QR-коду</b><p id="localInviteHint">Проверяю адрес локальной сети…</p><div class="circle-invite"><span id="playerInviteUrl">${escapeHtml(inviteUrl)}</span><button class="soft-button" id="copyPlayerLink">Скопировать ссылку</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong><small>Можно ввести вручную после открытия страницы на телефоне</small></div></div></div><div class="circle-join-status">${players.length} ${players.length===1?'УЧАСТНИК ПОДКЛЮЧЁН':players.length>1?'УЧАСТНИКА ПОДКЛЮЧЕНО':'УЧАСТНИКОВ ПОДКЛЮЧЕНО'} · КОД ${roomCode}</div><div class="circle-player-list">${rows}</div><div class="circle-host-actions"><button class="solid-button" id="circleCorrect" ${!active?'disabled':''}>Угадал! +1 🎉</button><button class="soft-button" id="circlePass" ${!active?'disabled':''}>Пас · следующий участник →</button><button class="soft-button" id="circleNewRound" ${!players.length?'disabled':''}>Новый круг ↻</button></div><p class="circle-safety-note">Все телефоны должны быть в той же Wi-Fi сети, что и компьютер ведущего. Компьютер с игрой должен оставаться включён.</p></section><aside class="circle-phone-preview"><div class="phone-preview-frame"><div class="phone-preview-speaker"></div><div class="phone-preview-snow">❄</div><b>${active?'ТВОЯ ОЧЕРЕДЬ':'ЖДЁМ ИГРОКОВ'}</b><span>${active?'На своём ходу участник не увидит свою карточку.':'Телефон каждого участника покажет личную карточку.'}</span><div class="phone-preview-dots">●　●　●</div></div><div class="picker-title">КАРТОЧКИ НАЗНАЧАЮТСЯ ЛИЧНО</div></aside></div>`;
+    return `<div class="guess-circle-layout"><section class="circle-host-panel"><div class="circle-round-label">ТЕЛЕФОННЫЙ КРУГ · РАУНД ${s.round||1}</div><h3>${active?`${escapeHtml(active.name)} угадывает`: 'Подключи участников'}</h3><p>${active?'Остальные участники увидят карточку активного игрока на своих телефонах. Сам угадывающий своей карточки не видит.':'Игроки вводят имена и получают случайные зимние карточки. Для игры подключите устройства к одной Wi-Fi сети.'}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа в телефонный круг" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение по QR-коду</b><p id="localInviteHint">Проверяю адрес локальной сети…</p><div class="circle-invite"><span id="playerInviteUrl">${escapeHtml(inviteUrl)}</span><button class="soft-button" id="copyPlayerLink">Скопировать ссылку</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong><small>Можно ввести вручную после открытия страницы на телефоне</small></div></div></div><div class="circle-join-status">${players.length} ${players.length===1?'УЧАСТНИК ПОДКЛЮЧЁН':players.length>1?'УЧАСТНИКА ПОДКЛЮЧЕНО':'УЧАСТНИКОВ ПОДКЛЮЧЕНО'} · КОД ${roomCode}</div><div class="circle-player-list">${rows}</div><div class="circle-host-actions"><button class="solid-button" id="circleCorrect" ${!active?'disabled':''}>Угадал! +1 🎉</button><button class="soft-button" id="circlePass" ${!active?'disabled':''}>Пас · следующий участник →</button><button class="soft-button" id="circleNewRound" ${!players.length?'disabled':''}>Новый круг ↻</button></div><p class="circle-safety-note">Все телефоны должны быть в той же Wi-Fi сети, что и компьютер ведущего. Компьютер с игрой должен оставаться включён.</p></section><aside class="circle-phone-preview"><div class="phone-preview-frame"><div class="phone-preview-speaker"></div><div class="phone-preview-snow">❄</div><b>${active?'ТВОЯ ОЧЕРЕДЬ':'ЖДЁМ ИГРОКОВ'}</b><span>${active?'На своём ходу участник не увидит свою карточку.':'Телефон каждого участника покажет личную карточку.'}</span><div class="phone-preview-dots">●　●　●</div></div><div class="picker-title">КАРТОЧКИ НАЗНАЧАЮТСЯ ЛИЧНО</div></aside></div>`;
   }
   async function setupPlayerInvite(){
     const hint=$('#localInviteHint'),image=$('#playerInviteQr'),placeholder=$('#localQrPlaceholder'),urlLabel=$('#playerInviteUrl'),title=$('#localInviteTitle');
@@ -510,7 +482,7 @@
   function publishGuess(reveal) { const card=guessDeck[guessState.index];publish({game:'guess',guessMode:'forehead',revealed:reveal,gameLabel:'НОВОГОДНИЕ ТАРАНТИНКИ',word:card.name,emoji:card.emoji,image:card.image,mode:'КАРТОЧКА '+String(guessState.index+1).padStart(2,'0'),team:guessState.names[guessState.active],instruction:'Угадывающий стоит спиной к экрану. Остальные задают вопросы, на которые отвечают «да» или «нет».'}); }
   function publishGuessCircle(){
     const s=guessState,players=s.circlePlayers||[],active=players.find(player=>player.id===s.activePlayerId);
-    publish({game:'guess',guessMode:'circle',revealed:false,gameLabel:'НОВОГОДНИЕ ТАРАНТИНКИ',word:'',emoji:'',image:'',mode:`РАУНД ${s.round||1}`,team:active?.name||'',activePlayerId:s.activePlayerId||'',round:s.round||1,circleCards:players.map(player=>({id:player.id,name:player.name,word:player.card.name,emoji:player.card.emoji,image:player.card.image,style:player.card.design,hint:`${player.card.hint1} ${player.card.hint2}`})),instruction:'Участники смотрят карточки на телефонах. Активный игрок не видит собственную подсказку.'});
+    publish({game:'guess',guessMode:'circle',revealed:false,gameLabel:'НОВОГОДНИЕ ТАРАНТИНКИ',word:'',emoji:'',image:'',mode:`РАУНД ${s.round||1}`,team:active?.name||'',activePlayerId:s.activePlayerId||'',round:s.round||1,circleCards:players.map(player=>({id:player.id,name:player.name,word:player.card.name,emoji:player.card.emoji,image:player.card.image,style:player.card.design,hint:''})),instruction:'Участники смотрят карточки на телефонах. Активный игрок не видит свою карточку.'});
   }
 
   const methodTexts=[
@@ -518,7 +490,7 @@
     {name:'Напой',icon:'🎵',hint:'Напой песню или мелодию, чтобы команда догадалась. Не произноси загаданное слово.'},
     {name:'Покажи',icon:'👣',hint:'Покажи слово жестами, мимикой и движениями — без слов и звуков.'},
     {name:'Нарисуй',icon:'🎨',hint:'Нарисуй подсказку на бумаге. Не пиши буквы и цифры.'},
-    {name:'Задавай вопросы',icon:'❔',hint:'Помоги команде вопросами, на которые можно ответить «да» или «нет».'}
+    {name:'Значок «?»',icon:'❔',hint:'В оригинале есть значок вопроса, но его значение пока не подтверждено.'}
   ];
   function cardTasks(cardIndex){return Array.from({length:5},(_,slot)=>{const prompt=prompts[(cardIndex*37+slot*19)%prompts.length];const method=methodTexts[slot];return{...prompt,method};});}
   function activeTask(){return cardTasks(crocState.card)[crocState.task];}
