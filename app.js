@@ -616,6 +616,10 @@
     const lists=[['СЕМЕЙНОЕ КАРАОКЕ',crosswordMusic.familyKaraoke],['ЗАРУБЕЖНЫЕ ХИТЫ · КАРАОКЕ',crosswordMusic.worldKaraoke],['РУССКИЕ ПЛЕЙЛИСТЫ',crosswordMusic.russianPlaylists],['ЗАРУБЕЖНОЕ И КЛАССИКА',crosswordMusic.internationalPlaylists]];
     return `<section class="crossword-music"><div class="crossword-music-head"><span>🎶</span><div><b>Музыкальная пауза</b><small>Семейные песни, зарубежные хиты и классика · ссылки откроются на YouTube</small></div></div><div class="crossword-music-columns">${lists.map(([heading,items])=>`<div class="crossword-music-group"><h4>${heading}</h4>${items.map(item=>`<a class="crossword-music-link" href="${item.url}" target="_blank" rel="noopener noreferrer"><span class="music-play">▶</span><span><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.kind)}</small></span><i>↗</i></a>`).join('')}</div>`).join('')}</div></section>`;
   }
+  function openMusicLibrary(){
+    const body=commonFrame('Новогоднее караоке и музыка','ВКЛЮЧАЙ И ПОДПЕВАЙ','Семейные песни, зарубежные хиты и классика — выбери настроение для праздника.','music-screen');
+    body.innerHTML=crosswordMusicMarkup();
+  }
   function renderCrossword(){
     const s=crosswordState,puzzles=window.CROSSWORD_PUZZLES||[],puzzle=puzzles[s.puzzleIndex];if(!puzzle)return;
     const layout=crosswordLayout(puzzle),entryByIndex=new Map(layout.entries.map(entry=>[entry.index,entry]));
@@ -714,20 +718,21 @@
     let lastSpawn=0;
     window.addEventListener('pointermove',event=>{
       if((event.pointerType!=='mouse'&&event.pointerType!=='pen')||layer.style.display==='none')return;
-      const now=performance.now();if(now-lastSpawn<55)return;lastSpawn=now;
-      const existing=layer.querySelectorAll('.cursor-snowflake');
-      if(existing.length>66)existing[0].remove();
-      const count=2+(Math.random()>.8?1:0);
+      const now=performance.now();if(now-lastSpawn<38)return;lastSpawn=now;
+      const count=3+(Math.random()>.6?2:0);
+      const existing=[...layer.querySelectorAll('.cursor-snowflake')];
+      while(existing.length>96-count)existing.shift().remove();
       for(let i=0;i<count;i++){
         const flake=document.createElement('span');flake.className='cursor-snowflake';flake.textContent=['❄','❅','✧','·','✦'][Math.floor(Math.random()*5)];
         flake.style.color=['#fff','#effcff','#dff6ff','#f4f0ff'][Math.floor(Math.random()*4)];
-        flake.style.left=`${event.clientX+(Math.random()*16-8)}px`;flake.style.top=`${event.clientY+(Math.random()*12-6)}px`;
-        flake.style.fontSize=`${8+Math.random()*11}px`;flake.style.setProperty('--flake-drift',`${Math.random()*54-27}px`);
-        flake.style.setProperty('--flake-spin',`${Math.random()*170-85}deg`);flake.style.setProperty('--flake-duration',`${650+Math.random()*550}ms`);
+        flake.style.left=`${event.clientX+(Math.random()*24-12)}px`;flake.style.top=`${event.clientY+(Math.random()*18-9)}px`;
+        flake.style.fontSize=`${11+Math.random()*14}px`;flake.style.setProperty('--flake-drift',`${Math.random()*82-41}px`);
+        flake.style.setProperty('--flake-spin',`${Math.random()*220-110}deg`);flake.style.setProperty('--flake-duration',`${850+Math.random()*800}ms`);
         flake.addEventListener('animationend',()=>flake.remove(),{once:true});layer.appendChild(flake);
       }
     },{passive:true});
   }
   makeSnow();connectSync();
+  $('#musicOpen').addEventListener('click',openMusicLibrary);
   $('#snowToggle').addEventListener('click',()=>{const layer=$('.snow-layer');const on=layer.style.display!=='none';layer.style.display=on?'none':'block';$('#snowToggle').innerHTML=`${on?'☼':'❄'} <span>${on?'Снегопад выкл.':'Снег идёт'}</span>`;});
 })();
