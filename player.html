@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#eaf7ff"><title>Тарантинки — твой телефон</title><link rel="stylesheet" href="player.css"></head>
+<body>
+  <div class="phone-snow" aria-hidden="true"></div>
+  <header class="phone-top"><a href="./" class="phone-brand">❄ СНЕЖНЫЙ ПЕРЕПОЛОХ</a><span id="phoneConnection" class="phone-connection"><i></i> Не подключён</span></header>
+  <main class="phone-main">
+    <section id="joinPanel" class="phone-card join-card">
+      <div class="phone-snowflake">❄</div><div class="phone-kicker">НОВОГОДНИЕ ТАРАНТИНКИ</div><h1>Войди в круг</h1>
+      <p>Введи имя. На своём ходу не смотри на телефон — остальные увидят твою карточку и будут помогать вопросами.</p>
+      <label class="phone-name-label" for="playerName">Как тебя называть?</label><input id="playerName" maxlength="24" autocomplete="given-name" placeholder="Например, Аня">
+      <div id="manualRoomEntry" class="manual-room-entry" hidden><label class="phone-name-label" for="roomCodeInput">Код комнаты от ведущего</label><input id="roomCodeInput" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Например, A7B2C"><small>Сначала открой страницу по локальной ссылке ведущего. Телефон и компьютер должны быть в одной Wi-Fi сети.</small></div>
+      <button id="joinButton" class="join-button" type="button">Подключиться к игре <span>→</span></button>
+      <div class="phone-room" id="phoneRoom"></div>
+    </section>
+    <section id="gamePanel" class="phone-card player-card" hidden>
+      <div id="playerTurn" class="phone-kicker">ЖДЁМ ВЕДУЩЕГО</div><h1 id="playerHeading">Подключаемся…</h1><p id="playerInstructions">Карточка появится, когда ведущий начнёт телефонный режим.</p>
+      <div id="playerCardFace" class="phone-card-face card-style-0"><span class="phone-card-season">НОВЫЙ ГОД · ТАРАНТИНКИ</span><div id="playerImage" class="phone-image phone-card-image"></div><div id="playerWord" class="phone-word phone-card-word"></div></div><div id="playerHint" class="phone-hint"></div>
+      <div id="playerActions" class="phone-actions" hidden><button id="solvedButton" class="join-button">Угадал! 🎉</button><button id="passButton" class="pass-button">Передать ход →</button></div>
+      <div class="phone-reminder">❄ В круге смотрим на телефоны друг друга — свой экран на своём ходу не подглядываем.</div>
+      <button id="leaveButton" class="leave-button">Сменить имя / отключиться</button>
+    </section>
+  </main>
+  <footer class="phone-footer">Зимние игры вместе · Код комнаты <b id="roomCode"></b></footer>
+  <script src="player.js"></script>
+</body></html>
