@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#eaf7ff" />
-  <meta name="description" content="Новогодние игры для школьных праздников: Мемо, Тарантинки, Крокодил и викторина." />
+  <meta name="description" content="Пять новогодних игр для школьных праздников: Мемо, Тарантинки, Крокодил, викторина и интерактивные кроссворды." />
   <title>Снежный переполох — новогодние игры</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
     <nav class="main-nav" aria-label="Главная навигация">
       <a href="#games">Игры</a><a href="#about">Для ведущего</a>
     </nav>
-    <button class="sound-toggle" id="snowToggle" aria-label="Выключить снег" title="Двигай курсором — за ним полетят снежинки">❄ <span>Снег идёт</span></button>
+    <div class="header-actions"><button class="music-toggle" id="musicOpen" aria-label="Открыть новогоднее караоке и плейлисты" title="Караоке и новогодняя музыка">♫ <span>Караоке и музыка</span></button><button class="sound-toggle" id="snowToggle" aria-label="Выключить снег" title="Двигай курсором — за ним полетят снежинки">❄ <span>Снег идёт</span></button></div>
   </header>
 
   <main id="home">
@@ -29,7 +29,7 @@
       <div class="hero-copy">
         <div class="eyebrow"><span class="eyebrow-star">✦</span> ПРАЗДНИЧНЫЙ НАБОР ДЛЯ КЛАССА <span class="eyebrow-star">✦</span></div>
         <h1>Пусть праздник<br>будет <em>игрой!</em></h1>
-        <p class="hero-lead">Четыре новогодние игры для класса: ищем пары, загадываем персонажей, объясняем слова и отвечаем на зимние вопросы.</p>
+        <p class="hero-lead">Пять новогодних игр для класса: ищем пары, загадываем персонажей, объясняем слова, отвечаем на зимние вопросы и разгадываем кроссворды.</p>
         <a class="primary-button" href="#games">Выбрать игру <span>↓</span></a>
         <div class="hero-note"><span class="note-icon">✧</span> Подходит для школьных праздников и классных часов</div>
       </div>
@@ -47,7 +47,7 @@
 
     <section class="games-section" id="games">
       <div class="section-heading">
-        <div><div class="section-kicker">ВЫБИРАЙ И НАЧИНАЙ</div><h2>Игры у ёлки</h2></div>
+        <div><div class="section-kicker">ВЫБИРАЙ И НАЧИНАЙ</div><h2>Игры и музыка у ёлки</h2></div>
         <p>Правила простые — веселья<br>хватит на весь праздник!</p>
       </div>
       <div class="game-grid">
@@ -69,12 +69,17 @@
         <article class="game-card quiz-card">
           <div class="card-top"><span class="game-number">04</span><span class="game-tag">70 ВОПРОСОВ</span></div>
           <div class="game-illustration quiz-illustration"><div class="quiz-cover-art"><img src="assets/quiz-pdf-child.webp" alt="Персонаж из исходной новогодней викторины"></div><span class="quiz-sparkle quiz-sparkle-one">✦</span><span class="quiz-sparkle quiz-sparkle-two">❄</span><div class="quiz-question-mark">?</div></div>
-          <div class="game-info"><h3>Новогодняя викторина</h3><p>70 зимних вопросов: традиции, сказки, Дед Мороз и новогодние загадки.</p><div class="game-meta"><span>⏱ 15–25 минут</span><span>👥 от 1 игрока</span></div><button class="game-button lilac-button" data-open="quiz">Играть <span>→</span></button></div>
+          <div class="game-info"><h3>Новогодняя викторина</h3><p>70 зимних вопросов: традиции, сказки, Дед Мороз и новогодние загадки.</p><div class="game-meta"><span>⏱ 15–25 минут</span><span>👥 от 1 игрока</span></div><div class="quiz-card-actions"><button class="game-button lilac-button" data-open="quiz">Играть <span>→</span></button><a class="quiz-download-link" href="assets/quiz-presentation.pptx" download="Новогодняя-викторина.pptx">↓ Скачать презентацию <small>173 слайда · PPTX</small></a></div></div>
         </article>
         <article class="game-card crossword-card">
           <div class="card-top"><span class="game-number">05</span><span class="game-tag">5 УРОВНЕЙ</span></div>
           <div class="game-illustration crossword-illustration"><span class="crossword-card-flake">❄</span><span class="crossword-card-sparkle">✦</span></div>
-          <div class="game-info"><h3>Новогодние кроссворды</h3><p>Пять зимних сеток — от лёгкой разминки до экспертного уровня. Внутри также караоке и праздничные плейлисты.</p><div class="game-meta"><span>🧩 5 кроссвордов</span><span>🎤 YouTube</span></div><button class="game-button blue-button" data-open="crossword">Решать <span>→</span></button></div>
+          <div class="game-info"><h3>Новогодние кроссворды</h3><p>Пять зимних сеток — от лёгкой разминки до экспертного уровня.</p><div class="game-meta"><span>🧩 5 кроссвордов</span><span>8–16 слов</span></div><button class="game-button blue-button" data-open="crossword">Решать <span>→</span></button></div>
+        </article>
+        <article class="game-card music-card">
+          <div class="card-top"><span class="game-number">♫</span><span class="game-tag">КАРАОКЕ + ПЛЕЙЛИСТЫ</span></div>
+          <div class="game-illustration music-illustration"><span class="music-note music-note-one">♫</span><span class="music-note music-note-two">♪</span><span class="music-card-star">✦</span></div>
+          <div class="game-info"><h3>Новогодняя музыка</h3><p>Русское и зарубежное караоке, поп-хиты и рождественская классика для всей компании.</p><div class="game-meta"><span>🎤 10 караоке-песен</span><span>▶ 7 плейлистов</span></div><button class="game-button music-game-button" data-open="music">Песни и плейлисты <span>→</span></button></div>
         </article>
       </div>
     </section>
