@@ -286,3 +286,15 @@
 @media(max-width:900px){.game-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.game-grid>.game-card{grid-column:span 2}.game-grid>.game-card:nth-child(4),.game-grid>.game-card:nth-child(5){grid-column:auto/span 2}}
 @media(max-width:620px){.game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.game-grid>.game-card{grid-column:span 2}.game-grid>.game-card:nth-child(4),.game-grid>.game-card:nth-child(5){grid-column:span 2}.header-actions{gap:5px}.music-toggle,.sound-toggle{display:grid;place-items:center;width:35px;height:35px;padding:0;font-size:16px}.music-toggle span,.sound-toggle span{display:none}.main-nav{margin-left:auto;margin-right:8px;gap:12px}}
 @media(max-width:620px){.site-header{gap:5px;padding-right:12px;padding-left:12px}.brand{gap:5px;font-size:11px}.brand-mark{font-size:23px}.brand-second{font-size:9px}.main-nav{gap:8px;margin-right:5px}.main-nav a{font-size:9px}.header-actions{gap:4px}.music-toggle,.sound-toggle{width:31px;height:31px}}
+
+/* Keep the crossword and music as separate home cards; the six cards form a tidy 3×2 grid. */
+.game-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.game-grid>.game-card,.game-grid>.game-card:nth-child(4),.game-grid>.game-card:nth-child(5){grid-column:auto}
+.music-illustration{background:#e9eaff url('assets/music-winter-art.webp') center/cover no-repeat}
+.music-illustration:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#d9eeff16,#e1d8fa12)}
+.music-note,.music-card-star{position:absolute;z-index:1;color:#fff;text-shadow:0 2px 12px #54708c88;font-weight:900}.music-note-one{top:31%;left:16%;font-size:37px;transform:rotate(-12deg)}.music-note-two{right:16%;top:24%;font-size:29px;transform:rotate(13deg)}.music-card-star{right:26%;bottom:17%;color:#ffe4a2;font-size:23px}
+.music-game-button{background:linear-gradient(110deg,#897bd0,#61b6d1)}
+.quiz-card-actions{display:flex;flex-direction:column;gap:5px;margin-top:18px}.quiz-card-actions .game-button{margin-top:0}
+.quiz-download-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:5px 7px;color:#8576ad;font-size:9px;font-weight:900;text-decoration:none;transition:color .16s,background .16s;border-radius:8px}.quiz-download-link:hover{color:#685796;background:#f5f0ff}.quiz-download-link small{color:#a0a9ba;font-size:8px;font-weight:700}
+.quiz-download-button{display:inline-flex;align-items:center;gap:5px;color:#8370aa!important;text-decoration:none;white-space:nowrap}.quiz-download-button:hover{background:#f4efff!important}
+@media(max-width:900px){.game-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.game-grid{grid-template-columns:1fr}.game-grid>.game-card{grid-column:auto}.quiz-card-actions{gap:3px;margin-top:9px}.quiz-download-link{font-size:8px}.quiz-download-link small{font-size:7px}.music-note-one{font-size:25px}.music-note-two{font-size:23px}}
