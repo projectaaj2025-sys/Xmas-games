@@ -385,3 +385,32 @@
 .croc-card-flip-frame.is-animating{animation:crocCardFlipIn .42s cubic-bezier(.2,.75,.25,1)}
 .croc-screen .croc-card-front .task-list{grid-template-columns:1fr}
 .croc-screen .task-actions button:disabled{opacity:.43;cursor:not-allowed;transform:none;filter:none}
+
+/* Compact Crocodile pawn selector: the color is visible, never a clipped label. */
+.croc-screen .croc-pawn-cycle{display:grid;place-items:center;flex:0 0 34px;width:34px;height:32px;padding:0;border:0;border-radius:10px;background:transparent;cursor:pointer;transition:transform .18s,background .18s}
+.croc-screen .croc-pawn-cycle:hover{transform:scale(1.1);background:#fff}
+.croc-screen .croc-pawn-cycle:focus-visible{outline:3px solid #70bfd7;outline-offset:1px}
+.croc-screen .croc-pawn-cycle .croc-pawn-token{font-size:18px}
+.croc-screen .score-chip input.player-name{flex:0 1 94px;width:94px;min-width:66px}
+@media(max-width:620px){.croc-screen .croc-pawn-cycle{flex-basis:28px;width:28px;height:28px}.croc-screen .croc-pawn-cycle .croc-pawn-token{font-size:16px}.croc-screen .score-chip input.player-name{flex:0 1 86px;width:86px;min-width:58px}}
+
+/* Tarantinki: make the current guesser, question count and score instantly scannable. */
+.guess-turn-summary{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;align-items:center;gap:9px;width:min(100%,420px);margin:13px auto 10px;padding:9px 11px;border:1px solid #dfe9f2;border-radius:14px;background:linear-gradient(115deg,#fff,#f3f7ff 62%,#f7f2ff);box-shadow:0 5px 14px #6c7da111;text-align:left}
+.guess-turn-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(145deg,#dff6fb,#e9e3fb);font-size:21px}
+.guess-turn-player{display:flex;flex-direction:column;min-width:0;gap:2px}
+.guess-turn-player small,.guess-turn-stat small{color:#98a2b6;font-size:9px;font-weight:900;letter-spacing:.1em}
+.guess-turn-player b{overflow:hidden;color:#536789;font-size:15px;text-overflow:ellipsis;white-space:nowrap}
+.guess-turn-stat{display:flex;flex-direction:column;align-items:center;min-width:48px;padding:4px 7px;border-left:1px solid #e5eaf1}
+.guess-turn-stat b{color:#8674b7;font-size:16px;line-height:1.15}
+.guess-screen .guess-panel{max-width:620px}
+.guess-screen .guess-box{padding:25px 21px 20px;border-color:#dedff1;background:radial-gradient(ellipse at 50% 0,#fff 0,#f3f4ff 48%,#effaff 100%)}
+.guess-screen .secret-card{width:min(260px,100%);height:205px;min-height:205px;border-width:3px;border-radius:19px;box-shadow:0 12px 25px #64799b24, inset 0 0 0 4px #ffffffa8;transition:transform .2s,box-shadow .2s}
+.guess-screen .secret-card:hover{transform:translateY(-2px) rotate(-.4deg);box-shadow:0 16px 30px #64799b2b,inset 0 0 0 4px #ffffffa8}
+.guess-screen .guess-actions{gap:8px}
+.guess-screen .guess-actions button{min-height:42px;border-radius:12px;font-size:13px}
+.guess-screen #guessScreen{background:linear-gradient(120deg,#56b9d5,#748fcf);box-shadow:0 5px 13px #628fc52b}
+.guess-screen #guessQuestion{border-color:#d9e9f2;background:#f6fcff;color:#5488a5}
+.guess-screen #guessCorrect{border-color:#bde1cb;background:#ecf9f0;color:#498760}
+.guess-screen #guessSkip{border-color:#ecdccf;background:#fff8f1;color:#a66c48}
+.guess-screen .guess-caption{max-width:470px;margin:11px auto 0;line-height:1.5}
+@media(max-width:620px){.guess-turn-summary{grid-template-columns:32px minmax(0,1fr) auto auto;gap:6px;margin:9px auto;padding:7px 8px}.guess-turn-icon{width:30px;height:30px;font-size:18px}.guess-turn-player small,.guess-turn-stat small{font-size:7.5px}.guess-turn-player b{font-size:13px}.guess-turn-stat{min-width:39px;padding:3px 4px}.guess-turn-stat b{font-size:14px}.guess-screen .guess-box{padding:19px 10px 13px}.guess-screen .secret-card{height:174px;min-height:174px}.guess-screen .guess-actions{gap:6px}.guess-screen .guess-actions button{flex:1 1 42%;font-size:11px;padding:8px 7px}}
