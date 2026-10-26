@@ -328,3 +328,24 @@
 @media(max-width:620px){.croc-screen .score-chip input.player-name{flex-basis:60px;width:60px}}
 .croc-layout.board-only .board-wrap{width:min(980px,90vw,max(320px,calc((100dvh - 390px)*1.2)));max-width:100%}
 @media(max-height:620px){.croc-layout.board-only .board-wrap{width:min(980px,88vh,90vw)}}
+
+/* Keep Crocodile pawns legible and separated, even when several teams share a cell. */
+.croc-screen .board-track{overflow:visible}
+.croc-screen .board-cell.has-pawn small{transform:translateY(-7px)}
+.croc-screen .board-pawns{left:50%;right:auto;bottom:3px;width:min(58px,82%);transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:clamp(13px,1.2vw,18px);gap:1px;align-items:center;justify-items:center}
+.croc-screen .board-pawns i{display:grid;place-items:center;width:100%;height:100%;min-width:0;border:1px solid #ffffffd9;border-radius:50%;background:var(--pawn-color);color:#fff;font-size:clamp(8px,.72vw,11px);font-weight:900;line-height:1;font-style:normal;text-shadow:0 1px 2px #00172b;box-shadow:0 1px 3px #00172b66;-webkit-text-stroke:0}
+@media(max-width:620px){.croc-screen .board-pawns{width:min(43px,88%);grid-auto-rows:12px;gap:1px}.croc-screen .board-pawns i{font-size:8px}.croc-screen .board-cell.has-pawn small{transform:translateY(-5px)}}
+
+/* Make crossword clues and controls easier to read at the shared board. */
+.crossword-puzzle-pick b{font-size:15px}
+.crossword-puzzle-pick small{font-size:12px}
+.crossword-meta p{font-size:15px}
+.crossword-clue-section h4{font-size:13.5px}
+.crossword-clue{font-size:clamp(13px,.95vw,15.5px);line-height:1.4}
+.crossword-clue b{font-size:inherit}
+.crossword-actions button{font-size:15px}
+@media(max-width:760px){.crossword-clue{font-size:clamp(12.5px,3vw,15px)}.crossword-puzzle-pick b{font-size:12.5px}.crossword-puzzle-pick small{font-size:11px}}
+@media(max-width:480px){.crossword-clue{font-size:13px}.crossword-clue-section h4{font-size:12px}}
+.guess-board-status{margin:6px auto 0;color:#7891a7;font-size:13px;font-weight:900;text-align:center}
+.guess-board-status.is-shown{color:#4597a7}.guess-board-status.is-hidden{color:#a188a2}
+@media(max-width:620px){.guess-board-status{font-size:11.5px}}
