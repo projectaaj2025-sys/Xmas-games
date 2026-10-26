@@ -349,3 +349,39 @@
 .guess-board-status{margin:6px auto 0;color:#7891a7;font-size:13px;font-weight:900;text-align:center}
 .guess-board-status.is-shown{color:#4597a7}.guess-board-status.is-hidden{color:#a188a2}
 @media(max-width:620px){.guess-board-status{font-size:11.5px}}
+
+/* Crocodile: flip the word card, choose a deck, and read each word comfortably. */
+.croc-deck-control{display:flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid #f0d7c8;border-radius:12px;background:#fffaf6;color:#a96845;font-size:14px;font-weight:900}
+.croc-deck-control select{max-width:230px;border:1px solid #edd5c7;border-radius:9px;background:#fff;color:#8b5338;padding:7px 9px;font:800 14px Nunito,sans-serif;outline:0}
+.croc-deck-note{font-size:12px!important}
+.croc-screen .croc-side-tools{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:10px}
+.croc-screen .croc-side-tools .side-title{margin:0;font-size:15px}
+.croc-flip-button{flex:0 0 auto;padding:9px 12px;border-color:#ecc9b4;background:#fff5ec;color:#a95b35;font-size:14px;font-weight:900}
+.croc-flip-button:hover{background:#ffecdf}
+.croc-card-flip-frame{min-height:365px;perspective:1000px;transform-origin:center;animation:crocCardFlipIn .42s cubic-bezier(.2,.75,.25,1)}
+@keyframes crocCardFlipIn{from{opacity:.55;transform:perspective(1000px) rotateY(-76deg) scale(.96)}to{opacity:1;transform:perspective(1000px) rotateY(0) scale(1)}}
+.croc-card-front{min-height:365px;padding:13px 11px 12px;border:1px solid #f0d1bc;border-radius:14px;background:linear-gradient(145deg,#fffefa,#fff6ef);box-shadow:inset 0 0 0 4px #fff,0 5px 15px #85451e12}
+.croc-card-front-kicker{margin:0 4px 10px;color:#ad603a;font-size:14px;font-weight:900;letter-spacing:.09em;text-align:center}
+.croc-card-back{min-height:365px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;overflow:hidden;position:relative;border:2px solid #da7b4c;border-radius:16px;background:radial-gradient(circle at 25% 18%,#ffc17d 0 2px,transparent 3px),radial-gradient(circle at 78% 70%,#ffd897 0 2px,transparent 3px),linear-gradient(145deg,#f88b45,#d9562b 70%,#b93d22);background-size:38px 42px,52px 48px,auto;color:#fffaf0;text-align:center;box-shadow:inset 0 0 0 7px #ffffff24,0 7px 17px #9d4d2822}
+.croc-card-back:before,.croc-card-back:after{content:'✦　❄　✦';position:absolute;color:#fff2d4a8;font-size:20px;letter-spacing:.2em}
+.croc-card-back:before{top:17px;left:13px}.croc-card-back:after{bottom:15px;right:13px}
+.croc-card-back-snow{font-size:58px;filter:drop-shadow(0 4px 5px #873a2b55)}
+.croc-card-back>b{font-size:24px;letter-spacing:.12em}
+.croc-card-back>span:not(.croc-card-back-snow){font-size:16px;font-weight:800}
+.croc-card-back small{max-width:250px;font-size:14px;line-height:1.45;color:#fff4dd}
+.croc-card-back-flourish{color:#ffedbf;font-size:18px;letter-spacing:.1em}
+.croc-screen .croc-card-front .task-list{gap:7px;padding:0;border:0;background:transparent}
+.croc-screen .croc-card-front .croc-task{min-height:55px;padding:8px 9px;gap:10px}
+.croc-screen .croc-card-front .task-number{flex-basis:29px;height:29px;font-size:17px}
+.croc-screen .croc-card-front .task-icon{flex-basis:33px;height:33px;font-size:21px}
+.croc-screen .croc-card-front .task-description b{font-size:18px;line-height:1.2}
+.croc-screen .croc-card-front .task-description small{font-size:13.5px;line-height:1.3}
+.croc-screen .croc-card-front .task-arrow{font-size:22px}
+@media(max-width:850px){.croc-card-flip-frame,.croc-card-front,.croc-card-back{min-height:340px}.croc-screen .croc-card-front .task-description b{font-size:16.5px}.croc-screen .croc-card-front .task-description small{font-size:12.5px}}
+@media(max-width:640px){.croc-projection-bar .croc-deck-control{width:100%;justify-content:space-between}.croc-deck-control select{max-width:70%;flex:1}.croc-deck-note{width:100%;text-align:center}.croc-screen .croc-side-tools{align-items:stretch;flex-direction:column}.croc-screen .croc-side-tools .side-title{text-align:center}.croc-flip-button{width:100%}.croc-card-flip-frame,.croc-card-front,.croc-card-back{min-height:330px}.croc-card-front{padding:10px 7px}.croc-card-back>b{font-size:21px}}
+@media(max-width:620px){.croc-screen .croc-card-front .croc-task{min-height:50px;padding:6px 7px;gap:7px}.croc-screen .croc-card-front .task-number{flex-basis:25px;height:25px;font-size:15px}.croc-screen .croc-card-front .task-icon{flex-basis:29px;height:29px;font-size:18px}.croc-screen .croc-card-front .task-description b{font-size:15px}.croc-screen .croc-card-front .task-description small{font-size:11.5px}.croc-deck-control{font-size:12px}.croc-deck-control select{font-size:12px}}
+.guess-actions #guessSkip{border-color:#edd9ca;background:#fff8f2;color:#a96845;font-weight:900}
+.croc-card-flip-frame{animation:none}
+.croc-card-flip-frame.is-animating{animation:crocCardFlipIn .42s cubic-bezier(.2,.75,.25,1)}
+.croc-screen .croc-card-front .task-list{grid-template-columns:1fr}
+.croc-screen .task-actions button:disabled{opacity:.43;cursor:not-allowed;transform:none;filter:none}
