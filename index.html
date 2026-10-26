@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#eaf7ff" />
+  <meta name="description" content="Новогодние игры для школьных праздников: Мемо, Тарантинки, Крокодил и викторина." />
+  <title>Снежный переполох — новогодние игры</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="snow-layer" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="Снежный переполох — на главную">
+      <span class="brand-mark">❄</span><span>снежный<span class="brand-second">переполох</span></span>
+    </a>
+    <nav class="main-nav" aria-label="Главная навигация">
+      <a href="#games">Игры</a><a href="#about">Для ведущего</a>
+    </nav>
+    <button class="sound-toggle" id="snowToggle" aria-label="Выключить снег" title="Двигай курсором — за ним полетят снежинки">❄ <span>Снег идёт</span></button>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="garland garland-top" aria-hidden="true"><span></span></div>
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-star">✦</span> ПРАЗДНИЧНЫЙ НАБОР ДЛЯ КЛАССА <span class="eyebrow-star">✦</span></div>
+        <h1>Пусть праздник<br>будет <em>игрой!</em></h1>
+        <p class="hero-lead">Четыре новогодние игры для класса: ищем пары, загадываем персонажей, объясняем слова и отвечаем на зимние вопросы.</p>
+        <a class="primary-button" href="#games">Выбрать игру <span>↓</span></a>
+        <div class="hero-note"><span class="note-icon">✧</span> Подходит для школьных праздников и классных часов</div>
+      </div>
+      <div class="hero-art" aria-label="Новогодние подарки и ёлка">
+        <div class="art-snow snow-a">✳</div><div class="art-snow snow-b">❄</div><div class="art-snow snow-c">✦</div>
+        <div class="moon"></div>
+        <div class="tree tree-back"><i></i><i></i><i></i><b>★</b></div>
+        <div class="tree tree-front"><i></i><i></i><i></i><b>★</b><span class="ornament o1"></span><span class="ornament o2"></span><span class="ornament o3"></span></div>
+        <div class="present present-one"><span></span></div><div class="present present-two"><span></span></div><div class="present present-three"><span></span></div>
+        <div class="snow-hill"></div>
+        <div class="hero-sticker"><span>5</span><small>игр<br>для всей<br>компании</small></div>
+      </div>
+      <div class="hero-bottom"><span>СОБИРАЕМСЯ ВМЕСТЕ</span><span class="sparkle-line">✧ ───────── ❄ ───────── ✧</span><span>ИГРАЕМ И СМЕЁМСЯ</span></div>
+    </section>
+
+    <section class="games-section" id="games">
+      <div class="section-heading">
+        <div><div class="section-kicker">ВЫБИРАЙ И НАЧИНАЙ</div><h2>Игры у ёлки</h2></div>
+        <p>Правила простые — веселья<br>хватит на весь праздник!</p>
+      </div>
+      <div class="game-grid">
+        <article class="game-card memo-card">
+          <div class="card-top"><span class="game-number">01</span><span class="game-tag">НА ПАМЯТЬ</span></div>
+          <div class="game-illustration memo-illustration"><div class="mini-card mini-one">🎁</div><div class="mini-card mini-two">⛄</div><div class="mini-card mini-three">🎄</div><span class="illustration-sparkle">✦</span></div>
+          <div class="game-info"><h3>Мемо: Новый год</h3><p>Выбирай иллюстрированную или фото-колоду, включай вопросы с бонусами или новогодние факты.</p><div class="game-meta"><span>⏱ 5–10 минут</span><span>👥 от 1 игрока</span></div><button class="game-button blue-button" data-open="memo">Играть <span>→</span></button></div>
+        </article>
+        <article class="game-card guess-card">
+          <div class="card-top"><span class="game-number">02</span><span class="game-tag">УГАДАЙ КТО?</span></div>
+          <div class="game-illustration guess-illustration"><div class="speech-bubble">Кто я?</div><div class="guess-character"><img src="assets/tarantinki-gingerbread-card.webp" alt="Имбирный человечек в зимней шапке"></div><span class="guess-snow">❄</span><div class="guess-card-mini">?</div></div>
+          <div class="game-info"><h3>Новогодние тарантинки</h3><p>Два режима: у доски спиной к экрану или круг, где каждый получает секретную карточку на телефоне.</p><div class="game-meta"><span>📱 2 режима</span><span>👥 от 1 игрока</span></div><button class="game-button lilac-button" data-open="guess">Играть <span>→</span></button></div>
+        </article>
+        <article class="game-card croc-card">
+          <div class="card-top"><span class="game-number">03</span><span class="game-tag">ПОКАЖИ БЕЗ СЛОВ</span></div>
+          <div class="game-illustration croc-illustration"><div class="croc-scarf"></div><div class="croc-character"><img src="assets/crocodile-game-art.webp" alt="Новогодний крокодил с карточкой"></div><span class="croc-star star-one">✦</span><span class="croc-star star-two">✧</span><div class="croc-speech">♪</div></div>
+          <div class="game-info"><h3>Новогодний Суперкрокодил</h3><p>100 карточек · 6 цветных фишек · поле и песочные часы. Объясняй слово — двигайся к финишу!</p><div class="game-meta"><span>⏱ 10–20 минут</span><span>👥 от 1 игрока</span></div><button class="game-button peach-button" data-open="croc">Играть <span>→</span></button></div>
+        </article>
+        <article class="game-card quiz-card">
+          <div class="card-top"><span class="game-number">04</span><span class="game-tag">70 ВОПРОСОВ</span></div>
+          <div class="game-illustration quiz-illustration"><div class="quiz-cover-art"><img src="assets/quiz-pdf-child.webp" alt="Персонаж из исходной новогодней викторины"></div><span class="quiz-sparkle quiz-sparkle-one">✦</span><span class="quiz-sparkle quiz-sparkle-two">❄</span><div class="quiz-question-mark">?</div></div>
+          <div class="game-info"><h3>Новогодняя викторина</h3><p>70 зимних вопросов: традиции, сказки, Дед Мороз и новогодние загадки.</p><div class="game-meta"><span>⏱ 15–25 минут</span><span>👥 от 1 игрока</span></div><button class="game-button lilac-button" data-open="quiz">Играть <span>→</span></button></div>
+        </article>
+        <article class="game-card crossword-card">
+          <div class="card-top"><span class="game-number">05</span><span class="game-tag">5 УРОВНЕЙ</span></div>
+          <div class="game-illustration crossword-illustration"><span class="crossword-card-flake">❄</span><span class="crossword-card-sparkle">✦</span></div>
+          <div class="game-info"><h3>Новогодние кроссворды</h3><p>Пять зимних сеток — от лёгкой разминки до экспертного уровня. Внутри также караоке и праздничные плейлисты.</p><div class="game-meta"><span>🧩 5 кроссвордов</span><span>🎤 YouTube</span></div><button class="game-button blue-button" data-open="crossword">Решать <span>→</span></button></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="host-section" id="about">
+      <div class="host-icon">✧</div><div><div class="section-kicker">ДЛЯ УЧИТЕЛЯ И ВЕДУЩЕГО</div><h2>Праздник без подготовки</h2><p>Игры уже готовы: просто выберите подходящую, соберите ребят и нажмите «Играть». Никаких распечаток и реквизита — только хорошее настроение!</p></div>
+      <div class="host-badge">❄<span>для<br>всего<br>класса</span></div>
+    </section>
+    <footer><a class="footer-brand" href="#home">❄ снежный переполох</a><span>Создано для тёплых зимних встреч <b>♡</b></span><a href="#games">К играм ↑</a></footer>
+  </main>
+
+  <div class="modal-backdrop" id="gameModal" aria-hidden="true">
+    <section class="game-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" aria-label="Закрыть">×</button>
+      <div class="modal-content" id="modalContent"></div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="quiz-data.js"></script>
+  <script src="crossword-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
