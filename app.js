@@ -318,16 +318,324 @@
     return $('#gameBody');
   }
   function closeGame() { if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+
+// --- Поле чудес (Field of Wonders) ---
+let fieldState = null;
+function renderField() {
+  const content = $('#gameBody');
+  const state = fieldState;
+  
+  const html = `
+    <div class="field-container">
+      <div class="field-topbar">
+        <div class="field-mode-selector">
+          <label><input type="radio" name="fieldMode" value="screen" ${state.mode==='screen'?'checked':''}> Только экран</label>
+          <label><input type="radio" name="fieldMode" value="player" ${state.mode==='player'?'checked':''}> Участник (буквы, колесо, шкатулки)</label>
+          <label><input type="radio" name="fieldMode" value="viewer" ${state.mode==='viewer'?'checked':''}> Зритель (реакции)</label>
+        </div>
+      </div>
+      
+      <div class="field-main">
+        ${state.mode === 'screen' ? renderFieldScreen(state) : ''}
+        ${state.mode === 'player' ? renderFieldPlayer(state) : ''}
+        ${state.mode === 'viewer' ? renderFieldViewer(state) : ''}
+      </div>
+      
+      <div class="field-controls">
+        <button class="field-button" id="fieldStart">Начать игру</button>
+        <button class="field-button" id="fieldReset">Сбросить</button>
+      </div>
+    </div>
+  `;
+  content.innerHTML = html;
+  
+  document.querySelectorAll('input[name="fieldMode"]').forEach(input => {
+    input.addEventListener('change', e => {
+      state.mode = e.target.value;
+      renderField();
+    });
+  });
+  
+  $('#fieldStart').addEventListener('click', () => {
+    state.round = 1;
+    state.wheelSector = 0;
+    state.lettersRevealed = [];
+    state.chests = [false, false];
+    state.chestPrize = Math.floor(Math.random()*2);
+    state.activePlayerId = 0;
+    state.viewerReactions = [];
+    state.finished = false;
+    renderField();
+    publish({game:'field', mode:state.mode, round:state.round, revealed:false, instruction:'Поле чудес начато.'});
+  });
+  
+  $('#fieldReset').addEventListener('click', () => {
+    state.finished = true;
+    renderField();
+    publish({game:'idle', revealed:false, instruction:'Поле чудес завершено.'});
+  });
+  
+  if (state.mode === 'player') {
+    $('#fieldWheel').addEventListener('click', () => {
+      state.wheelSector = Math.floor(Math.random() * 24);
+      renderField();
+      publish({game:'field', mode:state.mode, wheelSector:state.wheelSector, revealed:true, instruction:'Колесо крутится!'});
+    });
+    
+    document.querySelectorAll('.field-letter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const letter = btn.dataset.letter;
+        if (!state.lettersRevealed.includes(letter)) {
+          state.lettersRevealed.push(letter);
+          renderField();
+          publish({game:'field', mode:state.mode, letter:letter, revealed:true, instruction:'Буква открыта!'});
+        }
+      });
+    });
+    
+    document.querySelectorAll('.field-chest-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = Number(btn.dataset.index);
+        state.chests[index] = true;
+        const win = index === state.chestPrize;
+        renderField();
+        publish({game:'field', mode:state.mode, chest:index, win:win, revealed:true, instruction: win ? 'Приз в шкатулке!' : 'Пусто...'});
+      });
+    });
+  }
+  
+  if (state.mode === 'viewer') {
+    document.querySelectorAll('.field-reaction-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const reaction = btn.dataset.reaction;
+        state.viewerReactions.push({reaction, time: Date.now()});
+        renderField();
+        publish({game:'field', mode:state.mode, reaction:reaction, revealed:true, instruction:'Реакция отправлена!'});
+      });
+    });
+  }
+}
+
+function renderFieldScreen(state) {
+  return `
+    <div class="field-screen-view">
+      <h2>Поле чудес: Новый год</h2>
+      <p>Выберите режим выше для начала игры.</p>
+      <div class="field-wheel-display">
+        <div class="field-wheel" style="transform: rotate(${state.wheelSector * 15}deg);">🎡</div>
+      </div>
+      <div class="field-alphabet">
+        ${['А','Б','В','Г','Д','Е','Ё','Ж','З','И','Й','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Щ','Ъ','Ы','Ь','Э','Ю','Я'].map(l => 
+          `<span class="field-letter ${state.lettersRevealed.includes(l)?'revealed':''}">${l}</span>`
+        ).join('')}
+      </div>
+      <div class="field-chests">
+        ${state.chests.map((opened, i) => 
+          `<div class="field-chest ${opened?'opened':''}">🎁 ${opened ? (i===state.chestPrize?'🏆':'❌') : '❓'}</div>`
+        ).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderFieldPlayer(state) {
+  return `
+    <div class="field-player-view">
+      <h2>Участник: Поле чудес</h2>
+      <div class="field-wheel-control">
+        <button class="field-wheel-btn" id="fieldWheel">🌀 Крутить колесо</button>
+        <div class="field-wheel-display">
+          <div class="field-wheel" style="transform: rotate(${state.wheelSector * 15}deg);">🎡</div>
+        </div>
+      </div>
+      <div class="field-alphabet-control">
+        <h3>Алфавит</h3>
+        <div class="field-alphabet">
+          ${['А','Б','В','Г','Д','Е','Ё','Ж','З','И','Й','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Щ','Ъ','Ы','Ь','Э','Ю','Я'].map(l => 
+            `<button class="field-letter-btn ${state.lettersRevealed.includes(l)?'revealed':''}" data-letter="${l}">${l}</button>`
+          ).join('')}
+        </div>
+      </div>
+      <div class="field-chests-control">
+        <h3>Выберите шкатулку</h3>
+        <div class="field-chests">
+          ${state.chests.map((opened, i) => 
+            `<button class="field-chest-btn ${opened?'opened':''}" data-index="${i}">🎁 ${opened ? (i===state.chestPrize?'🏆':'❌') : '❓'}</button>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFieldViewer(state) {
+  return `
+    <div class="field-viewer-view">
+      <h2>Зритель: Поле чудес</h2>
+      <p>Смотрите игру и ставьте реакции!</p>
+      <div class="field-reactions">
+        <button class="field-reaction-btn" data-reaction="clap">👏 Аплодисменты</button>
+        <button class="field-reaction-btn" data-reaction="wow">😲 Удивление</button>
+        <button class="field-reaction-btn" data-reaction="laugh">😂 Смех</button>
+        <button class="field-reaction-btn" data-reaction="sad">😢 Грусть</button>
+      </div>
+      <div class="field-reaction-history">
+        ${state.viewerReactions.slice(-5).map(r => `<span>${r.reaction}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// --- Угадай мелодию (Guess the Melody) ---
+let melodyState = null;
+function renderMelody() {
+  const content = $('#gameBody');
+  const state = melodyState;
+  
+  const html = `
+    <div class="melody-container">
+      <div class="melody-topbar">
+        <div class="melody-tour">Тур: ${state.tour} / 4</div>
+        <div class="melody-score">Счет: ${state.scores[0]} : ${state.scores[1]}</div>
+      </div>
+      
+      <div class="melody-main">
+        ${state.mode === 'screen' ? renderMelodyScreen(state) : ''}
+        ${state.mode === 'player' ? renderMelodyPlayer(state) : ''}
+        ${state.mode === 'viewer' ? renderMelodyViewer(state) : ''}
+      </div>
+      
+      <div class="melody-controls">
+        <button class="melody-button" id="melodyStart">Начать тур</button>
+        <button class="melody-button" id="melodyNext">Следующая мелодия</button>
+        <button class="melody-button" id="melodyReset">Сбросить</button>
+      </div>
+    </div>
+  `;
+  content.innerHTML = html;
+  
+  $('#melodyStart').addEventListener('click', () => {
+    state.tour = 1;
+    state.melodyIndex = 0;
+    state.roundMelodies = shuffle(Array.from({length:9},(_,i)=>i));
+    state.scores = [0, 0];
+    state.activePlayerId = 0;
+    state.viewerReactions = [];
+    state.finished = false;
+    renderMelody();
+    publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, revealed:false, instruction:'Угадай мелодию начато.'});
+  });
+  
+  $('#melodyNext').addEventListener('click', () => {
+    if (state.melodyIndex < 8) {
+      state.melodyIndex++;
+      renderMelody();
+      publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, revealed:true, instruction:'Следующая мелодия.'});
+    } else if (state.tour < 4) {
+      state.tour++;
+      state.melodyIndex = 0;
+      state.roundMelodies = shuffle(Array.from({length:9},(_,i)=>i));
+      renderMelody();
+      publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, revealed:true, instruction:'Новый тур!'});
+    } else {
+      state.finished = true;
+      renderMelody();
+      publish({game:'idle', revealed:false, instruction:'Игра завершена.'});
+    }
+  });
+  
+  $('#melodyReset').addEventListener('click', () => {
+    state.finished = true;
+    renderMelody();
+    publish({game:'idle', revealed:false, instruction:'Угадай мелодию завершено.'});
+  });
+  
+  if (state.mode === 'player') {
+    $('#melodySignal').addEventListener('click', () => {
+      const score = Math.floor(Math.random() * 10);
+      state.scores[state.activePlayerId] += score;
+      renderMelody();
+      publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, score:score, revealed:true, instruction:'Сигнал отправлен!'});
+    });
+  }
+  
+  if (state.mode === 'viewer') {
+    document.querySelectorAll('.melody-reaction-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const reaction = btn.dataset.reaction;
+        state.viewerReactions.push({reaction, time: Date.now()});
+        renderMelody();
+        publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, reaction:reaction, revealed:true, instruction:'Реакция отправлена!'});
+      });
+    });
+  }
+}
+
+function renderMelodyScreen(state) {
+  return `
+    <div class="melody-screen-view">
+      <h2>Угадай мелодию: Новый год</h2>
+      <p>Тур ${state.tour}, Мелодия ${state.melodyIndex + 1} / 9</p>
+      <div class="melody-player">
+        <button class="melody-play-btn" id="melodyPlay">▶️ Играть мелодию</button>
+        <div class="melody-note">🎵</div>
+      </div>
+      <div class="melody-supergame">
+        <h3>Суперигра</h3>
+        <p>Финалисты выбирают мелодию</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderMelodyPlayer(state) {
+  return `
+    <div class="melody-player-view">
+      <h2>Участник: Угадай мелодию</h2>
+      <p>Нажмите кнопку, когда узнаете мелодию!</p>
+      <button class="melody-signal-btn" id="melodySignal">🔘 Сигнал</button>
+      <div class="melody-score-display">Счет: ${state.scores[0]} : ${state.scores[1]}</div>
+    </div>
+  `;
+}
+
+function renderMelodyViewer(state) {
+  return `
+    <div class="melody-viewer-view">
+      <h2>Зритель: Угадай мелодию</h2>
+      <p>Смотрите и ставьте реакции!</p>
+      <div class="melody-reactions">
+        <button class="melody-reaction-btn" data-reaction="clap">👏 Аплодисменты</button>
+        <button class="melody-reaction-btn" data-reaction="wow">😲 Удивление</button>
+        <button class="melody-reaction-btn" data-reaction="laugh">😂 Смех</button>
+        <button class="melody-reaction-btn" data-reaction="sad">😢 Грусть</button>
+      </div>
+      <div class="melody-reaction-history">
+        ${state.viewerReactions.slice(-5).map(r => `<span>${r.reaction}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
   function openGame(kind) {
     if (memoryState?.timer) clearInterval(memoryState.timer);
     if (crocState?.timer) clearInterval(crocState.timer);
     if(kind==='music'){openMusicLibrary();return;}
+    if (kind==='drive') {
+      // Открываем инструкцию и презентацию (ссылка из Google Drive)
+      const url = 'https://drive.google.com/drive/folders/1ZG3EVOkOO_ovAt0RBEzLBdrJ5iSXvz_m';
+      window.open(url, '_blank');
+      closeGame(); // Закрываем модал, так как это внешняя ссылка
+      return;
+    }
+    if (kind==='field') { fieldState={...createContest(),mode:'screen',wheelSector:0,lettersRevealed:[],chests:[false,false],chestPrize:Math.floor(Math.random()*2),round:1,activePlayerId:0,viewerReactions:[],finished:false}; renderField(); }
+    if (kind==='melody') { melodyState={...createContest(),tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false}; renderMelody(); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],activePlayerId:'',round:1}; renderGuess(); }
     if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,cardFaceUp:false,cardFlipAnimating:false,taskSelected:false,deckMode:'simple',finished:false}; renderCroc(); }
     if (kind==='quiz') { const teams=createContest('teams',2); quizState={...teams,active:Math.floor(Math.random()*2),questions:window.QUIZ_QUESTIONS||[],used:[],selected:null,selectedOption:null,revealed:false,answerResult:null,finished:false}; renderQuiz(); }
     if (kind==='crossword') { crosswordState={puzzleIndex:0,values:{},checked:false,solved:{},message:'Выбери подсказку и вписывай по одной букве в клетку.'}; renderCrossword(); publish({game:'idle',revealed:false,instruction:'Новогодний кроссворд открыт на основном устройстве.'}); }
-  }
+  }  }
   document.querySelectorAll('[data-open]').forEach(button=>button.addEventListener('click',()=>openGame(button.dataset.open)));
   $('#modalClose').addEventListener('click',closeGame);
   modal.addEventListener('click',event=>{if(event.target===modal)closeGame();});

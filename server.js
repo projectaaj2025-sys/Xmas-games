@@ -85,9 +85,25 @@ function handleMessage(peer, message) {
     if (state?.game === 'guess' && state.guessMode === 'circle' && state.activePlayerId === peer.playerId && ['solved','pass'].includes(data.action)) {
       for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName });
     }
+    // Поле чудес
+    if (state?.game === 'field' && peer.role === 'player') {
+      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, mode: state.mode });
+      broadcast(peer.room, { type: 'field-update', action: data.action, playerId: peer.playerId, name: peer.playerName, mode: state.mode }, peer);
+    }
+    // Угадай мелодию
+    if (state?.game === 'melody' && peer.role === 'player') {
+      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, tour: state.tour, melodyIndex: state.melodyIndex });
+      broadcast(peer.room, { type: 'melody-update', action: data.action, playerId: peer.playerId, name: peer.playerName, tour: state.tour, melodyIndex: state.melodyIndex }, peer);
+    }
   }
-}
-function detach(peer) { if (!peers.has(peer)) return; const room = peer.room; peers.delete(peer); if (room) updatePresence(room); }
+  // Ведущий отправляет обновления для новых игр
+  if (data.type === 'field-update' && peer.room && peer.role === 'host') {
+    broadcast(peer.room, data, peer);
+  }
+  if (data.type === 'melody-update' && peer.room && peer.role === 'host') {
+    broadcast(peer.room, data, peer);
+  }
+}function detach(peer) { if (!peers.has(peer)) return; const room = peer.room; peers.delete(peer); if (room) updatePresence(room); }
 function parseFrames(peer, chunk) {
   peer.buffer = Buffer.concat([peer.buffer, chunk]);
   while (peer.buffer.length >= 2) {
