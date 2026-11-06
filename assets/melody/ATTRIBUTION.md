@@ -73,3 +73,12 @@
 - `pesenka-krasnoy-shapochki.mp3` — с 10-й секунды файла «Песенка красной шапочки» из [EngineerGaming52/Telegram-bot-Guess-the-melody-](https://github.com/EngineerGaming52/Telegram-bot-Guess-the-melody-/tree/bd004076cb08eda626cd448ec85f7a4a270e2c7b/music2/Отредактированный%20сброд%20—%20копия); название указано в имени файла.
 
 Все фрагменты перекодированы в MP3 128 кбит/с. Исполнители фонограмм и разрешение правообладателей на повторную публичную публикацию не подтверждены.
+
+## Замены для недоступных русских песен
+
+Для трёх основных полей недоступные позиции заменены встроенными фрагментами. Часть замен — не новогодние песни, а популярные песни для праздничного застолья и танцев. Все фрагменты перекодированы с начала исходных клипов, до 25 секунд (один короче).
+
+- `pesnya-pro-zaytsev.mp3`, `ostrov-nevezeniya.mp3`, `razgovor-so-schastem.mp3`, `oy-moroz.mp3` — файлы 2, 4, 5 и 6 [викторины mrgick/pages](https://github.com/mrgick/pages/tree/20b5ab27366337656eb2122d58f0198185cbab91/new-year-2024/songs). Названия указаны в [списке вопросов](https://github.com/mrgick/pages/blob/20b5ab27366337656eb2122d58f0198185cbab91/new-year-2024/js/quiz.js); первые три названия также указаны в тегах исходных файлов. Исполнитель «Ой, мороз, мороз» в источнике не установлен.
+- Остальные 18 клипов — из [музыкального лото yook/lotto](https://github.com/yook/lotto/tree/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs); названия и исполнители приведены по [каталогу](https://github.com/yook/lotto/blob/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs.js): `vse-chto-tebya-kasaetsya.mp3` № 6, `videli-noch.mp3` № 7, `solntse-monako.mp3` № 8, `v-samoe-serdtse.mp3` № 9, `devchonka.mp3` № 11, `hali-gali.mp3` № 14, `kolambiya-pikcherz.mp3` № 17, `pozvoni.mp3` № 21, `znaesh-li-ty.mp3` № 22, `vse-budet-horosho.mp3` № 23, `do-skoroy-vstrechi.mp3` № 27, `18-mne-uzhe.mp3` № 32, `yagoda-malinka.mp3` № 48, `samyy-luchshiy-den.mp3` № 51, `ulybaysya.mp3` № 56, `federiko-fellini.mp3` № 57, `topoliny-puh.mp3` № 62 и `rayony-kvartaly.mp3` № 75. Некоторые исходные файлы обозначены как рингтоны; аудио — фрагменты, не полные песни.
+
+Разрешение правообладателей на публичное распространение этих фонограмм не подтверждено. Старые замечания выше о недоступных позициях относятся к предыдущей версии; эти позиции теперь заменены другими композициями.

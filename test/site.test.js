@@ -265,7 +265,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
     assert.equal(w.MELODY_SONGS.russian.length,47); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,47);
-    assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,2);
+    assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.match(doc.querySelector('.melody-song-list').textContent,/Новый год \(повтор названия\)/);
     doc.querySelector('[data-melody-note="0"]').click();
@@ -411,12 +411,12 @@ test('new Russian recordings are playable, with duplicate titles mapped to the r
       const path=w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title];
       if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
-    assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,21);
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,25);
+    assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,43);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,47);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
-    d.querySelector('[data-melody-note="3"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,true);
-    d.querySelector('[data-melody-tour="2"]').click();d.querySelector('[data-melody-note="12"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/novy-god-steklovata\.mp3$/);
+    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/novy-god-steklovata\.mp3$/);
+    d.querySelector('[data-melody-note="1"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новогодняя песня');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/novogodnyaya-pesnya-a4\.mp3$/);
   } finally {w.close()}
 });
 
@@ -430,10 +430,9 @@ test('new winter songs play from local files without replacing earlier catalogue
     const all=w.MELODY_LAYOUT.flatMap(t=>t.flatMap(row=>row.ru));
     for(let i=0;i<43;i++)assert.ok(all.includes(i),`catalogue index ${i} is still on a board`);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
-    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новогодняя песня');assert.equal(d.querySelector('#melodyPlay').disabled,true);
     const positions=[
-      [2,6,'Снег','sneg-kirkorov.mp3'],[2,16,'Новогодняя песня','novogodnyaya-pesnya-a4.mp3'],
-      [3,0,'Зима в сердце','zima-v-serdtse.mp3'],[3,4,'Синий иней','siniy-iney.mp3'],[3,18,'Диалог у новогодней ёлки','dialog-u-elki.mp3']
+      [2,6,'Снег','sneg-kirkorov.mp3'],[2,1,'Новогодняя песня','novogodnyaya-pesnya-a4.mp3'],
+      [2,5,'Зима в сердце','zima-v-serdtse.mp3'],[3,4,'Синий иней','siniy-iney.mp3'],[3,9,'Диалог у новогодней ёлки','dialog-u-elki.mp3']
     ];
     for(const [tour,note,title,file] of positions){
       d.querySelector(`[data-melody-tour="${tour}"]`).click();d.querySelector(`[data-melody-note="${note}"]`).click();
@@ -475,5 +474,30 @@ test('family selection has local playable songs on all three boards, in auction 
     d.querySelector('[data-auction-tour="4"]').click();d.querySelector('#superStart').click();
     for(let i=0;i<7;i++) {assert.ok(fs.existsSync(played.at(-1)));d.querySelector('#superCorrect').click();}
     assert.match(d.querySelector('.melody-stage').textContent,/Победа/);
+  } finally {w.close()}
+});
+
+
+test('all Russian board slots and catalog recordings are local, with no repeats within each round', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  const played=[];w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
+    const d=w.document;d.querySelector('[data-open="melody"]').click();
+    for(let tour=1;tour<=3;tour++){
+      const indices=w.MELODY_LAYOUT[tour-1].flatMap(row=>row.ru);
+      assert.equal(new Set(indices.map(i=>w.MELODY_SONGS.russian[i])).size,20);
+      d.querySelector(`[data-melody-tour="${tour}"]`).click();
+      for(let note=0;note<20;note++) {
+        d.querySelector(`[data-melody-note="${note}"]`).click();
+        assert.equal(d.querySelector('#melodyPlay').disabled,false,`${tour}:${note}`);
+        assert.equal(d.querySelector('.melody-answer p').textContent,w.MELODY_SONGS.russian[indices[note]]);
+        d.querySelector('#melodyPlay').click();const bytes=fs.readFileSync(played.at(-1));
+        assert.ok(bytes.length>100000);assert.ok(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===0xff);
+      }
+    }
+    assert.match(d.querySelector('.melody-song-list').textContent,/повтор названия/);
   } finally {w.close()}
 });
