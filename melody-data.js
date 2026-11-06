@@ -88,3 +88,43 @@ window.MELODY_AUDIO = {
   'We Wish You a Merry Christmas': 'assets/melody/audio/we-wish-you-a-merry-christmas.wav',
   'Away in a Manger': 'assets/melody/audio/away-in-a-manger.wav'
 };
+
+// Official or artist-published recordings, played through YouTube's embedded player.
+window.MELODY_YOUTUBE = {
+  'Jingle Bells': 'hLf0-lro8X8',
+  'Silent Night': 'moHobaO9TlM',
+  'Deck the Halls': '8ZRe_44IVSo',
+  'Joy to the World': 'V51esHTsCGU',
+  'Hark! The Herald Angels Sing': 'xqooC4ZG75Y',
+  'We Wish You a Merry Christmas': 'SNXWtunvyjg',
+  'Away in a Manger': 'XhV07BlG0q0',
+  'All I Want for Christmas Is You': 'yXQViqx6GMY',
+  'Last Christmas': 'E8gmARGvPlI',
+  'Feliz Navidad': 'SlNio1aclVI',
+  "Rockin' Around the Christmas Tree": 'DSHGd4lmLd4',
+  'White Christmas': 'v5ryZdpEHqM',
+  "It's the Most Wonderful Time of the Year": '_ekT8idRRD8',
+  'The Christmas Song': 'wKhRnZZ0cJI',
+  'Santa Tell Me': 'jnXxxKZ57Tw',
+  'Driving Home for Christmas': 'mkd1_S7g544',
+  'Happy Xmas (War Is Over)': 'BA8-XtdxB2E',
+  'Wonderful Christmastime': '3cr1EZQuwR8',
+  'Merry Christmas Everyone': 'N-PyWfVkjZc',
+  'Let It Snow! Let It Snow! Let It Snow!': 'Rnil5LyK_B0',
+  'A Holly Jolly Christmas': 'P_dI6fVZwd0',
+  'O Holy Night': 'c3Mnf87q9v8',
+  'Do They Know It’s Christmas?': '2_P7RW6Mm5g',
+  'Fairytale of New York': 'j9jbdgZidu8',
+  'Christmas Lights': 'z1rYmzQ8C9Q',
+  'Underneath the Tree': 'YfF10ow4YEo',
+  'Mistletoe': 'LUjn3RpkcKY',
+  'God Rest Ye Merry, Gentlemen': '-VxHdITRRmE',
+  'Winter Wonderland': 'GP5_dJUd3BY',
+  'Rudolph the Red-Nosed Reindeer': '17vAzrb_8vM',
+  'Frosty the Snowman': 'bdEpPXVOmTA',
+  'Carol of the Bells': '3ghQaoBjllg',
+  'Mary Did You Know?': 'ifCWN5pJGIE',
+  'Have Yourself a Merry Little Christmas': '-tJtsKngXJU',
+  'I Saw Three Ships': 'GD7a0g9uODg',
+  'Ding Dong Merrily on High': 'zJbRURK3zWo'
+};

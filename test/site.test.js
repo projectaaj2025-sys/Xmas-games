@@ -164,3 +164,59 @@ test('bundled melodies are available and playback uses them without exposing ans
     assert.deepEqual(errors, []);
   } finally { w.close(); }
 });
+
+test('holiday card shows the original rules and separately links to the game and the bundle', () => {
+  const dom = new JSDOM(read('index.html'), {url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false});
+  w.WebSocket=class { constructor(){this.readyState=0} addEventListener(){} }; w.WebSocket.OPEN=1;
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    w.document.querySelector('[data-open="drive"]').click();
+    assert.ok(w.document.querySelector('#gameModal').classList.contains('open'));
+    assert.equal(w.document.querySelectorAll('.holiday-round-list li').length,4);
+    assert.match(w.document.querySelector('.holiday-actions .primary-button').href,/1fmAdYjsFhZEPXMQMf3L66cHbBRHsyEd-/);
+    assert.match(w.document.querySelector('.holiday-download').href,/1ZG3EVOkOO_ovAt0RBEzLBdrJ5iSXvz_m/);
+    assert.ok(w.document.querySelector('#goFullscreen'));
+    assert.match(w.document.querySelector('.holiday-source').textContent,/скачать файл/i);
+  } finally {w.close()}
+});
+
+test('all English titles have a local clip or an embedded recording and YouTube player stops', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false}); w.confirm=()=>true;
+  w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
+  w.Audio=class {play(){return Promise.resolve()} pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for(const name of w.MELODY_SONGS.international) assert.ok(w.MELODY_AUDIO[name] || w.MELODY_YOUTUBE[name],name);
+    const doc=w.document; doc.querySelector('[data-open="melody"]').click();
+    const select=doc.querySelector('#melodyVersion'); select.value='international'; select.dispatchEvent(new w.Event('change',{bubbles:true}));
+    doc.querySelector('[data-melody-note="0"]').click(); doc.querySelector('#melodyYoutube').click();
+    assert.match(doc.querySelector('#melodyExternalPlayer iframe').src,/yXQViqx6GMY/);
+    doc.querySelector('[data-melody-score="0"][data-direction="1"]').click();
+    assert.ok(doc.querySelector('#melodyExternalPlayer iframe'), 'score changes do not interrupt the song');
+    doc.querySelector('#melodyStop').click();
+    assert.equal(doc.querySelector('#melodyExternalPlayer iframe'),null);
+  } finally {w.close()}
+});
+
+test('custom intro and round-transition files can be played and released', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false});
+  w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
+  let n=0; const revoked=[]; const played=[];
+  w.URL.createObjectURL=()=>`blob:cue${++n}`; w.URL.revokeObjectURL=url=>revoked.push(url);
+  w.Audio=class {constructor(url){this.url=url} play(){played.push(this.url); return Promise.resolve()} pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    const doc=w.document; doc.querySelector('[data-open="melody"]').click();
+    for(const id of ['melodyIntroFile','melodyTransitionFile']) {
+      const input=doc.getElementById(id);
+      Object.defineProperty(input,'files',{value:[new w.File(['sound'],id+'.mp3',{type:'audio/mpeg'})]});
+      input.dispatchEvent(new w.Event('change',{bubbles:true}));
+    }
+    doc.querySelector('#melodyIntro').click(); assert.equal(played.at(-1),'blob:cue1');
+    doc.querySelector('[data-melody-tour="2"]').click(); assert.equal(played.at(-1),'blob:cue2');
+    doc.querySelector('#backHome').click(); assert.deepEqual(revoked,['blob:cue1','blob:cue2']);
+  } finally {w.close()}
+});
