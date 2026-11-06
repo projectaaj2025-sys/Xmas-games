@@ -3,7 +3,7 @@ window.MELODY_SONGS = {
   "russian": [
     "Новогодняя",
     "Зима-холода",
-    "С Новым Годом!",
+    "Песня про зайцев",
     "Кабы не было зимы",
     "Пять минут",
     "Три белых коня",
@@ -11,32 +11,32 @@ window.MELODY_SONGS = {
     "Звенит январская вьюга",
     "Песенка о медведях",
     "Снег идёт",
-    "Новогодние игрушки",
-    "Снег-снежок",
-    "Это новый год",
-    "Снегом стать",
+    "Ой, мороз, мороз",
+    "Хали-гали",
+    "Ягода малинка",
+    "Видели ночь",
     "Зима (Потолок ледяной)",
-    "С Новым годом, Россия!",
-    "Белая зима",
-    "Белые снежинки",
-    "Новогодняя песня",
-    "Новый год",
-    "Старый год",
-    "Праздник к нам приходит",
+    "Всё будет хорошо",
+    "Остров невезения",
+    "Разговор со счастьем",
+    "Солнце Монако",
+    "Тополиный пух",
+    "Девчонка-девчоночка",
+    "Знаешь ли ты",
     "В лесу родилась ёлочка",
-    "В этот Новый год",
-    "Новогодний поцелуй",
-    "Снег падает",
-    "Первый час января",
-    "Заметёт зима",
-    "Выходи играть в снежки",
-    "Снег на Новый год",
-    "Загадай желание",
-    "Рождественская",
+    "Самый лучший день",
+    "Всё, что тебя касается",
+    "В самое сердце",
+    "Районы-кварталы",
+    "Улыбайся",
+    "До скорой встречи",
+    "18 мне уже",
+    "Федерико Феллини",
+    "Коламбия Пикчерз",
     "Маленькой ёлочке холодно зимой",
     "Расскажи, Снегурочка",
     "Новый год",
-    "О мой год!",
+    "Позвони",
     "Зима в сердце",
     "Снег",
     "Синий иней",
@@ -144,219 +144,75 @@ window.MELODY_YOUTUBE = {
 
 // Sources identify different recordings even when their titles coincide.
 window.MELODY_RUSSIAN_SOURCES = [
-  {
-    "artist": "Дискотека Авария",
-    "source": "https://rus.hitmos.fm/song/9293226",
-    "youtube": "1-bxBXOE368"
-  },
-  {
-    "artist": "Андрей Губин",
-    "source": "https://rus.hitmos.fm/song/10097515",
-    "youtube": "JnqKGDJD8gg"
-  },
-  {
-    "artist": "Руки Вверх!",
-    "source": "https://rus.hitmos.fm/song/10084841",
-    "youtube": "QRopTjoZWSA"
-  },
-  {
-    "artist": "Валентина Толкунова",
-    "source": "https://rus.hitmos.fm/song/12586473",
-    "youtube": null
-  },
-  {
-    "artist": "Людмила Гурченко",
-    "source": "https://rus.hitmos.fm/song/7716573",
-    "youtube": null
-  },
-  {
-    "artist": "Лариса Долина",
-    "source": null,
-    "youtube": "jWiKX6wE9fY"
-  },
-  {
-    "artist": "Чародеи",
-    "source": null,
-    "youtube": "EaOu9c_WR7c"
-  },
-  {
-    "artist": "Нина Бродская",
-    "source": "https://rus.hitmos.fm/song/12586413",
-    "youtube": "2QdBGUHV0uA"
-  },
-  {
-    "artist": "Аида Ведищева",
-    "source": "https://rus.hitmos.fm/song/12586443",
-    "youtube": null
-  },
-  {
-    "artist": "Глюкоза",
-    "source": "https://rus.hitmos.fm/song/12540932",
-    "youtube": "ruvZrmwlX8M"
-  },
-  {
-    "artist": "Инна Маликова, Новые Самоцветы",
-    "source": "https://rus.hitmos.fm/song/12586475",
-    "youtube": null
-  },
-  {
-    "artist": "Балаган Лимитед",
-    "source": "https://rus.hitmos.fm/song/10737950",
-    "youtube": null
-  },
-  {
-    "artist": "Reflex",
-    "source": "https://rus.hitmos.fm/song/10097526",
-    "youtube": null
-  },
-  {
-    "artist": "Силуянова",
-    "source": "https://rus.hitmos.fm/song/10729667",
-    "youtube": null
-  },
-  {
-    "artist": "Эдуард Хиль (минусовка)",
-    "source": null,
-    "youtube": null
-  },
-  {
-    "artist": "Ezziati",
-    "source": "https://rus.hitmos.fm/song/11401566",
-    "youtube": null
-  },
-  {
-    "artist": "Александр Добронравов и Варвара",
-    "source": "https://rus.hitmos.fm/song/12377175",
-    "youtube": null
-  },
-  {
-    "artist": "Детские Новогодние Песенки",
-    "source": "https://rus.hitmos.fm/song/7388015",
-    "youtube": null
-  },
-  {
-    "artist": "Блестящие",
-    "source": "https://rus.hitmos.fm/song/7310147",
-    "youtube": null
-  },
-  {
-    "artist": "Вирус",
-    "source": "https://rus.hitmos.fm/song/8886634",
-    "youtube": null
-  },
-  {
-    "artist": "Валерий Меладзе",
-    "source": "https://rus.hitmos.fm/song/9303584",
-    "youtube": null
-  },
-  {
-    "artist": "Клава Кока",
-    "source": "https://rus.hitmos.fm/song/10071794",
-    "youtube": "eptzcBeAOnk"
-  },
-  {
-    "artist": "детская песня",
-    "source": null,
-    "youtube": null
-  },
-  {
-    "artist": "Sasha Ray",
-    "source": "https://rus.hitmos.fm/song/10084837",
-    "youtube": null
-  },
-  {
-    "artist": "Чай Вдвоём",
-    "source": "https://rus.hitmos.fm/song/7288668",
-    "youtube": null
-  },
-  {
-    "artist": "Марк Тишман",
-    "source": "https://rus.hitmos.fm/song/12378128",
-    "youtube": null
-  },
-  {
-    "artist": "Алсу",
-    "source": "https://rus.hitmos.fm/song/8265424",
-    "youtube": null
-  },
-  {
-    "artist": "Маргарита Позоян",
-    "source": "https://rus.hitmos.fm/song/10090154",
-    "youtube": null
-  },
-  {
-    "artist": "The Hatters",
-    "source": "https://rus.hitmos.fm/song/12374411",
-    "youtube": null
-  },
-  {
-    "artist": "Би-2",
-    "source": "https://rus.hitmos.fm/song/12195592",
-    "youtube": null
-  },
-  {
-    "artist": "Мари Атлас",
-    "source": "https://rus.hitmos.fm/song/11401557",
-    "youtube": null
-  },
-  {
-    "artist": "Жасмин",
-    "source": "https://rus.hitmos.fm/song/7272601",
-    "youtube": null
-  },
-  {
-    "artist": "детская песня",
-    "source": null,
-    "youtube": "KCA3oUv1r4M"
-  },
-  {
-    "artist": "Ну, погоди!",
-    "source": null,
-    "youtube": "NRdGSXPmn2s"
-  },
-  {
-    "artist": "Стекловата",
-    "source": null,
-    "youtube": "3m4c5vnLh_E"
-  },
-  {
-    "artist": "Олег Попков",
-    "source": "https://rus.hitmos.fm/song/10737957",
-    "youtube": null
-  },
-  {"artist":"Моя Мишель", "source":null, "youtube":null},
-  {"artist":"Филипп Киркоров (минус)", "source":null, "youtube":null},
-  {"artist":"Премьер-Министр", "source":null, "youtube":null},
-  {"artist":"Из фильма «Москва слезам не верит»", "source":null, "youtube":null},
-  {"artist":"The Limba, JONY, Егор Крид, А4", "source":null, "youtube":null},
-  {"artist":"Из мультфильма «Холодное сердце»", "source":null, "youtube":null},
-  {"artist":"Григорий Гладков", "source":null, "youtube":null},
-  {"artist":"Из мультфильма «Шапокляк»", "source":null, "youtube":null},
-  {"artist":"Из мультфильма «Винни-Пух идёт в гости»", "source":null, "youtube":null},
-  {"artist":"Из мультфильма «Летучий корабль»", "source":null, "youtube":null},
-  {"artist":"Из фильма «Про Красную Шапочку»", "source":null, "youtube":null}
+  {"artist": "Дискотека Авария", "source": "https://rus.hitmos.fm/song/9293226", "youtube": "1-bxBXOE368"},
+  {"artist": "Андрей Губин", "source": "https://rus.hitmos.fm/song/10097515", "youtube": "JnqKGDJD8gg"},
+  {"artist": "Из к/ф «Бриллиантовая рука»", "source": null, "youtube": null},
+  {"artist": "Валентина Толкунова", "source": "https://rus.hitmos.fm/song/12586473", "youtube": null},
+  {"artist": "Людмила Гурченко", "source": "https://rus.hitmos.fm/song/7716573", "youtube": null},
+  {"artist": "Лариса Долина", "source": null, "youtube": "jWiKX6wE9fY"},
+  {"artist": "Чародеи", "source": null, "youtube": "EaOu9c_WR7c"},
+  {"artist": "Нина Бродская", "source": "https://rus.hitmos.fm/song/12586413", "youtube": "2QdBGUHV0uA"},
+  {"artist": "Аида Ведищева", "source": "https://rus.hitmos.fm/song/12586443", "youtube": null},
+  {"artist": "Глюкоза", "source": "https://rus.hitmos.fm/song/12540932", "youtube": "ruvZrmwlX8M"},
+  {"artist": "Народная песня", "source": null, "youtube": null},
+  {"artist": "Леприконсы", "source": null, "youtube": null},
+  {"artist": "Хабиб", "source": null, "youtube": null},
+  {"artist": "Zdob și Zdub", "source": null, "youtube": null},
+  {"artist": "Эдуард Хиль (минусовка)", "source": null, "youtube": null},
+  {"artist": "Митя Фомин", "source": null, "youtube": null},
+  {"artist": "Из к/ф «Бриллиантовая рука»", "source": null, "youtube": null},
+  {"artist": "Из к/ф «Иван Васильевич меняет профессию»", "source": null, "youtube": null},
+  {"artist": "Люся Чеботина", "source": null, "youtube": null},
+  {"artist": "Иванушки International", "source": null, "youtube": null},
+  {"artist": "Женя Белоусов", "source": null, "youtube": null},
+  {"artist": "МакSим", "source": null, "youtube": null},
+  {"artist": "детская песня", "source": null, "youtube": null},
+  {"artist": "Григорий Лепс", "source": null, "youtube": null},
+  {"artist": "Звери", "source": null, "youtube": null},
+  {"artist": "Сергей Лазарев", "source": null, "youtube": null},
+  {"artist": "Звери", "source": null, "youtube": null},
+  {"artist": "IOWA", "source": null, "youtube": null},
+  {"artist": "Звери", "source": null, "youtube": null},
+  {"artist": "Руки Вверх!", "source": null, "youtube": null},
+  {"artist": "Galibri & Mavik", "source": null, "youtube": null},
+  {"artist": "Банд’Эрос", "source": null, "youtube": null},
+  {"artist": "детская песня", "source": null, "youtube": "KCA3oUv1r4M"},
+  {"artist": "Ну, погоди!", "source": null, "youtube": "NRdGSXPmn2s"},
+  {"artist": "Стекловата", "source": null, "youtube": "3m4c5vnLh_E"},
+  {"artist": "DJ SMASH и NIVESTA", "source": null, "youtube": null},
+  {"artist": "Моя Мишель", "source": null, "youtube": null},
+  {"artist": "Филипп Киркоров (минус)", "source": null, "youtube": null},
+  {"artist": "Премьер-Министр", "source": null, "youtube": null},
+  {"artist": "Из фильма «Москва слезам не верит»", "source": null, "youtube": null},
+  {"artist": "The Limba, JONY, Егор Крид, А4", "source": null, "youtube": null},
+  {"artist": "Из мультфильма «Холодное сердце»", "source": null, "youtube": null},
+  {"artist": "Григорий Гладков", "source": null, "youtube": null},
+  {"artist": "Из мультфильма «Шапокляк»", "source": null, "youtube": null},
+  {"artist": "Из мультфильма «Винни-Пух идёт в гости»", "source": null, "youtube": null},
+  {"artist": "Из мультфильма «Летучий корабль»", "source": null, "youtube": null},
+  {"artist": "Из фильма «Про Красную Шапочку»", "source": null, "youtube": null}
 ];
 
 // Three boards, each with four themed rows and five fixed positions.
 // Each row's arrays point into the Russian and international catalogues above.
 window.MELODY_LAYOUT = [
   [
-    {name:'Новогодние хиты', ru:[0,12,18,19,35], en:[0,1,2,3,4]},
-    {name:'Снег и зима', ru:[1,9,11,14,16], en:[6,14,27,28,29]},
-    {name:'Зимняя классика', ru:[3,4,5,6,7], en:[4,5,17,26,34]},
-    {name:'Слова поздравлений', ru:[2,15,21,23,30], en:[2,18,23,26,12]}
+    {name:'Новогодние хиты', ru:[0,40,34,4,5], en:[0,1,2,3,4]},
+    {name:'Снег и зима', ru:[1,9,14,38,10], en:[6,14,27,28,29]},
+    {name:'Любимые мелодии', ru:[3,6,7,2,17], en:[4,5,17,26,34]},
+    {name:'Танцуем вместе', ru:[11,12,18,19,31], en:[0,2,3,12,13]}
   ],
   [
-    {name:'У ёлки', ru:[10,22,32,33,17], en:[3,12,17,22,20]},
-    {name:'Снежные истории', ru:[13,37,27,28,29], en:[6,14,27,28,29]},
-    {name:'Встречаем Новый год', ru:[20,26,34,35,12], en:[1,9,10,11,13]},
-    {name:'Праздничное настроение', ru:[0,40,19,24,31], en:[0,2,3,19,21]}
+    {name:'Хиты у ёлки', ru:[0,40,34,22,32], en:[3,12,17,22,20]},
+    {name:'Зимние истории', ru:[36,37,41,42,9], en:[6,14,27,28,29]},
+    {name:'Караоке за столом', ru:[21,20,23,15,26], en:[1,9,10,11,13]},
+    {name:'Праздничное настроение', ru:[11,18,30,12,35], en:[0,2,3,19,21]}
   ],
   [
-    {name:'Зимние картины', ru:[36,9,16,25,38], en:[6,14,27,28,29]},
-    {name:'Добрые истории', ru:[42,41,6,7,8], en:[4,28,29,33,34]},
-    {name:'Загадаем желание', ru:[2,15,23,26,30], en:[1,9,15,21,32]},
-    {name:'Праздник у ёлки', ru:[0,11,12,39,34], en:[0,2,3,12,13]}
+    {name:'Снежные мелодии', ru:[1,9,10,14,38], en:[6,14,27,28,29]},
+    {name:'Музыкальные истории', ru:[6,7,8,16,39], en:[4,28,29,33,34]},
+    {name:'Знакомые припевы', ru:[24,25,27,28,29], en:[1,9,15,21,32]},
+    {name:'Встречаем праздник', ru:[0,40,33,34,13], en:[0,2,3,12,13]}
   ]
 ];
 // Family selection: all entries have bundled audio. Repetitions are marked in the host list.
@@ -386,6 +242,28 @@ window.MELODY_SUPER_TRACKS = {
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  "Песня про зайцев":"assets/melody/audio/pesnya-pro-zaytsev.mp3",
+  "Ой, мороз, мороз":"assets/melody/audio/oy-moroz.mp3",
+  "Хали-гали":"assets/melody/audio/hali-gali.mp3",
+  "Ягода малинка":"assets/melody/audio/yagoda-malinka.mp3",
+  "Видели ночь":"assets/melody/audio/videli-noch.mp3",
+  "Всё будет хорошо":"assets/melody/audio/vse-budet-horosho.mp3",
+  "Остров невезения":"assets/melody/audio/ostrov-nevezeniya.mp3",
+  "Разговор со счастьем":"assets/melody/audio/razgovor-so-schastem.mp3",
+  "Солнце Монако":"assets/melody/audio/solntse-monako.mp3",
+  "Тополиный пух":"assets/melody/audio/topoliny-puh.mp3",
+  "Девчонка-девчоночка":"assets/melody/audio/devchonka.mp3",
+  "Знаешь ли ты":"assets/melody/audio/znaesh-li-ty.mp3",
+  "Самый лучший день":"assets/melody/audio/samyy-luchshiy-den.mp3",
+  "Всё, что тебя касается":"assets/melody/audio/vse-chto-tebya-kasaetsya.mp3",
+  "В самое сердце":"assets/melody/audio/v-samoe-serdtse.mp3",
+  "Районы-кварталы":"assets/melody/audio/rayony-kvartaly.mp3",
+  "Улыбайся":"assets/melody/audio/ulybaysya.mp3",
+  "До скорой встречи":"assets/melody/audio/do-skoroy-vstrechi.mp3",
+  "18 мне уже":"assets/melody/audio/18-mne-uzhe.mp3",
+  "Федерико Феллини":"assets/melody/audio/federiko-fellini.mp3",
+  "Коламбия Пикчерз":"assets/melody/audio/kolambiya-pikcherz.mp3",
+  "Позвони":"assets/melody/audio/pozvoni.mp3",
   'Голубой вагон':'assets/melody/audio/goluboy-vagon.mp3',
   'Кто ходит в гости по утрам':'assets/melody/audio/kto-hodit-v-gosti.mp3',
   'Песня царевны Забавы':'assets/melody/audio/pesnya-tsarevny-zabavy.mp3',
