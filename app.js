@@ -500,6 +500,11 @@ function melodyKey(state, index = state.selected) { return `${state.version}-${s
 function stopMelodyAudio(clear = false) {
   if (melodyAudio) { melodyAudio.pause(); if (clear) melodyAudio = null; }
 }
+function playMelodyAudio(url) {
+  stopMelodyAudio(true);
+  melodyAudio = new Audio(url);
+  melodyAudio.play().catch(() => notify('Не удалось воспроизвести аудио. Попробуйте другой файл.'));
+}
 function disposeMelodyFiles() {
   stopMelodyAudio(true);
   if (melodyState) Object.values(melodyState.files).forEach(file => URL.revokeObjectURL(file.url));
@@ -515,11 +520,13 @@ function renderMelody() {
   const body = $('#gameBody');
   const song = s.selected == null ? null : melodySong(s, s.selected);
   const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
-  const file = song && s.files[melodyKey(s)];
+  const uploadedFile = song && s.files[melodyKey(s)];
+  const bundledUrl = song && window.MELODY_AUDIO?.[song.title];
+  const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Инструментальный фрагмент · 16 секунд'} : null);
   body.innerHTML = `<div class="melody-show melody-screen-view">
     <div class="melody-setup">
       <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option></select></label>
-      <span>4 тура · по 9 мелодий</span><button type="button" id="melodyReset">Новая игра</button>
+      <span>4 тура · по 9 мелодий</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button><button type="button" id="melodyReset">Новая игра</button>
     </div>
     <div class="melody-stage">
       <div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Угадай мелодию</h2></div><strong>ТУР ${s.tour} <small>/ 4</small></strong></div>
@@ -530,10 +537,10 @@ function renderMelody() {
     </div>
     <section class="melody-host-panel" aria-live="polite"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${song ? `Мелодия на ${melodyValues[s.selected]} баллов` : 'Выберите ноту на поле'}</h3></div><span>${s.used[s.tour-1].length} / 9 сыграно</span></div>
       ${song ? `<details class="melody-answer"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)} <small>· ${song.language === 'russian' ? 'русская' : 'английская'}</small></p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
-      <div class="melody-audio-controls"><label class="melody-file">${file ? 'Заменить аудиофайл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${file?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : 'Аудио в проект не включено: добавьте файл или включите песню из другого источника.'}</span></div>
+      <div class="melody-audio-controls"><label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${file?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : 'Для этой песни записи пока нет: добавьте свой файл или найдите песню отдельно.'}</span></div>
       <div class="melody-judge"><span>Начислить или снять ${melodyValues[s.selected]} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button></div>`).join('')}</div>
       <div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ':'Показать ответ на экране'}</button><button type="button" id="melodyDone" ${selectedUsed?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Название песни будет видно только ведущему после открытия подсказки.</p>'}
-      <p class="melody-help">Ведущий самостоятельно включает фрагмент и оценивает ответ. Названия из прежних туров сохранены; файлы аудио не входят в комплект. Категории оформлены по образцу и не являются проверенной классификацией песен.</p>
+      <p class="melody-help">Часть английских мелодий уже включена как инструментальные фрагменты. Для остальных выберите свой аудиофайл. Заставка и переходы — свободная музыка, не оригинал телешоу. Ведущий оценивает ответы самостоятельно.</p>
     </section>
   </div>`;
   $('#melodyVersion').addEventListener('change', e => {
@@ -541,12 +548,14 @@ function renderMelody() {
     if (!confirm('Сменить подборку и начать новую игру? Очки и сыгранные ноты будут сброшены.')) { e.target.value=s.version; return; }
     disposeMelodyFiles(); melodyState = newMelodyState(version); renderMelody();
   });
+  $('#melodyIntro').addEventListener('click', () => playMelodyAudio('assets/melody/audio/gameshow-brazz.mp3'));
+  $('#melodyMusicStop').addEventListener('click', () => stopMelodyAudio());
   $('#melodyReset').addEventListener('click', () => { if (!confirm('Начать новую игру и сбросить очки?')) return; disposeMelodyFiles(); melodyState = newMelodyState(s.version); renderMelody(); });
-  body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(); s.tour=Number(button.dataset.melodyTour); s.selected=null; s.revealed=false; renderMelody(); }));
+  body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { const nextTour=Number(button.dataset.melodyTour); if(nextTour!==s.tour) playMelodyAudio('assets/melody/audio/christmas-town.mp3'); else stopMelodyAudio(); s.tour=nextTour; s.selected=null; s.revealed=false; renderMelody(); }));
   body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(); s.selected=Number(button.dataset.melodyNote); s.revealed=false; renderMelody(); }));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('change', () => { s.names[Number(input.dataset.melodyName)]=input.value.trim().slice(0,24) || `Игрок ${Number(input.dataset.melodyName)+1}`; renderMelody(); }));
   $('#melodyFile')?.addEventListener('change', e => { const chosen=e.target.files[0]; if (!chosen) return; const key=melodyKey(s); stopMelodyAudio(true); if(s.files[key]) URL.revokeObjectURL(s.files[key].url); s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
-  $('#melodyPlay')?.addEventListener('click', () => { if (!file) return; stopMelodyAudio(true); melodyAudio=new Audio(file.url); melodyAudio.play().catch(() => notify('Не удалось воспроизвести файл. Попробуйте другой формат.')); });
+  $('#melodyPlay')?.addEventListener('click', () => { if (!file) return; playMelodyAudio(file.url); });
   $('#melodyStop')?.addEventListener('click', () => stopMelodyAudio());
   body.querySelectorAll('[data-melody-score]').forEach(button => button.addEventListener('click', () => { if(selectedUsed) return; s.scores[Number(button.dataset.melodyScore)] += Number(button.dataset.direction)*melodyValues[s.selected]; renderMelody(); }));
   $('#melodyReveal')?.addEventListener('click', () => { s.revealed=!s.revealed; renderMelody(); });

@@ -125,3 +125,42 @@ test('projector displays the melody board and only a revealed answer', () => {
     assert.deepEqual(errors, []);
   } finally { dom.window.close(); }
 });
+
+test('bundled melodies are available and playback uses them without exposing answers', () => {
+  const vc = new VirtualConsole();
+  const errors = [];
+  vc.on('jsdomError', error => errors.push(error));
+  const dom = new JSDOM(read('index.html'), { url:'http://localhost:4173/', runScripts:'outside-only', virtualConsole:vc });
+  const w = dom.window;
+  w.matchMedia = () => ({matches:true});
+  w.fetch = async () => ({ok:false});
+  w.confirm = () => true;
+  w.WebSocket = class { constructor(){this.readyState=0} addEventListener(){} };
+  w.WebSocket.OPEN=1;
+  const played=[];
+  w.Audio = class { constructor(url){this.url=url} pause(){} play(){played.push(this.url); return Promise.resolve()} };
+  try {
+    for (const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for (const [name, path] of Object.entries(w.MELODY_AUDIO)) {
+      assert.ok(w.MELODY_SONGS.international.includes(name));
+      const data=fs.readFileSync(path);
+      assert.equal(data.subarray(0,4).toString(), 'RIFF', path);
+      assert.ok(data.length > 100000, path);
+    }
+    const doc=w.document;
+    doc.querySelector('[data-open="melody"]').click();
+    doc.querySelector('#melodyIntro').click();
+    assert.match(played.at(-1), /gameshow-brazz\.mp3$/);
+    const version=doc.querySelector('#melodyVersion');
+    version.value='international'; version.dispatchEvent(new w.Event('change',{bubbles:true}));
+    doc.querySelector('[data-melody-note="4"]').click();
+    assert.equal(doc.querySelector('#melodyPlay').disabled,false);
+    doc.querySelector('#melodyPlay').click();
+    assert.match(played.at(-1), /jingle-bells\.wav$/);
+    doc.querySelector('[data-melody-tour="2"]').click();
+    assert.match(played.at(-1), /christmas-town\.mp3$/);
+    doc.querySelector('[data-melody-note="0"]').click();
+    assert.equal(doc.querySelector('#melodyPlay').disabled,true);
+    assert.deepEqual(errors, []);
+  } finally { w.close(); }
+});

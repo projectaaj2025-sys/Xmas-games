@@ -77,3 +77,14 @@ window.MELODY_SONGS = {
     "Ding Dong Merrily on High"
   ]
 };
+
+// Short instrumental previews made from openly licensed MIDI arrangements.
+window.MELODY_AUDIO = {
+  'Jingle Bells': 'assets/melody/audio/jingle-bells.wav',
+  'Silent Night': 'assets/melody/audio/silent-night.wav',
+  'Deck the Halls': 'assets/melody/audio/deck-the-halls.wav',
+  'Joy to the World': 'assets/melody/audio/joy-to-the-world.wav',
+  'Hark! The Herald Angels Sing': 'assets/melody/audio/hark-the-herald-angels-sing.wav',
+  'We Wish You a Merry Christmas': 'assets/melody/audio/we-wish-you-a-merry-christmas.wav',
+  'Away in a Manger': 'assets/melody/audio/away-in-a-manger.wav'
+};
