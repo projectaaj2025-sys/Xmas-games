@@ -512,3 +512,57 @@
 .members-heading{font-weight:800;font-size:14px}.members-list{display:flex;flex-wrap:wrap;gap:7px;list-style:none;margin:10px 0 0;padding:0}.members-list li{display:flex;gap:8px;align-items:center;max-width:100%;padding:6px 9px;border-radius:9px;background:#e7f3f8;overflow-wrap:anywhere}.members-list li b{font-size:12px;color:#416a7b}.members-empty{margin:8px 0 0!important;font-size:13px!important;color:#49657a!important}.field-reconnect-seats input{border:1px solid #abc9d7;border-radius:8px;padding:9px;color:#294c60;min-width:0}
 .field-reconnect-person{display:flex;flex-direction:column;gap:8px;flex:1 1 160px;padding:10px;border:1px solid #d6e9f1;border-radius:10px;background:#fff}.field-reconnect-person label{width:100%}
 .melody-invite{margin:12px 0;padding:14px;border:1px solid #c9dee8;border-radius:14px;background:#f7fcff;color:#294c60}.melody-invite summary{font-weight:900;cursor:pointer}.melody-invite p{line-height:1.5}.melody-seat-list{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.melody-seat-list label{display:grid;gap:4px;flex:1 1 160px;font-weight:800}.melody-seat-list select{padding:9px;border:1px solid #abc9d7;border-radius:8px;background:#fff;color:#294c60}.melody-player-score.active{background:#ad5209;outline:3px solid #ffe274;outline-offset:-3px}.melody-player-score.passed{opacity:.42;filter:grayscale(.65)}.melody-player-score small{display:block;font-weight:900;color:#fff2aa;font-size:12px}.melody-buzzer-panel{margin-top:14px;padding:12px;border:1px solid #f0dab2;border-radius:12px;background:#fff9ed}.melody-buzzer-panel p{margin:0 0 8px;color:#533823}.melody-buzzer-actions{display:flex;gap:8px;flex-wrap:wrap}.melody-score-correction{margin-top:14px}.melody-score-correction summary{cursor:pointer;font-weight:800}
+
+/* Compact host console: keep the board and judging side by side on a laptop. */
+.modal-content.melody-screen{padding:0 2vw 16px}
+.melody-screen .game-topbar{height:50px;margin-bottom:6px}
+.melody-screen-tools{max-width:1250px;margin:0 auto;color:#526985;font-size:13px}
+.melody-screen-tools>summary,.melody-config>summary{cursor:pointer;font-weight:900;padding:7px 12px;border:1px solid #dce9f0;border-radius:9px;background:#fff;color:#486079}
+.melody-screen-tools .screen-tools{padding:8px}
+.melody-main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(330px,.75fr);grid-template-areas:'config config' 'stage panel';align-items:start;gap:10px;margin:8px auto 12px;padding:0}
+.melody-main>.melody-config{grid-area:config;min-width:0;color:#536887}
+.melody-main>.melody-stage{grid-area:stage;padding:12px 16px;border-width:3px;border-radius:16px}
+.melody-main>.melody-host-panel{grid-area:panel;margin:0;padding:14px;border-radius:14px}
+.melody-config[open]{padding-bottom:4px}.melody-config .melody-intro-image,.melody-config .melody-invite,.melody-config .melody-cue-settings,.melody-config .melody-song-list{margin:8px 0}
+.melody-main .melody-show-heading h2{font-size:clamp(24px,2.3vw,34px)}
+.melody-main .melody-show-heading strong{font-size:24px}
+.melody-main .melody-rounds{margin:8px 0 4px}
+.melody-main .melody-rounds button{padding:6px 9px}
+.melody-main .melody-board-hint{margin:6px 0;font-size:12px;color:#ffe2cb}
+.melody-main .melody-board{gap:3px}
+.melody-main .melody-board-row{min-height:0;gap:7px}
+.melody-main .melody-category{padding:4px;font-size:clamp(12px,1.2vw,17px)}
+.melody-main .melody-notes{gap:3px}
+.melody-main .melody-note-tile{width:min(100%,100px);font-size:clamp(17px,2vw,25px)}
+.melody-main .melody-scoreboard{margin-top:7px;border-top-width:2px}
+.melody-main .melody-player-score{padding:6px;gap:6px}
+.melody-main .melody-player-number{font-size:38px}
+.melody-main .melody-player-score strong{font-size:25px}
+.melody-main .melody-host-title h3{font-size:19px}
+.melody-main .melody-answer{padding:9px}
+.melody-main .melody-answer p{margin:5px 0 1px;color:#533823}
+.melody-main .melody-answer small{display:block;color:#59667a}
+.melody-main .melody-answer a{display:inline-block;margin-top:4px}
+.melody-main .melody-audio-controls,.melody-main .melody-actions{margin-top:8px}
+.melody-main .melody-host-panel button,.melody-main .melody-file{padding:7px 9px}
+.melody-main .melody-buzzer-panel{margin-top:8px;padding:8px}
+.melody-main .melody-buzzer-actions{gap:5px}
+.melody-main #melodyCorrect{background:#e7f6ec;color:#20643a;border-color:#aed8b9}.melody-main #melodyWrong{background:#fff0ee;color:#a73b33;border-color:#e7b5ad}.melody-main #melodyPass{background:#f4f4fa;color:#555779}
+.melody-main .melody-extra-audio,.melody-main .melody-score-correction,.melody-main .melody-help{margin-top:8px;color:#52677d;font-size:13px}
+.melody-main .melody-extra-audio summary,.melody-main .melody-help summary{cursor:pointer;font-weight:800}
+.melody-screen #melodyExternalPlayer:not([hidden]){position:fixed;left:12px;bottom:12px;width:min(220px,30vw);z-index:30;margin:0;padding:8px;box-shadow:0 6px 22px #0005;font-size:11px}
+.melody-screen #melodyExternalPlayer iframe{aspect-ratio:16/9}
+@media(max-width:850px){.melody-main{grid-template-columns:1fr;grid-template-areas:'config' 'stage' 'panel'}.melody-screen #melodyExternalPlayer:not([hidden]){width:min(220px,45vw)}}
+@media(max-height:700px) and (min-width:851px){.melody-screen .game-topbar{height:42px}.melody-main .melody-note-tile{width:min(100%,82px)}.melody-main .melody-show-heading h2{font-size:24px}.melody-main .melody-player-number{font-size:30px}.melody-main .melody-player-score strong{font-size:21px}}
+/* The auction and supergame use the same compact two-column host layout. */
+.melody-bonus{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(330px,.9fr);grid-template-areas:'saved saved' 'stage panel' 'list list';align-items:start;gap:10px;margin:8px auto 12px}
+.melody-bonus>.game-save-status{grid-area:saved;margin:0}
+.melody-bonus>.melody-stage{grid-area:stage;padding:14px 16px;border-width:3px}
+.melody-bonus>.melody-host-panel{grid-area:panel;margin:0;padding:14px}
+.melody-bonus>.melody-song-list{grid-area:list;margin:0;padding:8px 12px}
+.melody-bonus .melody-show-heading h2{font-size:clamp(26px,2.5vw,36px)}
+.melody-bonus .melody-rounds{margin:9px 0 5px}
+.melody-bonus .melody-board-hint{margin:8px 0}
+.melody-bonus .melody-host-panel p{margin:7px 0}
+.melody-bonus .melody-host-panel button,.melody-bonus .melody-file{padding:7px 9px}
+@media(max-width:850px){.melody-bonus{grid-template-columns:1fr;grid-template-areas:'saved' 'stage' 'panel' 'list'}}

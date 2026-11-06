@@ -46,3 +46,15 @@ test('LAN routes melody buzzer only from player connections',async()=>{
     const actions=host.messages.filter(m=>m.type==='player-action');assert.equal(actions.length,1);assert.equal(actions[0].playerId,'alice');assert.equal(actions[0].role,'player');
   }finally{for(const ws of sockets)ws.close();child.kill()}
 });
+
+test('LAN audio responses support lengths, byte ranges, and seeking',async()=>{
+  const port=await freePort(),child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port)},stdio:['ignore','pipe','pipe']});
+  try{
+    await Promise.race([once(child.stdout,'data'),delay(3000).then(()=>{throw Error('server did not start')})]);
+    const url=`http://127.0.0.1:${port}/assets/melody/audio/novogodnyaya.mp3`;
+    const head=await fetch(url,{method:'HEAD'}),size=Number(head.headers.get('content-length'));assert.equal(head.status,200);assert.ok(size>100000);assert.equal(head.headers.get('accept-ranges'),'bytes');
+    const part=await fetch(url,{headers:{range:'bytes=10-19'}});assert.equal(part.status,206);assert.equal(part.headers.get('content-range'),`bytes 10-19/${size}`);assert.equal((await part.arrayBuffer()).byteLength,10);
+    const tail=await fetch(url,{headers:{range:'bytes=-5'}});assert.equal(tail.status,206);assert.equal((await tail.arrayBuffer()).byteLength,5);
+    const invalid=await fetch(url,{headers:{range:`bytes=${size}-`}});assert.equal(invalid.status,416);assert.equal(invalid.headers.get('content-range'),`bytes */${size}`);
+  }finally{child.kill()}
+});

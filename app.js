@@ -456,7 +456,7 @@
   function commonFrame(title, kicker, description, gameClass) {
     modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
     content.className=`modal-content ${gameClass || ''}`;
-    content.innerHTML=`<div class="game-topbar"><button class="back-game" id="backHome">← Все игры</button><div class="full-brand">❄ СНЕЖНЫЙ ПЕРЕПОЛОХ</div><button class="fullscreen-control" id="goFullscreen">На весь экран ⛶</button>${['field-screen','melody-screen'].includes(gameClass)?'<button class="game-reset" id="resetCurrentGame" type="button">Сбросить игру ↻</button>':''}</div><div class="modal-heading"><div class="section-kicker">${kicker}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div>${screenToolbar()}<div id="gameBody"></div>`;
+    content.innerHTML=`<div class="game-topbar"><button class="back-game" id="backHome">← Все игры</button><div class="full-brand">❄ СНЕЖНЫЙ ПЕРЕПОЛОХ</div><button class="fullscreen-control" id="goFullscreen">На весь экран ⛶</button>${['field-screen','melody-screen'].includes(gameClass)?'<button class="game-reset" id="resetCurrentGame" type="button">Сбросить игру ↻</button>':''}</div><div class="modal-heading"><div class="section-kicker">${kicker}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div>${gameClass==='melody-screen'?`<details class="melody-screen-tools"><summary>Экран ведущего · экран участников и подключение</summary>${screenToolbar()}</details>`:screenToolbar()}<div id="gameBody"></div>`;
     $('#backHome').addEventListener('click', closeGame);
     $('#resetCurrentGame')?.addEventListener('click',resetCurrentGame);
     bindScreenTools();
@@ -659,7 +659,7 @@ function fieldRemote(data) {
 
 // --- Угадай мелодию: три игровых поля и суперигра ---
 let melodyState = null;
-let melodyAudio = null, melodyAudioUrl = null;
+let melodyAudio = null, melodyAudioUrl = null, melodyYoutubeCleanup = null;
 const melodyValues = [
   [80,40,90,60,70, 50,30,80,50,90, 80,40,50,70,30, 90,70,40,50,60],
   [60,80,40,90,70, 30,50,90,80,50, 70,80,40,30,50, 60,90,70,50,40],
@@ -672,7 +672,7 @@ function melodySong(state, index, superGame = false) {
   const language=children ? 'russian' : state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
   const songIndex=superGame ? (children ? window.MELODY_CHILDREN_SUPER_TRACKS[index] : window.MELODY_SUPER_TRACKS[language][index]) : melodyLayout(state)[state.tour-1][Math.floor(index/5)][language === 'russian' ? 'ru' : 'en'][index%5];
   const source=language === 'russian' ? window.MELODY_RUSSIAN_SOURCES[songIndex] : null;
-  return {title:window.MELODY_SONGS[language][songIndex],language,source,songIndex};
+  return {title:window.MELODY_SONGS[language][songIndex],artist:language==='russian' ? source?.artist : window.MELODY_INTERNATIONAL_ARTISTS?.[songIndex],language,source,songIndex};
 }
 function bundledMelodyUrl(song) {
   if(!song) return null;
@@ -683,14 +683,35 @@ function melodyLayout(state) {return state.version==='children' ? window.MELODY_
 function melodyCategories(state) {return melodyLayout(state)[state.tour-1].map(row=>row.name);}
 function melodyKey(state, index = state.selected) { return `${state.version}-${state.tour}-${index}`; }
 function stopMelodyAudio(clear = false) {
+  if(melodyYoutubeCleanup){melodyYoutubeCleanup();melodyYoutubeCleanup=null;}
   if (melodyAudio) { melodyAudio.pause(); if (clear) {melodyAudio = null;melodyAudioUrl = null;} }
   const player = document.querySelector('#melodyExternalPlayer');
   if (player) { player.innerHTML = ''; player.hidden = true; }
 }
-function playMelodyAudio(url) {
+function playMelodyAudio(url, onEnd, onError) {
   stopMelodyAudio(true);
   melodyAudio = new Audio(url);melodyAudioUrl=url;
-  melodyAudio.play().catch(() => notify('Не удалось воспроизвести аудио. Попробуйте другой файл.'));
+  const audio=melodyAudio;if(onEnd)audio.onended=()=>{if(melodyAudio===audio)onEnd();};
+  audio.play().catch(()=>{if(melodyAudio!==audio)return;if(onError)onError();else notify('Не удалось воспроизвести аудио. Попробуйте другой файл.');});
+}
+function melodyShowHostAnswer(s,key) {
+  if(melodyState!==s||s.tour>3||s.selected==null||melodyKey(s)!==key)return;
+  const a=melodyAttempt(s);if(!a)return;a.hostAnswer=true;renderMelody();
+}
+function playMelodyYoutube(id,onEnd) {
+  stopMelodyAudio(true);
+  const player=$('#melodyExternalPlayer');if(!player)return;
+  player.hidden=false;
+  player.innerHTML=`<p>Онлайн-плеер · если звук не начался, нажмите ▶ в плеере. <a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener noreferrer">Открыть отдельно ↗</a></p><iframe title="Плеер музыкального фрагмента" src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&enablejsapi=1&origin=${encodeURIComponent(location.origin)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+  const frame=player.querySelector('iframe');
+  const listener=event=>{
+    if(event.source!==frame.contentWindow||!['https://www.youtube-nocookie.com','https://www.youtube.com'].includes(event.origin))return;
+    let data;try{data=typeof event.data==='string'?JSON.parse(event.data):event.data;}catch{return;}
+    if(data?.event==='onReady')frame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'addEventListener',args:['onStateChange']}),'https://www.youtube-nocookie.com');
+    if(data?.event==='onStateChange'&&data.info===0)onEnd?.();
+  };
+  window.addEventListener('message',listener);melodyYoutubeCleanup=()=>window.removeEventListener('message',listener);
+  frame.addEventListener('load',()=>frame.contentWindow?.postMessage(JSON.stringify({event:'listening',id:'melody-player',channel:'widget'}),'https://www.youtube-nocookie.com'));
 }
 function disposeMelodyFiles() {
   stopMelodyAudio(true);
@@ -711,7 +732,7 @@ function melodyReady(s,a){return !!(a&&a.open&&!a.finished&&a.active===null&&s.s
 function melodySelectResponder(index,token){
   const s=melodyState,a=s&&melodyAttempt(s);if(!a||s.revealed||s.used[s.tour-1].includes(s.selected)||a.finished||a.active!==null||a.passed.includes(index)||!Number.isInteger(index)||index<0||index>2||s.judged[melodyKey(s)+'-'+index])return;
   if(token!==undefined&&(!melodyReady(s,a)||token!==a.token))return;
-  a.active=index;a.open=false;stopMelodyAudio();renderMelody();
+  a.active=index;a.open=false;a.hostAnswer=true;stopMelodyAudio();renderMelody();
 }
 function melodyRemote(data){
   const s=melodyState;if(!s||data.role!=='player'||data.action?.kind!=='melody-buzz'||typeof data.action.token!=='string')return;
@@ -729,13 +750,13 @@ function publishMelody() {
   const selectedSong = s.selected == null ? null : melodySong(s, s.selected);
   const a=melodyAttempt(s);
   const categories=melodyCategories(s);
-  publish({game:'melody', tour:s.tour, categories, rows:melodyRows.map(row => row.map(index => ({index, value:melodyValue(s,index), used:s.used[s.tour - 1].includes(index), selected:index === s.selected}))), scores:s.names.map((name,i)=>({name,score:s.scores[i],active:a?.active===i,passed:!!a?.passed.includes(i)})), phoneIds:s.phoneIds, buzz:{open:melodyReady(s,a),token:melodyReady(s,a)?a.token:'',active:a?.active??null,passed:a?.passed||[],eligible:s.names.map((_,i)=>melodyEligible(s,a,i)),finished:!!a?.finished}, selectedValue:s.selected == null ? null : melodyValue(s), answer:s.revealed && selectedSong ? selectedSong.title : '', revealed:s.revealed});
+  publish({game:'melody', tour:s.tour, categories, rows:melodyRows.map(row => row.map(index => ({index, value:melodyValue(s,index), used:s.used[s.tour - 1].includes(index), selected:index === s.selected}))), scores:s.names.map((name,i)=>({name,score:s.scores[i],active:a?.active===i,passed:!!a?.passed.includes(i)})), phoneIds:s.phoneIds, buzz:{open:melodyReady(s,a),token:melodyReady(s,a)?a.token:'',active:a?.active??null,passed:a?.passed||[],eligible:s.names.map((_,i)=>melodyEligible(s,a,i)),finished:!!a?.finished}, selectedValue:s.selected == null ? null : melodyValue(s), answer:s.revealed && selectedSong ? selectedSong.title : '', answerArtist:s.revealed && selectedSong ? (selectedSong.artist||'Исполнитель не указан') : '', revealed:s.revealed});
 }
 function melodyJudge(result){
   const s=melodyState,a=s&&melodyAttempt(s);if(!a||a.active===null||a.finished)return;
   const i=a.active,key=melodyKey(s)+'-'+i;if(s.judged[key])return;
   if(result==='correct'||result==='wrong'){const delta=(result==='correct'?1:-1)*melodyValue(s);s.judged[key]=delta;s.scores[i]+=delta;}
-  if(result==='correct'){a.finished=true;a.open=false;}
+  if(result==='correct'){a.finished=true;a.open=false;s.revealed=true;}
   else if(result==='wrong'||result==='pass'){a.passed.push(i);a.active=null;a.open=s.names.some((_,j)=>melodyEligible(s,a,j));a.token=a.open?freshBuzzToken():'';}
   renderMelody();
 }
@@ -746,8 +767,8 @@ function renderMelody() {
   if(s.tour===5) { renderMelodyAuction(); return; }
   initMelodyControls(s);const a=melodyAttempt(s);
   const saved=saveMelody();
-  const openDetails=['.melody-intro-image','.melody-cue-settings','.melody-song-list','.melody-invite','.melody-score-correction'].filter(sel=>body.querySelector(sel)?.open);
-  const answerOpen=body.querySelector('.melody-answer')?.open && body.querySelector('.melody-answer')?.dataset.answerKey===melodyKey(s);
+  const openDetails=['.melody-config','.melody-intro-image','.melody-cue-settings','.melody-song-list','.melody-invite','.melody-score-correction','.melody-extra-audio'].filter(sel=>body.querySelector(sel)?.open);
+  const answerOpen=!!a?.hostAnswer || (body.querySelector('.melody-answer')?.open && body.querySelector('.melody-answer')?.dataset.answerKey===melodyKey(s));
   const categories=melodyCategories(s);
   const song = s.selected == null ? null : melodySong(s, s.selected);
   const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
@@ -755,34 +776,36 @@ function renderMelody() {
   const bundledUrl = bundledMelodyUrl(song);
   const youtubeId = song && (song.language === 'russian' ? song.source?.youtube : window.MELODY_YOUTUBE?.[song.title]);
   const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Встроенная запись'} : null);
-  body.innerHTML = `<div class="melody-show melody-screen-view">
-    <details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
+  body.innerHTML = `<div class="melody-show melody-screen-view melody-main">
+    <details class="melody-config"><summary>⚙ Настройки, телефоны и список песен</summary><details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
     <p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><div class="melody-setup">
       <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option></select></label>
       <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button>
     </div>
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
     <details class="melody-invite"><summary>📱 Подключить телефоны · <span id="melodyMemberCount">${connectedPlayers.length} игроков · ${connectedViewers.length} зрителей</span></summary><p>Необязательно: без телефонов ведущий выбирает отвечающего сам. Игроки сканируют QR, выбирают роль «Игрок», а ведущий назначает телефоны на места.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код для игроков" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><div class="connected-members" data-connected-members>${connectedMembersMarkup()}</div><div class="melody-seat-list">${s.names.map((name,i)=>`<label>${escapeHtml(name)}<select data-melody-seat="${i}"><option value="">Без телефона</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.phoneIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>`).join('')}</div><small>После обновления страницы телефоны нужно подключить и назначить заново.</small></details>
+    ${melodySongList(s)}<button type="button" class="soft-button" id="melodyCloseSettings">Готово · вернуться к игре</button></details>
     <div class="melody-stage">
       <div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Угадай мелодию</h2></div><strong>ТУР ${s.tour} <small>/ 3</small></strong></div>
       <div class="melody-rounds" aria-label="Выбор тура">${[1,2,3].map(n=>`<button type="button" data-melody-tour="${n}" class="${s.tour===n?'active':''}" aria-pressed="${s.tour===n}">Тур ${n}</button>`).join('')}<button type="button" data-melody-tour="5">Торги ♫</button><button type="button" data-melody-tour="4">Суперигра ★</button></div>
-      <p class="melody-board-hint">Выберите ноту и включите мелодию. В этом туре сыграно ${s.used[s.tour-1].length} из 20.</p>
+      <p class="melody-board-hint">Нажмите ноту — музыка начнётся сразу. Сыграно ${s.used[s.tour-1].length} из 20.</p>
       <div class="melody-board" aria-label="Игровое поле">${melodyRows.map((row,ri)=>`<div class="melody-board-row"><div class="melody-category">${escapeHtml(categories[ri])}</div><div class="melody-notes">${row.map(i=>`<button type="button" class="melody-note-tile ${s.used[s.tour-1].includes(i)?'used':''} ${s.selected===i?'selected':''}" data-melody-note="${i}" ${s.used[s.tour-1].includes(i)?'disabled':''} aria-label="${escapeHtml(categories[ri])}, ${melodyValue(s,i)} баллов${s.used[s.tour-1].includes(i)?', сыграно':''}" aria-pressed="${s.selected===i}"><span>${melodyValue(s,i)}</span></button>`).join('')}</div></div>`).join('')}</div>
       <div class="melody-scoreboard">${s.names.map((name,i)=>`<div class="melody-player-score ${a?.active===i?'active':''} ${a?.passed.includes(i)?'passed':''}"><span class="melody-player-number">${i+1}</span><div><label><span class="sr-only">Имя игрока ${i+1}</span><input data-melody-name="${i}" maxlength="24" value="${escapeHtml(name)}"></label><strong>${s.scores[i]}</strong><small>${a?.active===i?'ОТВЕЧАЕТ':a?.passed.includes(i)?'ПРОПУСК':''}</small></div></div>`).join('')}</div>
     </div>
-    ${melodySongList(s)}
     <section class="melody-host-panel" aria-live="polite"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${song ? `Мелодия на ${melodyValue(s)} баллов` : 'Выберите ноту на поле'}</h3></div><span>${s.used[s.tour-1].length} / 20 сыграно</span></div>
-      ${song ? `<details class="melody-answer" data-answer-key="${melodyKey(s)}"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)}</p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + (song.source?.artist || '') + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
-      <div class="melody-audio-controls">${song.source?.source ? `<a class="melody-file" href="${escapeHtml(song.source.source)}" target="_blank" rel="noopener noreferrer">Слушать в источнике ↗</a>` : ''}${youtubeId ? `<button type="button" id="melodyYoutube">▶ Слушать на YouTube</button>` : ''}<label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${(file || youtubeId)?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : youtubeId ? 'Запись доступна онлайн через YouTube.' : song.source?.source ? 'Запись доступна на странице источника.' : 'Запись можно найти отдельно или добавить свой файл.'}</span></div>
-      <div class="melody-buzzer-panel"><p role="status">${a.finished?'Ответ принят. Завершите мелодию.':a.active!==null?`Отвечает: <strong>${escapeHtml(s.names[a.active])}</strong>`:melodyReady(s,a)?'Кнопки открыты: кто нажмёт первым, отвечает.':'Выберите отвечающего вручную или откройте кнопки на телефонах.'}</p><div class="melody-buzzer-actions">${s.names.map((name,i)=>`<button type="button" data-melody-answerer="${i}" ${a.finished||a.active!==null||a.passed.includes(i)||s.judged[melodyKey(s)+'-'+i]?'disabled':''}>${escapeHtml(name)} отвечает</button>`).join('')}<button type="button" id="melodyBuzzOpen" ${a.active!==null||a.finished||s.revealed||!s.names.some((_,i)=>melodyEligible(s,a,i))?'disabled':''}>${melodyReady(s,a)?'Закрыть кнопки':'Открыть кнопки'}</button></div>${a.passed.some(i=>!s.judged[melodyKey(s)+'-'+i])?`<div class="melody-buzzer-actions">${a.passed.filter(i=>!s.judged[melodyKey(s)+'-'+i]).map(i=>`<button type="button" data-melody-unpass="${i}">Вернуть ${escapeHtml(s.names[i])}</button>`).join('')}</div>`:''}${a.active!==null?'<div class="melody-buzzer-actions"><button type="button" id="melodyCorrect">✓ Правильно</button><button type="button" id="melodyWrong">✕ Неправильно</button><button type="button" id="melodyPass">Пропуск без штрафа</button></div>':''}</div>
+      ${song ? `<details class="melody-answer" data-answer-key="${melodyKey(s)}"><summary>Ответ ведущему</summary><p>${escapeHtml(song.title)}</p><small>Исполнитель / известная версия: ${escapeHtml(song.artist||'не указан')}</small></details>
+      <div class="melody-buzzer-panel"><p role="status">${a.finished?'Ответ принят. Завершите мелодию.':a.active!==null?`Отвечает: <strong>${escapeHtml(s.names[a.active])}</strong>`:melodyReady(s,a)?'Кнопки открыты: кто нажмёт первым, отвечает.':'Выберите отвечающего вручную или откройте кнопки на телефонах.'}</p>${a.active===null&&!a.finished?`<div class="melody-buzzer-actions">${s.names.map((name,i)=>`<button type="button" data-melody-answerer="${i}" aria-label="${escapeHtml(name)} отвечает" ${a.passed.includes(i)||s.judged[melodyKey(s)+'-'+i]?'disabled':''}>${escapeHtml(name)}</button>`).join('')}<button type="button" id="melodyBuzzOpen" ${s.revealed||!s.names.some((_,i)=>melodyEligible(s,a,i))?'disabled':''}>${melodyReady(s,a)?'Закрыть кнопки':'Открыть кнопки'}</button></div>`:''}${a.passed.some(i=>!s.judged[melodyKey(s)+'-'+i])?`<div class="melody-buzzer-actions">${a.passed.filter(i=>!s.judged[melodyKey(s)+'-'+i]).map(i=>`<button type="button" data-melody-unpass="${i}">Вернуть ${escapeHtml(s.names[i])}</button>`).join('')}</div>`:''}${a.active!==null&&!a.finished?'<div class="melody-buzzer-actions"><button type="button" id="melodyCorrect">✓ Правильно</button><button type="button" id="melodyWrong">✕ Неправильно</button><button type="button" id="melodyPass">Пропуск без штрафа</button></div>':''}</div>
+      <div class="melody-audio-controls"><button type="button" id="melodyPlay" ${file||youtubeId?'':'disabled'}>▶ ${file?'Продолжить':'Включить снова'}</button><button type="button" id="melodyStop" ${(file || youtubeId)?'':'disabled'}>■ Стоп</button><span>${file ? '' : youtubeId ? 'Онлайн: YouTube' : 'Добавьте аудиофайл.'}</span></div>
+      <details class="melody-extra-audio"><summary>Другие источники и свой файл</summary><div class="melody-audio-controls">${song.source?.source ? `<a class="melody-file" href="${escapeHtml(song.source.source)}" target="_blank" rel="noopener noreferrer">Слушать в источнике ↗</a>` : ''}${youtubeId ? `<button type="button" id="melodyYoutube">▶ Слушать на YouTube</button>` : ''}<label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label></div></details>
       <details class="melody-score-correction"><summary>Ручная корректировка очков</summary><div class="melody-judge"><span>Начислить или снять ${melodyValue(s)} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed||a.active!==null||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed||a.active!==null||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button>${s.judged[melodyKey(s)+'-'+i]&&!selectedUsed?`<button type="button" data-melody-undo="${i}" aria-label="Отменить начисление или штраф: ${escapeHtml(name)}">↶</button>`:''}</div>`).join('')}</div></details>
-      ${s.revealed?`<p class="melody-revealed-answer" role="status">Ответ: <strong>${escapeHtml(song.title)}</strong></p>`:''}<div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ от участников':'Показать ответ участникам'}</button><button type="button" id="melodyDone" ${selectedUsed||a.active!==null&&!a.finished?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Название песни будет видно только ведущему после открытия подсказки.</p>'}
-      <p class="melody-help">Некоторые русские и английские мелодии доступны без интернета; остальные — по ссылкам на источники или через YouTube. Плеер YouTube может показывать название и рекламу — включайте его только на экране ведущего, а участникам при необходимости покажите отдельный экран. Заставку и переход можно заменить своими файлами.</p>
+      ${s.revealed?`<p class="melody-revealed-answer" role="status">Ответ: <strong>${escapeHtml(song.title)} — ${escapeHtml(song.artist||'исполнитель не указан')}</strong></p>`:''}<div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ от участников':'Показать ответ участникам'}</button><button type="button" id="melodyDone" ${selectedUsed||a.active!==null&&!a.finished?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Музыка запустится сразу. Ответ появится здесь после окончания фрагмента или выбора отвечающего.</p>'}
+      <details class="melody-help"><summary>Как играть и источники музыки</summary><p>Встроенные фрагменты запускаются сразу. Для YouTube нужен интернет; сайт может ограничить воспроизведение или показать рекламу. Плеер и ответы видны на экране ведущего. Для онлайн-записей указан известный исполнитель песни, но доступная версия может отличаться. Свой файл можно выбрать в дополнительных источниках.</p></details>
     </section>
   </div>`;
   openDetails.forEach(sel=>{const el=body.querySelector(sel);if(el)el.open=true;});
   if(answerOpen&&body.querySelector('.melody-answer'))body.querySelector('.melody-answer').open=true;
   setupPlayerInvite();
+  $('#melodyCloseSettings')?.addEventListener('click',()=>{body.querySelector('.melody-config').open=false;document.querySelector('#gameModal .game-modal').scrollTop=0;});
   $('#copyPlayerLink')?.addEventListener('click',async()=>{const url=appPageUrl(`player.html?room=${roomCode}`);try{await navigator.clipboard.writeText(url);notify('Ссылка скопирована.');}catch{prompt('Ссылка для телефонов:',url);}});
   body.querySelectorAll('[data-melody-seat]').forEach(select=>select.addEventListener('change',()=>{const i=Number(select.dataset.melodySeat),id=select.value;if(id&&s.phoneIds.some((x,j)=>j!==i&&x===id)){notify('Этот телефон уже назначен другому игроку.');renderMelody();return;}s.phoneIds[i]=id;if(id)s.names[i]=connectedPlayers.find(p=>p.id===id)?.name||s.names[i];renderMelody();}));
   body.querySelectorAll('[data-melody-answerer]').forEach(b=>b.addEventListener('click',()=>melodySelectResponder(Number(b.dataset.melodyAnswerer))));
@@ -800,20 +823,17 @@ function renderMelody() {
   }
   $('#melodyMusicStop').addEventListener('click', () => stopMelodyAudio());
   body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { const nextTour=Number(button.dataset.melodyTour); if(nextTour!==s.tour) playMelodyAudio(s.cues.transition?.url || 'assets/melody/audio/show-endround.mp3'); else stopMelodyAudio(); if(nextTour===5 && s.auction.phase==='setup') {const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);s.auction.players=ranked.slice(0,2);} if(nextTour===4 && s.tour!==4 && s.super.status==='ready' && s.auction.phase!=='finished') s.super.player=s.scores.indexOf(Math.max(...s.scores)); if(a){a.open=false;a.token='';}s.tour=nextTour; s.selected=null; s.revealed=false; renderMelody(); }));
-  body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(true);if(a){a.open=false;a.token='';} s.selected=Number(button.dataset.melodyNote); s.revealed=false; renderMelody(); }));
+  body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(true);if(a){a.open=false;a.token='';} s.selected=Number(button.dataset.melodyNote); s.revealed=false; const key=melodyKey(s),selectedSong=melodySong(s,s.selected),url=s.files[key]?.url||bundledMelodyUrl(selectedSong),youtube=selectedSong.language==='russian'?selectedSong.source?.youtube:window.MELODY_YOUTUBE?.[selectedSong.title]; renderMelody(); if(url)playMelodyAudio(url,()=>melodyShowHostAnswer(s,key),()=>notify('Не удалось запустить аудио. Нажмите «Включить» или выберите файл.'));else if(youtube)playMelodyYoutube(youtube,()=>melodyShowHostAnswer(s,key));else notify('Для этой ноты нет записи: добавьте свой файл.'); }));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('input', () => {s.names[Number(input.dataset.melodyName)]=input.value.slice(0,24);saveMelody();}));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('change', () => { s.names[Number(input.dataset.melodyName)]=input.value.trim().slice(0,24) || `Игрок ${Number(input.dataset.melodyName)+1}`; renderMelody(); }));
   $('#melodyFile')?.addEventListener('change', e => { const chosen=e.target.files[0]; if (!chosen) return; const key=melodyKey(s); stopMelodyAudio(true); if(s.files[key]) URL.revokeObjectURL(s.files[key].url); s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
   $('#melodyYoutube')?.addEventListener('click', () => {
-    stopMelodyAudio(true);
-    const player=$('#melodyExternalPlayer'); player.hidden=false;
-    player.innerHTML=`<p>Плеер ведущего · название может быть видно. <a href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" rel="noopener noreferrer">Открыть на YouTube ↗</a></p><iframe title="Плеер музыкального фрагмента" src="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
-    player.scrollIntoView?.({behavior:'smooth', block:'nearest'});
+    const key=melodyKey(s);playMelodyYoutube(youtubeId,()=>melodyShowHostAnswer(s,key));
   });
-  $('#melodyPlay')?.addEventListener('click', () => { if (!file) return; if(melodyAudio && melodyAudioUrl===file.url)melodyAudio.play().catch(()=>notify('Не удалось воспроизвести аудио.'));else playMelodyAudio(file.url); });
-  $('#melodyStop')?.addEventListener('click', () => stopMelodyAudio());
+  $('#melodyPlay')?.addEventListener('click', () => { if(!file){if(youtubeId){const key=melodyKey(s);playMelodyYoutube(youtubeId,()=>melodyShowHostAnswer(s,key));}return;} if(melodyAudio && melodyAudioUrl===file.url)melodyAudio.play().catch(()=>notify('Не удалось воспроизвести аудио.'));else {const key=melodyKey(s);playMelodyAudio(file.url,()=>melodyShowHostAnswer(s,key));} });
+  $('#melodyStop')?.addEventListener('click', () => {stopMelodyAudio();melodyShowHostAnswer(s,melodyKey(s));});
   body.querySelectorAll('[data-melody-score]').forEach(button => button.addEventListener('click', () => { const player=Number(button.dataset.melodyScore),key=melodyKey(s)+'-'+player; if(selectedUsed||a.active!==null||s.judged[key]) return; const delta=Number(button.dataset.direction)*melodyValue(s);s.judged[key]=delta;s.scores[player] += delta;if(delta<0&&!a.passed.includes(player))a.passed.push(player);renderMelody(); }));
-  body.querySelectorAll('[data-melody-undo]').forEach(button=>button.addEventListener('click',()=>{const player=Number(button.dataset.melodyUndo),key=melodyKey(s)+'-'+player;if(selectedUsed||!s.judged[key])return;s.scores[player]-=s.judged[key];delete s.judged[key];if(a){a.passed=a.passed.filter(i=>i!==player);if(a.active===player){a.active=null;a.finished=false;}a.open=false;a.token='';}renderMelody();}));
+  body.querySelectorAll('[data-melody-undo]').forEach(button=>button.addEventListener('click',()=>{const player=Number(button.dataset.melodyUndo),key=melodyKey(s)+'-'+player;if(selectedUsed||!s.judged[key])return;s.scores[player]-=s.judged[key];delete s.judged[key];if(a){a.passed=a.passed.filter(i=>i!==player);if(a.active===player){a.active=null;a.finished=false;s.revealed=false;}a.open=false;a.token='';}renderMelody();}));
   $('#melodyReveal')?.addEventListener('click', () => { s.revealed=!s.revealed;if(a){a.open=false;a.token='';} renderMelody(); });
   $('#melodyDone')?.addEventListener('click', () => { if(s.selected==null || selectedUsed || a.active!==null&&!a.finished) return; stopMelodyAudio(); s.used[s.tour-1].push(s.selected);if(a){a.open=false;a.token='';} s.selected=null; s.revealed=false; renderMelody(); if(s.used[s.tour-1].length===20) notify(s.tour<3?'Тур завершён! Выберите следующий тур.':'Тур завершён! Переходите к торгам.'); });
   publishMelody();
@@ -845,7 +865,7 @@ const auctionTracks={
 function auctionSong(s,i) {
   const language=s.version==='children'?'russian':s.version==='mixed'?(i%2?'international':'russian'):s.version;
   const track=auctionTracks[s.version==='children'?'children':language][i],songIndex=track.index;
-  return {title:window.MELODY_SONGS[language][songIndex],language,songIndex,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
+  return {title:window.MELODY_SONGS[language][songIndex],artist:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]?.artist:window.MELODY_INTERNATIONAL_ARTISTS?.[songIndex],language,songIndex,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
 }
 function resetAuction(s){
   const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);
@@ -853,7 +873,7 @@ function resetAuction(s){
 }
 function publishAuction(){
   const s=melodyState,a=s.auction,song=auctionSong(s,a.track);
-  publish({game:'melody',mode:'auction',phase:a.phase,clue:song.clue,bid:a.bid,turn:s.names[a.players[a.turn]],bidder:a.bidder===null?'':s.names[a.players[a.bidder]],players:a.players.map((id,i)=>({name:s.names[id],score:a.points[i]})),answer:a.phase==='result'||a.phase==='finished'?song.title:''});
+  publish({game:'melody',mode:'auction',phase:a.phase,clue:song.clue,bid:a.bid,turn:s.names[a.players[a.turn]],bidder:a.bidder===null?'':s.names[a.players[a.bidder]],players:a.players.map((id,i)=>({name:s.names[id],score:a.points[i]})),answer:a.phase==='result'||a.phase==='finished'?song.title:'',answerArtist:a.phase==='result'||a.phase==='finished'?(song.artist||'Исполнитель не указан'):''});
 }
 function renderMelodyAuction(){
   const s=melodyState,a=s.auction,body=$('#gameBody'),song=auctionSong(s,a.track);
@@ -862,15 +882,15 @@ function renderMelodyAuction(){
   const url=s.files['auction-'+a.track]?.url||bundledMelodyUrl(song);
   const youtube=song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title];
   const phaseText=setup?'Выберите двух участников с лучшими результатами.':bidding?`Ход: ${escapeHtml(s.names[a.players[a.turn]])}`:guessing?`Отвечает: ${escapeHtml(s.names[a.players[a.bidder]])} · ${a.bid} нот`:finished?`Победитель: ${escapeHtml(s.names[a.players[a.lastWinner]])}`:`Очко получает ${escapeHtml(s.names[a.players[a.lastWinner]])}.`;
-  body.innerHTML=`<div class="melody-show melody-screen-view"><p class="game-save-status" role="status">${saveStatus(saved)}</p><div class="melody-stage"><div class="melody-show-heading"><div><span>БОНУСНЫЙ РАУНД</span><h2>Торги ♫</h2></div><strong>ДО 3 ОЧКОВ</strong></div>
+  body.innerHTML=`<div class="melody-show melody-screen-view melody-bonus"><p class="game-save-status" role="status">${saveStatus(saved)}</p><div class="melody-stage"><div class="melody-show-heading"><div><span>БОНУСНЫЙ РАУНД</span><h2>Торги ♫</h2></div><strong>ДО 3 ОЧКОВ</strong></div>
     <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-auction-tour="${n}">Тур ${n}</button>`).join('')}<button class="active" type="button" aria-current="page">Торги ♫</button><button type="button" data-auction-tour="4">Суперигра ★</button></div>
     <p class="melody-board-hint">${phaseText}</p><div class="auction-score">${a.players.map((p,i)=>`<div><b>${escapeHtml(s.names[p])}</b><strong>${a.points[i]}</strong></div>`).join('')}</div>
     ${setup?'':`<p class="auction-clue">Подсказка: ${escapeHtml(song.clue)}</p><p class="auction-bid">${a.bid===null?'Первая ставка: от 7 до 3 нот':`Текущая ставка: ${a.bid} нот`}</p>`}</div>
     <section class="melody-host-panel"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${setup?'Подготовка':bidding?'Назовите количество нот':guessing?'Проверьте ответ':'Результат'}</h3></div></div>
     ${setup?`<p>Выберите двух игроков. Начинает первый; каждый называет меньше нот или уступает сопернику. Три ноты завершают торги. При ошибке очко получает соперник. Победа — три очка.</p><div class="auction-players">${a.players.map((player,i)=>`<label>Участник ${i+1}<select data-auction-player="${i}">${s.names.map((name,j)=>`<option value="${j}" ${player===j?'selected':''}>${escapeHtml(name)}</option>`).join('')}</select></label>`).join('')}</div><button type="button" id="auctionStart">Начать торги</button>`:''}
     ${bidding?`<p>Ставка должна быть меньше предыдущей. Можно уступить после первой ставки.</p><div class="melody-actions">${[7,6,5,4,3].map(n=>`<button type="button" data-auction-bid="${n}" ${a.bid!==null&&n>=a.bid?'disabled':''}>${n} нот</button>`).join('')}<button type="button" id="auctionPass" ${a.bid===null?'disabled':''}>Уступить</button></div>`:''}
-    ${guessing?`<details class="melody-answer"><summary>Ответ ведущему</summary><p>${escapeHtml(song.title)}</p></details><div class="melody-audio-controls"><button type="button" id="auctionPlay" ${url||youtube?'':'disabled'}>▶ Включить мелодию</button><button type="button" id="auctionStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="auctionFile" accept="audio/*"></label></div><p>Записи не разбиты по нотам: ведущий останавливает воспроизведение самостоятельно после нужного числа нот.</p><div class="melody-actions"><button type="button" id="auctionCorrect">✓ Угадано</button><button type="button" id="auctionWrong">✕ Ошибка</button></div>`:''}
-    ${a.phase==='result'||finished?`<p>Ответ: <b>${escapeHtml(song.title)}</b></p><button type="button" id="auctionNext">${finished?'К суперигре ★':'Следующая мелодия →'}</button>`:''}
+    ${guessing?`<details class="melody-answer"><summary>Ответ ведущему</summary><p>${escapeHtml(song.title)}</p><small>Исполнитель / известная версия: ${escapeHtml(song.artist||'не указан')}</small></details><div class="melody-audio-controls"><button type="button" id="auctionPlay" ${url||youtube?'':'disabled'}>▶ Включить мелодию</button><button type="button" id="auctionStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="auctionFile" accept="audio/*"></label></div><p>Записи не разбиты по нотам: ведущий останавливает воспроизведение самостоятельно после нужного числа нот.</p><div class="melody-actions"><button type="button" id="auctionCorrect">✓ Угадано</button><button type="button" id="auctionWrong">✕ Ошибка</button></div>`:''}
+    ${a.phase==='result'||finished?`<p>Ответ: <b>${escapeHtml(song.title)} — ${escapeHtml(song.artist||'исполнитель не указан')}</b></p><button type="button" id="auctionNext">${finished?'К суперигре ★':'Следующая мелодия →'}</button>`:''}
     ${!setup?'<button type="button" class="auction-reset" id="auctionReset">Начать торги заново</button>':''}</section>${melodySongList(s)}</div>`;
   body.querySelectorAll('[data-auction-tour]').forEach(button=>button.addEventListener('click',()=>{stopMelodyAudio(true);s.tour=Number(button.dataset.auctionTour);s.selected=null;s.revealed=false;renderMelody();}));
   body.querySelectorAll('[data-auction-player]').forEach(select=>select.addEventListener('change',e=>{const side=Number(select.dataset.auctionPlayer),value=Number(e.target.value);if(value===a.players[1-side]){e.target.value=a.players[side];notify('Выберите двух разных игроков.');return;}a.players[side]=value;renderMelodyAuction();}));
@@ -890,7 +910,7 @@ function renderMelodyAuction(){
 // Answers in this list are intentionally available only to the host, never sent to the projector.
 function melodySongList(s) {
   const seen=new Set();
-  const entry=song=>{const repeat=seen.has(song.title);seen.add(song.title);return `<li>${escapeHtml(song.title)}${repeat?' <small>(повтор названия)</small>':''}</li>`;};
+  const entry=song=>{const repeat=seen.has(song.title);seen.add(song.title);return `<li>${escapeHtml(song.title)} — ${escapeHtml(song.artist||'исполнитель не указан')}${repeat?' <small>(повтор названия)</small>':''}</li>`;};
   const rounds=[1,2,3].map(tour=>`<h4>Тур ${tour}</h4>${melodyLayout(s)[tour-1].map((row,ri)=>`<b>${escapeHtml(row.name)}</b><ol>${Array.from({length:5},(_,i)=>entry(melodySong({...s,tour},ri*5+i))).join('')}</ol>`).join('')}`).join('');
   return `<details class="melody-song-list"><summary>Список песен для ведущего · содержит ответы</summary>${rounds}<h4>Торги</h4><ol>${Array.from({length:5},(_,i)=>entry(auctionSong(s,i))).join('')}</ol><h4>Суперигра</h4><ol>${Array.from({length:7},(_,i)=>entry(melodySong(s,i,true))).join('')}</ol><p>Отмечены повторные названия; одинаковые названия могут относиться к разным записям.</p></details>`;
 }
@@ -928,11 +948,11 @@ function renderMelodySuper() {
   const youtube=song && (song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title]);
   const url=song && (s.files['super-'+index]?.url || bundledMelodyUrl(song));
   const message=supergame.status==='paused'?'Суперигра приостановлена. Нажмите «Продолжить», когда будете готовы.':supergame.status==='won'?'Победа! Все семь мелодий угаданы.':supergame.status==='lost'?'Суперигра окончена: ошибка или время истекло.':'Угадайте семь мелодий за 30 секунд. Можно пропустить мелодию и вернуться к ней. Ошибка завершает игру.';
-  body.innerHTML=`<div class="melody-show melody-screen-view"><p class="game-save-status" role="status">${saveStatus(saved)}</p><div class="melody-stage"><div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Суперигра ★</h2></div><strong id="superSeconds">${supergame.seconds}</strong></div>
+  body.innerHTML=`<div class="melody-show melody-screen-view melody-bonus"><p class="game-save-status" role="status">${saveStatus(saved)}</p><div class="melody-stage"><div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Суперигра ★</h2></div><strong id="superSeconds">${supergame.seconds}</strong></div>
     <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-super-tour="${n}" ${running?'disabled':''}>Тур ${n}</button>`).join('')}<button type="button" data-super-tour="5" ${running?'disabled':''}>Торги ♫</button><button class="active" type="button" aria-current="page">Суперигра ★</button></div>
     <p class="melody-board-hint">${message}</p><div class="melody-super-status"><b>${7-supergame.queue.length} / 7 угадано</b><label>Финалист <select id="superPlayer" ${running?'disabled':''}>${s.names.map((name,i)=>`<option value="${i}" ${i===supergame.player?'selected':''}>${escapeHtml(name)}</option>`).join('')}</select></label></div></div>
     <section class="melody-host-panel"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${running?`Мелодия ${7-supergame.queue.length+1} из 7`:'Готовы к финалу?'}</h3></div></div>
-    ${song && running?`<details class="melody-answer"><summary>Название для ведущего</summary><p>${escapeHtml(song.title)}</p></details><div class="melody-audio-controls"><button type="button" id="superPlay" ${(url||youtube)?'':'disabled'}>▶ Повторить мелодию</button><button type="button" id="superStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="superFile" accept="audio/*"></label><span>${url?'Встроенный фрагмент':youtube?'Запись YouTube':'Нет встроенной записи'}</span></div><div class="melody-actions"><button type="button" id="superCorrect">✓ Угадано</button><button type="button" id="superSkip">↻ Пропустить</button><button type="button" id="superWrong">✕ Ошибка</button></div>`:`<button type="button" id="superStart">▶ ${supergame.status==='paused'?'Продолжить суперигру':supergame.status==='ready'?'Начать суперигру':'Сыграть ещё раз'}</button>`}
+    ${song && running?`<details class="melody-answer"><summary>Название для ведущего</summary><p>${escapeHtml(song.title)}</p><small>Исполнитель / известная версия: ${escapeHtml(song.artist||'не указан')}</small></details><div class="melody-audio-controls"><button type="button" id="superPlay" ${(url||youtube)?'':'disabled'}>▶ Повторить мелодию</button><button type="button" id="superStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="superFile" accept="audio/*"></label><span>${url?'Встроенный фрагмент':youtube?'Запись YouTube':'Нет встроенной записи'}</span></div><div class="melody-actions"><button type="button" id="superCorrect">✓ Угадано</button><button type="button" id="superSkip">↻ Пропустить</button><button type="button" id="superWrong">✕ Ошибка</button></div>`:`<button type="button" id="superStart">▶ ${supergame.status==='paused'?'Продолжить суперигру':supergame.status==='ready'?'Начать суперигру':'Сыграть ещё раз'}</button>`}
     <p class="melody-help">Ведущий управляет звучанием и результатами. При переходе между мелодиями запись запускается автоматически. Онлайн-плеер может показывать название; для него нужен интернет. Суперигра — адаптация правил передачи для ведущего.</p></section>${melodySongList(s)}</div>`;
   $('#superPlayer').addEventListener('change',e=>{supergame.player=Number(e.target.value);saveMelody();publishMelody();});
   body.querySelectorAll('[data-super-tour]').forEach(button=>button.addEventListener('click',()=>{stopSuperTimer();stopMelodyAudio(true);s.tour=Number(button.dataset.superTour);if(s.tour===5 && s.auction.phase==='setup')resetAuction(s);s.selected=null;s.revealed=false;renderMelody();}));

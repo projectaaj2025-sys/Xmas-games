@@ -89,6 +89,22 @@ window.MELODY_SONGS = {
   ]
 };
 
+// Well-known versions; the local carol snippets are instrumentals, not recordings by a named singer.
+window.MELODY_INTERNATIONAL_ARTISTS = [
+  'Mariah Carey', 'Wham!', 'José Feliciano', 'Brenda Lee',
+  'Традиционная песня · инструментальная версия', 'Традиционная песня · инструментальная версия',
+  'Bing Crosby', 'Andy Williams', 'Nat King Cole', 'Ariana Grande',
+  'Chris Rea', 'John Lennon и Yoko Ono', 'Paul McCartney', 'Shakin’ Stevens',
+  'Dean Martin', 'Burl Ives', 'Традиционная рождественская песня',
+  'Традиционная песня · инструментальная версия', 'Band Aid', 'The Pogues и Kirsty MacColl',
+  'Coldplay', 'Kelly Clarkson', 'Justin Bieber', 'Традиционная песня · инструментальная версия',
+  'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня',
+  'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня',
+  'Gene Autry', 'Gene Autry', 'Традиционная рождественская песня',
+  'Традиционная рождественская песня', 'Frank Sinatra', 'Традиционная рождественская песня',
+  'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня'
+];
+
 // Local audio: short recordings and instrumental previews (see ATTRIBUTION.md).
 window.MELODY_AUDIO = {
   'Last Christmas':'assets/melody/audio/last-christmas-wham.mp3',
@@ -147,11 +163,11 @@ window.MELODY_RUSSIAN_SOURCES = [
   {"artist": "Дискотека Авария", "source": "https://rus.hitmos.fm/song/9293226", "youtube": "1-bxBXOE368"},
   {"artist": "Андрей Губин", "source": "https://rus.hitmos.fm/song/10097515", "youtube": "JnqKGDJD8gg"},
   {"artist": "Из к/ф «Бриллиантовая рука»", "source": null, "youtube": null},
-  {"artist": "Валентина Толкунова", "source": "https://rus.hitmos.fm/song/12586473", "youtube": null},
+  {"artist": "Валентина Толкунова · инструментальная версия", "source": "https://rus.hitmos.fm/song/12586473", "youtube": null},
   {"artist": "Людмила Гурченко", "source": "https://rus.hitmos.fm/song/7716573", "youtube": null},
   {"artist": "Лариса Долина", "source": null, "youtube": "jWiKX6wE9fY"},
-  {"artist": "Чародеи", "source": null, "youtube": "EaOu9c_WR7c"},
-  {"artist": "Нина Бродская", "source": "https://rus.hitmos.fm/song/12586413", "youtube": "2QdBGUHV0uA"},
+  {"artist": "ВИА «Добры Молодцы»", "source": null, "youtube": "EaOu9c_WR7c"},
+  {"artist": "Нина Бродская · инструментальная версия", "source": "https://rus.hitmos.fm/song/12586413", "youtube": "2QdBGUHV0uA"},
   {"artist": "Аида Ведищева", "source": "https://rus.hitmos.fm/song/12586443", "youtube": null},
   {"artist": "Глюкоза", "source": "https://rus.hitmos.fm/song/12540932", "youtube": "ruvZrmwlX8M"},
   {"artist": "Народная песня", "source": null, "youtube": null},
@@ -183,7 +199,7 @@ window.MELODY_RUSSIAN_SOURCES = [
   {"artist": "Моя Мишель", "source": null, "youtube": null},
   {"artist": "Филипп Киркоров (минус)", "source": null, "youtube": null},
   {"artist": "Премьер-Министр", "source": null, "youtube": null},
-  {"artist": "Из фильма «Москва слезам не верит»", "source": null, "youtube": null},
+  {"artist": "Сергей и Татьяна Никитины", "source": null, "youtube": null},
   {"artist": "The Limba, JONY, Егор Крид, А4", "source": null, "youtube": null},
   {"artist": "Из мультфильма «Холодное сердце»", "source": null, "youtube": null},
   {"artist": "Григорий Гладков", "source": null, "youtube": null},
