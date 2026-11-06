@@ -491,3 +491,8 @@
 .field-reconnect-seats label{display:flex;flex-direction:column;gap:5px;font-weight:700}
 .field-reconnect select,.field-reconnect button{border:1px solid #abc9d7;border-radius:8px;background:#fff;color:#294c60;padding:9px}
 @media(max-width:620px){.field-screen .game-topbar,.melody-screen .game-topbar{height:auto;min-height:56px;gap:6px;flex-wrap:wrap;padding:8px 0}.game-topbar .game-reset{padding:8px;font-size:12px}.game-resume{margin:12px auto;padding:20px}.field-reconnect-seats label{width:100%}}
+
+/* The game controls always belong to the host; the participant display is optional. */
+.host-screen-label{display:inline-flex;align-items:center;border:1px solid #afd2dd;border-radius:20px;background:#e9f7fb;color:#24536a;padding:6px 10px;font-size:13px;font-weight:900}
+.screen-tools .screen-instruction{flex-basis:100%;text-align:center;color:#536f82}
+.melody-revealed-answer{padding:12px 14px;border:1px solid #92c6b1;border-radius:12px;background:#e9f8ef;color:#225b42;font-size:16px}

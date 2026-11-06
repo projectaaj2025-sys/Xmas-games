@@ -2,7 +2,7 @@
   const room = new URLSearchParams(location.search).get('room') || '';
   const connection = document.querySelector('#screenConnection');
   const stage = document.querySelector('#screenStage');
-  document.querySelector('#screenRoom').textContent = room ? `Код экрана: ${room.toUpperCase()}` : 'В ссылке не указан код игры';
+  document.querySelector('#screenRoom').textContent = room ? `Код комнаты: ${room.toUpperCase()}` : 'В ссылке не указан код игры';
   let socket, fieldAngle=0;
   function connect() {
     if (!room) return;
@@ -11,8 +11,8 @@
     socket.addEventListener('open', () => socket.send(JSON.stringify({ type: 'join', room, role: 'screen' })));
     socket.addEventListener('message', event => {
       let data; try { data = JSON.parse(event.data); } catch { return; }
-      if (data.type === 'joined') { connection.className = 'screen-state connected'; connection.innerHTML = '<i></i> Экран подключён'; }
-      if (data.type === 'presence') { connection.className = 'screen-state connected'; connection.innerHTML = '<i></i> Экран на связи'; }
+      if (data.type === 'joined') { connection.className = 'screen-state connected'; connection.innerHTML = '<i></i> Экран участников подключён'; }
+      if (data.type === 'presence') { connection.className = 'screen-state connected'; connection.innerHTML = '<i></i> Экран участников на связи'; }
       if (data.type === 'state') render(data.payload);
     });
     socket.addEventListener('close', () => { connection.className = 'screen-state disconnected'; connection.innerHTML = '<i></i> Связь прервалась — переподключаемся'; setTimeout(connect, 1600); });
@@ -26,9 +26,9 @@
     stage.classList.toggle('quiz-question-active', data.game === 'quiz' && Boolean(data.questionNumber));
     stage.classList.toggle('memo-photo', data.game === 'memo' && data.deckId === 'photo');
     stage.classList.toggle('memo-event-active', data.game === 'memo' && Boolean(data.event));
-    const roomNote = `<div class="screen-code">КОД ЭКРАНА: ${safeText(room.toUpperCase())}</div>`;
+    const roomNote = `<div class="screen-code">КОД КОМНАТЫ: ${safeText(room.toUpperCase())}</div>`;
     if (data.game === 'idle') {
-      stage.innerHTML = `<div class="screen-stars">✦　❄　✧　❄　✦</div><div class="waiting-art">🎄</div><div class="screen-kicker">ЭКРАН УЧАСТНИКОВ</div><h1>Ждём начала игры</h1><p>${safeText(data.instruction || 'Выберите игру на главном экране.')}</p>${roomNote}`;
+      stage.innerHTML = `<div class="screen-stars">✦　❄　✧　❄　✦</div><div class="waiting-art">🎄</div><div class="screen-kicker">ЭКРАН УЧАСТНИКОВ</div><h1>Ждём начала игры</h1><p>${safeText(data.instruction || 'Ведущий выбирает игру на своём экране.')}</p>${roomNote}`;
       return;
     }
     if (data.game === 'field') {
