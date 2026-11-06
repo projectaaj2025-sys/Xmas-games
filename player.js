@@ -12,7 +12,7 @@
     localStorage.setItem(tokenKey,reconnectToken);
   }
   const savedName = localStorage.getItem('snowyPlayerName') || '';
-  let socket = null, playerName = '', joined = false, retryTimer = null, phoneRole = 'player';
+  let socket = null, playerName = '', joined = false, retryTimer = null, phoneRole = 'player', lastState = null, profileTimer = null, profileRequest = 0;
   $('#playerName').value = savedName;
   $('#manualRoomEntry').hidden = Boolean(room);
   $('#roomCodeInput').value = room.toUpperCase();
@@ -33,20 +33,41 @@
       let data;try{data=JSON.parse(event.data)}catch{return}
       if(data.type==='joined'){
         if(data.playerId) playerId=data.playerId;
-        joined=true;$('#joinPanel').hidden=true;$('#gamePanel').hidden=false;status('Подключён','connected');
+        updateProfileUI();joined=true;$('#joinPanel').hidden=true;$('#gamePanel').hidden=false;status('Подключён','connected');
       }
-      if(data.type==='state')renderPlayerState(data.payload);
+      if(data.type==='profile-updated' && data.requestId===profileRequest){
+        clearTimeout(profileTimer);$('#saveProfile').disabled=false;
+        playerName=data.name;phoneRole=data.role;playerId=data.playerId||playerId;
+        localStorage.setItem('snowyPlayerName',playerName);$('#playerName').value=playerName;$('#phoneRole').value=phoneRole;updateProfileUI();
+        $('#profileFeedback').textContent='Сохранено.';$('#profileSettings').open=false;
+        if(lastState?.game==='field')renderPlayerState(lastState);
+        else if(phoneRole==='viewer'){lastState=null;renderPlayerState(null);}
+      }
+      if(data.type==='profile-error' && data.requestId===profileRequest){clearTimeout(profileTimer);$('#saveProfile').disabled=false;$('#profileFeedback').textContent='Не удалось сохранить. Проверьте имя и роль.';}
+      if(data.type==='state'){lastState=data.payload;renderPlayerState(data.payload);}
     });
-    socket.addEventListener('close',()=>{if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Не удалось подключиться','disconnected');$('#phoneRoom').textContent='Проверьте связь, код комнаты и открытую страницу ведущего, затем попробуйте ещё раз.'}});
+    socket.addEventListener('close',()=>{clearTimeout(profileTimer);$('#saveProfile').disabled=false;if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Не удалось подключиться','disconnected');$('#phoneRoom').textContent='Проверьте связь, код комнаты и открытую страницу ведущего, затем попробуйте ещё раз.'}});
     socket.addEventListener('error',()=>socket.close());
   }
+  function updateProfileUI(){
+    $('#profileSummary').textContent=`${playerName} · ${phoneRole==='viewer'?'Зритель':'Игрок'} — изменить`;
+    $('#profileName').value=playerName;$('#profileRole').value=phoneRole;
+  }
+  $('#profileForm').addEventListener('submit',event=>{
+    event.preventDefault();const name=$('#profileName').value.trim().slice(0,24),role=$('#profileRole').value;
+    if(!name){$('#profileFeedback').textContent='Введите имя.';$('#profileName').focus();return;}
+    if(!['player','viewer'].includes(role)||!socket||socket.readyState!==WebSocket.OPEN){$('#profileFeedback').textContent='Нет связи. Повторите после подключения.';return;}
+    const requestId=++profileRequest;$('#saveProfile').disabled=true;$('#profileFeedback').textContent='Сохраняем…';
+    try{socket.send(JSON.stringify({type:'profile-update',name,role,requestId}));}catch{$('#saveProfile').disabled=false;$('#profileFeedback').textContent='Нет связи. Повторите после подключения.';return;}
+    clearTimeout(profileTimer);profileTimer=setTimeout(()=>{if(profileRequest===requestId){$('#saveProfile').disabled=false;$('#profileFeedback').textContent='Нет подтверждения. Проверьте связь и попробуйте ещё раз.';}},8000);
+  });
   function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function renderPlayerState(state){
     if(state?.game==='field'){renderFieldPhone(state);return;}
     $('#fieldPhone').hidden=true;$('#playerCardFace').hidden=false;document.querySelector('.phone-reminder').hidden=false;
     if(!state||state.game!=='guess'||state.guessMode!=='circle'||!state.playerView){
-      $('#playerTurn').textContent='ЖДЁМ ВЕДУЩЕГО';$('#playerHeading').textContent='Телефонный круг ещё не начался';
-      $('#playerInstructions').textContent='Ведущий включит режим «Круг с телефонами». До этого можно оставить эту страницу открытой.';
+      $('#playerTurn').textContent='ЖДЁМ ВЕДУЩЕГО';$('#playerHeading').textContent=phoneRole==='viewer'?'Вы подключены как зритель':'Телефонный круг ещё не начался';
+      $('#playerInstructions').textContent=phoneRole==='viewer'?'Вы можете наблюдать за «Полем чудес». Для участия в телефонном круге выберите роль игрока.':'Ведущий включит режим «Круг с телефонами». До этого можно оставить эту страницу открытой.';
       $('#playerImage').innerHTML='❄';$('#playerWord').textContent='';$('#playerHint').textContent='';$('#playerActions').hidden=true;return;
     }
     const view=state.playerView;
@@ -100,5 +121,5 @@
   $('#playerName').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinButton').click()});
   $('#solvedButton').addEventListener('click',()=>sendAction('solved'));
   $('#passButton').addEventListener('click',()=>sendAction('pass'));
-  $('#leaveButton').addEventListener('click',()=>{joined=false;playerName='';if(socket)socket.close();$('#gamePanel').hidden=true;$('#joinPanel').hidden=false;status('Не подключён')});
+  $('#leaveButton').addEventListener('click',()=>{joined=false;playerName='';lastState=null;clearTimeout(profileTimer);profileRequest++;if(socket)socket.close();$('#gamePanel').hidden=true;$('#joinPanel').hidden=false;status('Не подключён')});
 })();

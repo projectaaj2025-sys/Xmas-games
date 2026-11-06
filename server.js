@@ -31,7 +31,7 @@ function roomPeers(room) { return [...peers].filter(peer => peer.room === room);
 function broadcast(room, value, except) { for (const peer of roomPeers(room)) if (peer !== except) sendJSON(peer, value); }
 function presenceFor(room) {
   const members = roomPeers(room);
-  return { type: 'presence', count: members.filter(p => p.role === 'screen').length, players: members.filter(p => p.role === 'player').map(p => ({ id: p.playerId, name: p.playerName })) };
+  return { type: 'presence', count: members.filter(p => p.role === 'screen').length, players: members.filter(p => p.role === 'player').map(p => ({ id: p.playerId, name: p.playerName })), viewers: members.filter(p => p.role === 'viewer').map(p => ({ id: p.playerId, name: p.playerName })) };
 }
 function updatePresence(room) { broadcast(room, presenceFor(room)); }
 function stateForPeer(peer, payload) {
@@ -72,6 +72,15 @@ function handleMessage(peer, message) {
     sendJSON(peer, { type: 'joined', room: peer.room, role: peer.role, playerId: peer.playerId || '', screenCount: roomPeers(peer.room).filter(p => p.role === 'screen').length });
     if (rooms.has(peer.room)) sendJSON(peer, { type: 'state', payload: stateForPeer(peer, rooms.get(peer.room)) });
     updatePresence(peer.room); return;
+  }
+  if (data.type === 'profile-update' && peer.room && (peer.role === 'player' || peer.role === 'viewer')) {
+    const name = typeof data.name === 'string' ? data.name.trim().slice(0, 24) : '';
+    if (!name || !['player','viewer'].includes(data.role)) { sendJSON(peer, {type:'profile-error',requestId:data.requestId}); return; }
+    peer.playerName = name; peer.role = data.role;
+    sendJSON(peer, {type:'profile-updated',requestId:data.requestId,playerId:peer.playerId,name,role:peer.role});
+    updatePresence(peer.room);
+    if (rooms.has(peer.room)) sendJSON(peer, {type:'state',payload:stateForPeer(peer,rooms.get(peer.room))});
+    return;
   }
   if (data.type === 'state' && peer.room && peer.role === 'host') {
     const payload = data.payload;
