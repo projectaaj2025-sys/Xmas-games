@@ -41,7 +41,7 @@ test('each game opens in its frame and the new game controls render', () => {
   } finally { window.close(); }
 });
 
-test('melody board keeps four rounds, three scores and three language selections', () => {
+test('melody board keeps three fields, a supergame, three scores and language selections', () => {
   const errors = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error));
@@ -70,7 +70,7 @@ test('melody board keeps four rounds, three scores and three language selections
     const payload = () => socket.messages.filter(msg => msg.type === 'state').at(-1).payload;
     click('[data-open="melody"]');
     assert.equal(doc.querySelectorAll('[data-melody-tour]').length, 4);
-    assert.equal(doc.querySelectorAll('[data-melody-note]').length, 9);
+    assert.equal(doc.querySelectorAll('[data-melody-note]').length, 20);
     assert.equal(doc.querySelectorAll('[data-melody-name]').length, 3);
     assert.equal(doc.querySelectorAll('#melodyVersion option').length, 3);
     click('[data-melody-note="0"]');
@@ -82,7 +82,7 @@ test('melody board keeps four rounds, three scores and three language selections
     click('#melodyPlay');
     assert.equal(playing, 1);
     click('[data-melody-score="2"][data-direction="1"]');
-    assert.equal(payload().scores[2].score, 10);
+    assert.equal(payload().scores[2].score, 80);
     click('#melodyReveal');
     assert.equal(payload().answer, window.MELODY_SONGS.russian[0]);
     click('#melodyDone');
@@ -90,7 +90,7 @@ test('melody board keeps four rounds, three scores and three language selections
     assert.ok(paused > 0);
     click('[data-melody-tour="2"]');
     assert.equal(payload().tour, 2);
-    assert.equal(payload().scores[2].score, 10);
+    assert.equal(payload().scores[2].score, 80);
     click('[data-melody-tour="1"]');
     assert.equal(doc.querySelector('[data-melody-note="0"]').disabled, true);
     const select = doc.querySelector('#melodyVersion');
@@ -150,7 +150,7 @@ test('bundled melodies are available and playback uses them without exposing ans
     const doc=w.document;
     doc.querySelector('[data-open="melody"]').click();
     doc.querySelector('#melodyIntro').click();
-    assert.match(played.at(-1), /gameshow-brazz\.mp3$/);
+    assert.match(played.at(-1), /show-opening\.mp3$/);
     const version=doc.querySelector('#melodyVersion');
     version.value='international'; version.dispatchEvent(new w.Event('change',{bubbles:true}));
     doc.querySelector('[data-melody-note="4"]').click();
@@ -158,7 +158,7 @@ test('bundled melodies are available and playback uses them without exposing ans
     doc.querySelector('#melodyPlay').click();
     assert.match(played.at(-1), /jingle-bells\.wav$/);
     doc.querySelector('[data-melody-tour="2"]').click();
-    assert.match(played.at(-1), /christmas-town\.mp3$/);
+    assert.match(played.at(-1), /show-endround\.mp3$/);
     doc.querySelector('[data-melody-note="0"]').click();
     assert.equal(doc.querySelector('#melodyPlay').disabled,true);
     assert.deepEqual(errors, []);
@@ -267,7 +267,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
     assert.equal(w.MELODY_SONGS.russian.length,36); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,36);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,2);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
-    assert.match(doc.querySelector('.melody-song-list').textContent,/Повтор названия.*Новый год/);
+    assert.match(doc.querySelector('.melody-song-list').textContent,/Новый год \(повтор названия\)/);
     doc.querySelector('[data-melody-note="0"]').click();
     assert.match(doc.querySelector('.melody-answer p').textContent,/Новогодняя/);
     assert.match(doc.querySelector('.melody-audio-controls a').href,/song\/9293226/);
@@ -278,4 +278,75 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
     assert.match(doc.querySelector('.melody-answer p').textContent,/Last Christmas/);
     assert.ok(doc.querySelector('#melodyYoutube'));
   } finally {w.close()}
+});
+
+test('three 4 by 5 boards use the reference prices, distinct categories and per-song scoring', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  w.Audio=class{play(){return Promise.resolve()}pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    const d=w.document;d.querySelector('[data-open="melody"]').click();
+    const categories=[];
+    for(let tour=1;tour<=3;tour++) {
+      d.querySelector(`[data-melody-tour="${tour}"]`).click();
+      const rows=[...d.querySelectorAll('.melody-board-row')];assert.equal(rows.length,4);
+      assert.deepEqual(rows.map(row=>row.querySelectorAll('[data-melody-note]').length),[5,5,5,5]);
+      categories.push(rows.map(row=>row.querySelector('.melody-category').textContent));
+      if(tour===1) assert.deepEqual(rows.map(row=>[...row.querySelectorAll('[data-melody-note] span')].map(x=>Number(x.textContent))),[[80,40,90,60,70],[50,30,80,50,90],[80,40,50,70,30],[90,70,40,50,60]]);
+    }
+    assert.equal(new Set(categories.flat()).size,12);
+    d.querySelector('[data-melody-tour="1"]').click();d.querySelector('[data-melody-note="0"]').click();
+    d.querySelector('[data-melody-score="0"][data-direction="1"]').click();
+    assert.equal(d.querySelector('[data-melody-score="0"][data-direction="1"]').disabled,true);
+    assert.equal(d.querySelector('.melody-player-score strong').textContent,'80');
+    d.querySelector('[data-melody-score="0"][data-direction="1"]').click();
+    assert.equal(d.querySelector('.melody-player-score strong').textContent,'80');
+    assert.equal(d.querySelectorAll('.melody-song-list li').length,67);
+    assert.ok([...d.querySelectorAll('.melody-song-list li')].some(li=>/повтор названия/.test(li.textContent)));
+  } finally {w.close()}
+});
+
+test('supergame skips and revisits, wins after seven, ends on error or timeout, and does not leak answers to projector', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  let socket;w.WebSocket=class{constructor(){socket=this;this.readyState=1;this.listeners={};this.messages=[]}addEventListener(n,f){this.listeners[n]=f}send(m){this.messages.push(JSON.parse(m))}};w.WebSocket.OPEN=1;
+  const plays=[];w.Audio=class{constructor(url){this.url=url}play(){plays.push(this.url);return Promise.resolve()}pause(){}};
+  let now=100000;w.Date.now=()=>now;
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    socket.listeners.open();const d=w.document;d.querySelector('[data-open="melody"]').click();d.querySelector('[data-melody-tour="4"]').click();
+    assert.match(d.querySelector('.melody-stage').textContent,/семь мелодий за 30 секунд/i);
+    d.querySelector('#superStart').click();assert.match(plays.at(-1),/kaby-ne-bylo-zimy\.mp3$/);
+    const first=d.querySelector('.melody-answer p').textContent;
+    const last=()=>socket.messages.filter(m=>m.type==='state').at(-1).payload;
+    assert.equal(last().mode,'super');assert.ok(!JSON.stringify(last()).includes(first));
+    d.querySelector('#superSkip').click();assert.notEqual(d.querySelector('.melody-answer p').textContent,first);
+    for(let i=0;i<6;i++)d.querySelector('#superCorrect').click();
+    assert.equal(d.querySelector('.melody-answer p').textContent,first);
+    d.querySelector('#superCorrect').click();assert.match(d.querySelector('.melody-stage').textContent,/Победа/);assert.equal(last().status,'won');
+    d.querySelector('#superStart').click();d.querySelector('#superWrong').click();assert.equal(last().status,'lost');
+    d.querySelector('#superStart').click();now+=31000;d.querySelector('#superCorrect').click();assert.equal(last().status,'lost');
+    assert.equal(d.querySelector('#superSeconds').textContent,'0');
+    d.querySelector('#backHome').click();
+  } finally {w.close()}
+});
+
+test('new show cues and Russian minus recordings are real local audio files', () => {
+  for(const path of ['assets/melody/audio/show-opening.mp3','assets/melody/audio/show-endround.mp3','assets/melody/audio/kaby-ne-bylo-zimy.mp3','assets/melody/audio/zvenit-yanvarskaya-vyuga.mp3']) {
+    const data=fs.readFileSync(path);assert.ok(data.length>50000,path);
+    assert.ok(data.subarray(0,3).toString()==='ID3' || data[0]===0xff,path);
+  }
+});
+
+test('projector displays the supergame clock and progress without song titles', () => {
+  const dom=new JSDOM(read('display.html'),{url:'http://localhost:4173/display.html?room=ABCDE',runScripts:'outside-only'});
+  let socket;dom.window.WebSocket=class{constructor(){socket=this;this.listeners={}}addEventListener(n,f){this.listeners[n]=f}send(){}};
+  try {
+    dom.window.eval(read('display.js'));
+    socket.listeners.message({data:JSON.stringify({type:'state',payload:{game:'melody',mode:'super',seconds:12,correct:3,status:'running',player:'Игрок 1'}})});
+    const stage=dom.window.document.querySelector('#screenStage');
+    assert.match(stage.textContent,/СУПЕРИГРА/);assert.match(stage.textContent,/12 сек/);assert.match(stage.textContent,/3 \/ 7/);
+  } finally {dom.window.close()}
 });

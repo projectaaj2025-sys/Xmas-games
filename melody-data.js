@@ -1,4 +1,4 @@
-// Названия из прежних четырёх туров. Аудиофайлы добавляет ведущий.
+// Каталог песен; расположение по турам определено ниже.
 window.MELODY_SONGS = {
   "russian": [
     "Новогодняя",
@@ -312,3 +312,34 @@ window.MELODY_RUSSIAN_SOURCES = [
     "youtube": null
   }
 ];
+
+// Three boards, each with four themed rows and five fixed positions.
+// Each row's arrays point into the Russian and international catalogues above.
+window.MELODY_LAYOUT = [
+  [
+    {name:'Новогодние хиты', ru:[0,12,18,19,35], en:[0,1,2,3,4]},
+    {name:'Снег и зима', ru:[1,9,11,14,16], en:[6,14,27,28,29]},
+    {name:'Зимняя классика', ru:[3,4,5,6,7], en:[4,5,17,26,34]},
+    {name:'Слова поздравлений', ru:[2,15,21,23,30], en:[2,18,23,26,12]}
+  ],
+  [
+    {name:'У ёлки', ru:[10,22,32,33,17], en:[3,12,17,22,20]},
+    {name:'Снежные истории', ru:[13,25,27,28,29], en:[6,14,27,28,29]},
+    {name:'Встречаем Новый год', ru:[20,26,34,35,12], en:[1,9,10,11,13]},
+    {name:'Праздничное настроение', ru:[0,18,19,24,31], en:[0,2,3,19,21]}
+  ],
+  [
+    {name:'Зимние картины', ru:[1,9,16,25,27], en:[6,14,27,28,29]},
+    {name:'Добрые истории', ru:[3,5,6,7,8], en:[4,28,29,33,34]},
+    {name:'Загадаем желание', ru:[2,15,23,26,30], en:[1,9,15,21,32]},
+    {name:'Танцуем на празднике', ru:[0,11,12,22,34], en:[0,2,3,12,13]}
+  ]
+];
+window.MELODY_SUPER_TRACKS = {
+  russian:[3,7,5,0,32,34,9],
+  international:[4,1,26,2,14,0,34]
+};
+window.MELODY_RUSSIAN_AUDIO = {
+  'Кабы не было зимы':'assets/melody/audio/kaby-ne-bylo-zimy.mp3',
+  'Звенит январская вьюга':'assets/melody/audio/zvenit-yanvarskaya-vyuga.mp3'
+};
