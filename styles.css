@@ -472,3 +472,22 @@
 @media(max-width:620px){.melody-screen .melody-board-row{grid-template-columns:minmax(75px,1fr) 4fr}.melody-screen .melody-category{font-size:11px;overflow-wrap:anywhere}.melody-screen .melody-notes{gap:1px}.melody-screen .melody-note-tile{font-size:clamp(11px,3vw,18px)}}
 .screen-qr-panel{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:white;color:#526b86;font-size:12px}.screen-qr-panel[hidden]{display:none}.screen-qr-panel img{width:100px;height:100px}
 .auction-score{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}.auction-score div{display:flex;align-items:center;gap:12px;background:#72020a;border:1px solid #e79944;padding:10px 18px;border-radius:12px}.auction-score strong{font-size:32px;color:#ffe56a}.auction-clue,.auction-bid{text-align:center;font-size:clamp(16px,2vw,23px);color:#fff1bf}.auction-players{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}.auction-players label{display:grid;gap:4px}.auction-players select{padding:8px;border-radius:8px;border:1px solid #d7eaf3}.melody-host-panel .auction-reset{margin-top:16px}
+
+/* Resume and host controls */
+.game-topbar .game-reset{border:1px solid #d9b4bc;background:#fff5f5;color:#8a3448;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}
+.game-topbar .game-reset[hidden]{display:none}
+.game-resume{max-width:700px;margin:24px auto;padding:28px;border:1px solid #d2e4ed;border-radius:20px;background:#f7fbff;color:#263c54;box-shadow:0 12px 30px #30587818}
+.game-resume>span{font-size:12px;font-weight:900;letter-spacing:.12em;color:#44748a}
+.game-resume h2{margin:8px 0;font-size:clamp(25px,4vw,36px)}
+.game-resume p{line-height:1.5;margin:10px 0}
+.game-resume>div{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.game-resume button{border:1px solid #b8cdd9;background:#fff;color:#274c62;border-radius:10px;padding:12px 17px;font-weight:800;cursor:pointer}
+.game-resume #resumeGame{background:#246985;color:#fff;border-color:#246985}
+.game-save-status{margin:8px 0;color:#3d6677;font-size:13px;font-weight:700}
+.field-reconnect{margin:14px 0;padding:14px;border:1px solid #c5dce7;border-radius:14px;background:#f6fbfe;color:#294c60}
+.field-reconnect summary{cursor:pointer;font-weight:800}
+.field-reconnect p{line-height:1.5}
+.field-reconnect-seats{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+.field-reconnect-seats label{display:flex;flex-direction:column;gap:5px;font-weight:700}
+.field-reconnect select,.field-reconnect button{border:1px solid #abc9d7;border-radius:8px;background:#fff;color:#294c60;padding:9px}
+@media(max-width:620px){.field-screen .game-topbar,.melody-screen .game-topbar{height:auto;min-height:56px;gap:6px;flex-wrap:wrap;padding:8px 0}.game-topbar .game-reset{padding:8px;font-size:12px}.game-resume{margin:12px auto;padding:20px}.field-reconnect-seats label{width:100%}}
