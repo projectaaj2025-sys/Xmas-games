@@ -31,3 +31,11 @@
 - Hark! The Herald Angels Sing и Away in a Manger — MIDI-аранжировки на основе нот Steve Dunlop для Mutopia Project, размещённых в общественном достоянии.
 
 Лицензии и происхождение файлов указаны в [реестре источника](https://github.com/dcuccia/go-go-harmoniyo/blob/1a48831e925c4f4ae3beb6c5f32b7d4bf89957c4/attribution/register.json), записи `s5-charts-from-cc0-lead-sheets` и `s5-charts-mutopia-satb-2026-10-25`. В оригинальном реестре отмечено, что проверка исполнителем/владельцем проекта ещё не завершена.
+
+## Дополнительные русские записи
+
+- `tri-belyh-konya.mp3`, `pesenka-o-medvedyah.mp3`, `pyat-minut.mp3` — файлы 1, 3 и 8 из [новогодней викторины](https://github.com/mrgick/pages/tree/20b5ab27366337656eb2122d58f0198185cbab91/new-year-2024/songs), названия указаны в [списке вопросов](https://github.com/mrgick/pages/blob/20b5ab27366337656eb2122d58f0198185cbab91/new-year-2024/js/quiz.js).
+- `pesenka-o-snezhinke.mp3` — 18-секундный фрагмент (с 20-й секунды) версии ВИА «Добры Молодцы» из [Commandor-Vimes/RU_80_GR](https://github.com/Commandor-Vimes/RU_80_GR/blob/HEAD/audio/ru/1980/gr/Song%20%2838%29.mp3). Название и исполнитель указаны в метаданных исходного файла.
+- `sneg-idet.mp3` — 18-секундный фрагмент (с 20-й секунды) записи, обозначенной в исходном [Indy660/player_for_viktoria](https://github.com/Indy660/player_for_viktoria/tree/HEAD/public/music) как «Глюк-oZa - Снег идет.mp3».
+
+В перечисленных репозиториях разрешение правообладателей на повторную публичную публикацию этих фонограмм и произведений не подтверждено; доступность файлов сама по себе не является лицензией.

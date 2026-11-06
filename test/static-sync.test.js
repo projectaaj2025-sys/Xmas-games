@@ -1,0 +1,93 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {JSDOM}=require('jsdom');
+const source=fs.readFileSync('static-sync.js','utf8');
+
+// A deterministic in-memory PeerJS data-channel network. It exercises our
+// protocol, not real signalling, NAT traversal or browser WebRTC.
+function fakeNetwork() {
+  const peers=new Map();let counter=0;
+  class Emitter {constructor(){this.events={}} on(n,f){(this.events[n]??=[]).push(f)} emit(n,...args){for(const f of this.events[n]||[])f(...args)}}
+  class Connection extends Emitter {
+    constructor(peer){super();this.peer=peer;this.open=false;this.closed=false}
+    send(data){if(this.open && !this.closed)setImmediate(()=>{if(!this.other.closed)this.other.emit('data',structuredClone(data))})}
+    close(){if(this.closed)return;this.closed=true;this.open=false;this.emit('close');if(!this.other.closed)this.other.close()}
+  }
+  class Peer extends Emitter {
+    constructor(id){super();this.id=id||`anonymous-${++counter}`;this.destroyed=false;this.connections=[];setImmediate(()=>{if(peers.has(this.id))this.emit('error',new Error('taken'));else{peers.set(this.id,this);this.emit('open',this.id)}})}
+    connect(id){const client=new Connection(id);const remote=peers.get(id);setImmediate(()=>{if(!remote){client.emit('error',new Error('missing'));return}const server=new Connection(this.id);client.other=server;server.other=client;this.connections.push(client);remote.connections.push(server);remote.emit('connection',server);client.open=server.open=true;client.emit('open');server.emit('open')});return client}
+    destroy(){if(this.destroyed)return;this.destroyed=true;if(peers.get(this.id)===this)peers.delete(this.id);for(const c of this.connections)if(c.other)c.close()}
+    reconnect(){}
+  }
+  return Peer;
+}
+const wait=()=>new Promise(resolve=>setTimeout(resolve,30));
+function create(Peer,role,token,name,requestedId) {
+  const dom=new JSDOM('',{url:'https://example.com/',runScripts:'outside-only'});const w=dom.window;w.Peer=Peer;w.eval(source);
+  const socket=new w.StaticSync('ABCD2345',role==='host'?'host':'client');const messages=[];
+  socket.addEventListener('message',e=>messages.push(JSON.parse(e.data)));
+  socket.addEventListener('open',()=>socket.send(JSON.stringify(role==='host'?{type:'join',role:'host'}:{type:'join',role,playerId:requestedId,name,reconnectToken:token})));
+  return {dom,socket,messages};
+}
+
+test('host routes filtered state, authenticates reconnect identity, and rejects inactive actions',async()=>{
+  const Peer=fakeNetwork(),clients=[];
+  const spawn=(...args)=>{const c=create(Peer,...args);clients.push(c);return c};
+  const host=spawn('host');await wait();
+  const alice=spawn('player','a'.repeat(64),'Alice','public-id');
+  const bob=spawn('player','b'.repeat(64),'Bob','public-id');
+  const screen=spawn('screen');await wait();
+  try {
+    const a=alice.messages.find(m=>m.type==='joined').playerId,b=bob.messages.find(m=>m.type==='joined').playerId;
+    assert.notEqual(a,b);assert.notEqual(a,'public-id');
+    let presence=host.messages.filter(m=>m.type==='presence').at(-1);
+    assert.equal(presence.count,1);assert.equal(presence.players.length,2);
+    host.socket.send(JSON.stringify({type:'state',payload:{game:'guess',guessMode:'circle',activePlayerId:a,circleCards:[{id:a,name:'Alice',word:'SECRET-A',emoji:'A',image:'a.png',hint:'hint A'},{id:b,name:'Bob',word:'SECRET-B'}]}}));await wait();
+    const state=c=>c.messages.filter(m=>m.type==='state').at(-1).payload;
+    assert.equal(state(alice).playerView.word,'');assert.ok(!JSON.stringify(state(alice)).includes('SECRET-A'));
+    assert.equal(state(bob).playerView.word,'SECRET-A');assert.ok(!JSON.stringify(state(bob)).includes('SECRET-B'));
+    assert.ok(!JSON.stringify(state(screen)).includes('SECRET-A'));assert.ok(!('circleCards' in state(screen)));
+    bob.socket.send(JSON.stringify({type:'player-action',action:'solved',playerId:a}));await wait();assert.equal(host.messages.filter(m=>m.type==='player-action').length,0);
+    alice.socket.send(JSON.stringify({type:'player-action',action:'solved',playerId:b}));await wait();assert.equal(host.messages.filter(m=>m.type==='player-action').at(-1).playerId,a);
+    alice.socket.close();await wait();assert.equal(host.messages.filter(m=>m.type==='presence').at(-1).players.length,1);
+    const returnee=spawn('player','a'.repeat(64),'Alice','fake');await wait();
+    assert.equal(returnee.messages.find(m=>m.type==='joined').playerId,a);
+    assert.equal(state(returnee).playerView.word,'');
+    assert.equal(host.messages.filter(m=>m.type==='presence').at(-1).players.length,2);
+  } finally {for(const c of clients){c.socket.close();c.dom.window.close()}}
+});
+
+test('HTTPS host, phones and projector cooperate through the static transport',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts) {
+    const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);
+    const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.Audio=class{play(){return Promise.resolve()}pause(){}};
+    for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js' && file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}
+    return w;
+  }
+  try {
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','app.js']);await wait();
+    const d=host.document;d.querySelector('[data-open="guess"]').click();d.querySelector('[data-guess-mode="circle"]').click();await wait();
+    assert.match(d.querySelector('#playerInviteQr').src,/^data:image\/svg\+xml/);
+    const url=d.querySelector('#playerInviteUrl').textContent,room=new URL(url).searchParams.get('room');assert.equal(room.length,8);
+    d.querySelector('#showScreenQr').click();assert.match(d.querySelector('#screenQrImage').src,/^data:image\/svg\+xml/);
+    const projector=page('display.html',`https://example.com/Xmas-games/display.html?room=${room}`,['static-sync.js','display.js']);
+    const a=page('player.html',url,['static-sync.js','player.js']);const b=page('player.html',url,['static-sync.js','player.js']);
+    for(const [w,name] of [[a,'Alice'],[b,'Bob']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#joinButton').click()}
+    await wait();await wait();
+    assert.match(d.querySelector('.circle-player-list').textContent,/Alice/);assert.match(d.querySelector('.circle-player-list').textContent,/Bob/);
+    assert.match(projector.document.querySelector('#screenConnection').textContent,/связи|подключён/);
+    assert.equal(a.document.querySelector('#playerActions').hidden,false);assert.equal(a.document.querySelector('#playerWord').textContent,'ТВОЯ КАРТОЧКА');
+    assert.notEqual(b.document.querySelector('#playerWord').textContent,'');
+    a.document.querySelector('#solvedButton').click();await wait();
+    assert.match(d.querySelector('.circle-player-list').textContent,/1 ★/);
+    assert.equal(b.document.querySelector('#playerActions').hidden,false);
+    // A dropped channel and rejoin must keep Alice's score.
+    const member=[...PeerFor(host).members].find(m=>m.name==='Alice');member.conn.close();await wait();
+    // Trigger reconnection immediately rather than waiting for the browser timer.
+    a.document.querySelector('#leaveButton').click();a.document.querySelector('#playerName').value='Alice';a.document.querySelector('#joinButton').click();await wait();await wait();
+    assert.match(d.querySelector('.circle-player-list').textContent,/Alice[\s\S]*1 ★/);
+  } finally {for(const dom of doms)dom.window.close()}
+  function PeerFor(w){return w.__hostSync}
+});

@@ -340,6 +340,11 @@ window.MELODY_SUPER_TRACKS = {
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  'Пять минут':'assets/melody/audio/pyat-minut.mp3',
+  'Три белых коня':'assets/melody/audio/tri-belyh-konya.mp3',
+  'Песенка о медведях':'assets/melody/audio/pesenka-o-medvedyah.mp3',
+  'Песенка о снежинке':'assets/melody/audio/pesenka-o-snezhinke.mp3',
+  'Снег идёт':'assets/melody/audio/sneg-idet.mp3',
   'Кабы не было зимы':'assets/melody/audio/kaby-ne-bylo-zimy.mp3',
   'Звенит январская вьюга':'assets/melody/audio/zvenit-yanvarskaya-vyuga.mp3'
 };

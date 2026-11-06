@@ -2,14 +2,21 @@
   const $ = s => document.querySelector(s);
   const params = new URLSearchParams(location.search);
   let room = params.get('room') || '';
-  const playerId = localStorage.getItem('snowyPlayerId') || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  let playerId = localStorage.getItem('snowyPlayerId') || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
   localStorage.setItem('snowyPlayerId', playerId);
+  const tokenKey='snowyPlayerToken';
+  let reconnectToken=localStorage.getItem(tokenKey);
+  if(!reconnectToken || !/^[a-f0-9]{64}$/.test(reconnectToken)) {
+    const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);
+    reconnectToken=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+    localStorage.setItem(tokenKey,reconnectToken);
+  }
   const savedName = localStorage.getItem('snowyPlayerName') || '';
   let socket = null, playerName = '', joined = false, retryTimer = null;
   $('#playerName').value = savedName;
   $('#manualRoomEntry').hidden = Boolean(room);
   $('#roomCodeInput').value = room.toUpperCase();
-  $('#phoneRoom').textContent = room ? `КОМНАТА ${room.toUpperCase()}` : 'Открой локальную ссылку ведущего или введи код комнаты.';
+  $('#phoneRoom').textContent = room ? `КОМНАТА ${room.toUpperCase()}` : 'Открой ссылку ведущего или введи код комнаты.';
   $('#roomCode').textContent = room.toUpperCase() || '—';
   $('#roomCodeInput').addEventListener('input',()=>{const code=$('#roomCodeInput').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);$('#roomCodeInput').value=code;if(!joined){room=code;$('#roomCode').textContent=code||'—';if(code)$('#phoneRoom').textContent=`КОМНАТА ${code}`;}});
 
@@ -18,19 +25,19 @@
   }
   function connect() {
     if (!room || !playerName) return;
-    if(location.hostname.endsWith('.github.io')){status('Нужен локальный сервер','disconnected');$('#phoneRoom').textContent='GitHub Pages не поддерживает связь с игрой. Открой ссылку локального сервера ведущего из той же Wi-Fi сети.';return;}
     clearTimeout(retryTimer);
     const scheme=location.protocol==='https:'?'wss:':'ws:';
-    socket=new WebSocket(`${scheme}//${location.host}/sync`);
-    socket.addEventListener('open',()=>socket.send(JSON.stringify({type:'join',room,role:'player',playerId,name:playerName})));
+    socket=location.protocol==='https:' && window.StaticSync ? new window.StaticSync(room,'client') : new WebSocket(`${scheme}//${location.host}/sync`);
+    socket.addEventListener('open',()=>socket.send(JSON.stringify({type:'join',room,role:'player',playerId,reconnectToken,name:playerName})));
     socket.addEventListener('message',event=>{
       let data;try{data=JSON.parse(event.data)}catch{return}
       if(data.type==='joined'){
+        if(data.playerId) playerId=data.playerId;
         joined=true;$('#joinPanel').hidden=true;$('#gamePanel').hidden=false;status('Подключён','connected');
       }
       if(data.type==='state')renderPlayerState(data.payload);
     });
-    socket.addEventListener('close',()=>{if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Сервер игры недоступен','disconnected');$('#phoneRoom').textContent=location.hostname.endsWith('.github.io')?'GitHub Pages не поддерживает связь с игрой. Открой локальную ссылку ведущего из той же Wi-Fi сети.':'Проверь, что адрес сервера правильный и ведущий запустил игру в этой же Wi-Fi сети.'}});
+    socket.addEventListener('close',()=>{if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Не удалось подключиться','disconnected');$('#phoneRoom').textContent='Проверьте связь, код комнаты и открытую страницу ведущего, затем попробуйте ещё раз.'}});
     socket.addEventListener('error',()=>socket.close());
   }
   function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}

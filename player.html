@@ -9,7 +9,7 @@
       <div class="phone-snowflake">❄</div><div class="phone-kicker">НОВОГОДНИЕ ТАРАНТИНКИ</div><h1>Войди в круг</h1>
       <p>Введи имя. На своём ходу не смотри на телефон — остальные увидят твою карточку и будут помогать вопросами.</p>
       <label class="phone-name-label" for="playerName">Как тебя называть?</label><input id="playerName" maxlength="24" autocomplete="given-name" placeholder="Например, Аня">
-      <div id="manualRoomEntry" class="manual-room-entry" hidden><label class="phone-name-label" for="roomCodeInput">Код комнаты от ведущего</label><input id="roomCodeInput" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Например, A7B2C"><small>Сначала открой страницу по локальной ссылке ведущего. Телефон и компьютер должны быть в одной Wi-Fi сети.</small></div>
+      <div id="manualRoomEntry" class="manual-room-entry" hidden><label class="phone-name-label" for="roomCodeInput">Код комнаты от ведущего</label><input id="roomCodeInput" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Например, A7B2C"><small>Введите код ведущего. Телефону и компьютеру нужен интернет.</small></div>
       <button id="joinButton" class="join-button" type="button">Подключиться к игре <span>→</span></button>
       <div class="phone-room" id="phoneRoom"></div>
     </section>
@@ -22,5 +22,8 @@
     </section>
   </main>
   <footer class="phone-footer">Зимние игры вместе · Код комнаты <b id="roomCode"></b></footer>
+  <script src="assets/vendor/peerjs-1.5.5.min.js"></script>
+  <script src="assets/vendor/qrcode-generator-1.4.4.js"></script>
+  <script src="static-sync.js"></script>
   <script src="player.js"></script>
 </body></html>
