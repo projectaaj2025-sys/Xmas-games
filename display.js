@@ -33,10 +33,15 @@
       return;
     }
     if (data.game === 'melody') {
+      if (data.mode === 'super') {
+        const status=data.status==='won'?'Все мелодии угаданы!':data.status==='lost'?'Суперигра завершена':'Семь мелодий за 30 секунд';
+        stage.innerHTML=`<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>СУПЕРИГРА ★</b></div><h1>${safeText(data.seconds)} сек.</h1><p>${safeText(data.player)} · угадано ${safeText(data.correct)} / 7</p><p>${status}</p>${roomNote}`;
+        return;
+      }
       const rows = Array.isArray(data.rows) ? data.rows : [];
       const categories = Array.isArray(data.categories) ? data.categories : [];
       const scores = Array.isArray(data.scores) ? data.scores : [];
-      stage.innerHTML = `<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>ТУР ${safeText(data.tour)} / 4</b></div><div class="display-melody-board">${rows.map((row,ri)=>`<div class="display-melody-row"><div class="display-melody-category">${safeText(categories[ri])}</div><div class="display-melody-notes">${row.map(note=>`<div class="display-melody-note ${note.used?'used':''} ${note.selected?'selected':''}"><span>${safeText(note.value)}</span></div>`).join('')}</div></div>`).join('')}</div>${data.selectedValue != null ? `<p class="display-melody-prompt">${data.answer ? `Ответ: ${safeText(data.answer)}` : `Мелодия на ${safeText(data.selectedValue)} баллов`}</p>` : '<p class="display-melody-prompt">Выберите ноту</p>'}<div class="display-melody-scores">${scores.map((player,i)=>`<div><strong>${i+1}</strong><span><b>${safeText(player.name)}</b><small>${safeText(player.score)}</small></span></div>`).join('')}</div>${roomNote}`;
+      stage.innerHTML = `<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>ТУР ${safeText(data.tour)} / 3</b></div><div class="display-melody-board">${rows.map((row,ri)=>`<div class="display-melody-row"><div class="display-melody-category">${safeText(categories[ri])}</div><div class="display-melody-notes">${row.map(note=>`<div class="display-melody-note ${note.used?'used':''} ${note.selected?'selected':''}"><span>${safeText(note.value)}</span></div>`).join('')}</div></div>`).join('')}</div>${data.selectedValue != null ? `<p class="display-melody-prompt">${data.answer ? `Ответ: ${safeText(data.answer)}` : `Мелодия на ${safeText(data.selectedValue)} баллов`}</p>` : '<p class="display-melody-prompt">Выберите ноту</p>'}<div class="display-melody-scores">${scores.map((player,i)=>`<div><strong>${i+1}</strong><span><b>${safeText(player.name)}</b><small>${safeText(player.score)}</small></span></div>`).join('')}</div>${roomNote}`;
       return;
     }
     if (data.game === 'quiz') {
