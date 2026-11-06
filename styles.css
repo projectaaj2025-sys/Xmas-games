@@ -105,6 +105,8 @@
 .croc-illustration .croc-scarf{display:none}
 .croc-character img{display:block;width:auto;height:150px;max-width:70%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 9px #456e5233)}
 .guess-illustration .guess-character{font-size:0;inset:28px 0 0;display:flex;align-items:flex-end;justify-content:center;background:none!important;filter:none}
+/* Keep the question readable over the character artwork. */
+.guess-illustration .speech-bubble{z-index:1}
 .guess-character img{display:block;width:auto;height:148px;max-width:58%;object-fit:contain;filter:drop-shadow(0 8px 8px #756b9a25)}
 @media(max-width:620px){.croc-character img,.guess-character img{height:125px}}
 .croc-active-card{position:relative}.croc-game-mascot{position:absolute;right:12px;top:8px;width:65px;height:65px;object-fit:contain;opacity:.88;filter:drop-shadow(0 4px 6px #496b5028)}
