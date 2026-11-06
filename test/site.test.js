@@ -134,10 +134,17 @@ test('projector displays the melody board and only a revealed answer', () => {
     send();
     const stage = dom.window.document.querySelector('#screenStage');
     assert.ok(stage.querySelector('.display-melody-board'));
+    assert.ok(dom.window.document.body.classList.contains('showing-melody'));
+    const style=dom.window.document.createElement('style');style.textContent=read('display.css');dom.window.document.head.appendChild(style);
+    assert.match(dom.window.getComputedStyle(dom.window.document.body).height,/^100(?:d)?vh$/);
+    assert.equal(dom.window.getComputedStyle(stage).maxWidth,'1920px');
+    assert.equal(dom.window.getComputedStyle(stage.querySelector('.display-melody-scores')).width,'100%');
     assert.match(stage.textContent, /Мелодия на 10 баллов/);
     assert.doesNotMatch(stage.textContent, /Тайная песня/);
     data.answer='Тайная песня'; data.answerArtist='Исполнитель'; send();
     assert.match(stage.textContent, /Ответ: Тайная песня — Исполнитель/);
+    data.game='idle'; send();
+    assert.equal(dom.window.document.body.classList.contains('showing-melody'),false);
     assert.deepEqual(errors, []);
   } finally { dom.window.close(); }
 });

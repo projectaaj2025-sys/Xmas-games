@@ -22,6 +22,7 @@
   function render(data) {
     if (!data || !data.game) return;
     stage.classList.toggle('melody-display', data.game === 'melody');
+    document.body.classList.toggle('showing-melody', data.game === 'melody');
     stage.classList.toggle('quiz-display', data.game === 'quiz');
     stage.classList.toggle('quiz-question-active', data.game === 'quiz' && Boolean(data.questionNumber));
     stage.classList.toggle('memo-photo', data.game === 'memo' && data.deckId === 'photo');

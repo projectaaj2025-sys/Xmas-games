@@ -52,7 +52,8 @@ test('the host screen keeps setup collapsed and the board and host console in th
  const a=setup();try{
   const style=a.d.createElement('style');style.textContent=read('styles.css');a.d.head.appendChild(style);
   a.click('[data-open="melody"]');assert.equal(a.d.querySelector('.melody-config').open,false);assert.equal(a.d.querySelector('.melody-screen-tools').open,false);
-  const layout=a.w.getComputedStyle(a.d.querySelector('.melody-main'));assert.equal(layout.display,'grid');assert.match(layout.gridTemplateAreas,/stage panel/);
+  const layout=a.w.getComputedStyle(a.d.querySelector('.melody-main'));assert.equal(layout.display,'grid');assert.match(layout.gridTemplateAreas,/stage panel/);assert.equal(layout.maxWidth,'1920px');
+  assert.equal(a.w.getComputedStyle(a.d.querySelector('.modal-content.melody-screen')).maxWidth,'1920px');
   assert.equal(a.w.getComputedStyle(a.d.querySelector('.melody-stage')).gridArea,'stage');assert.equal(a.w.getComputedStyle(a.d.querySelector('.melody-host-panel')).gridArea,'panel');
   a.d.querySelector('.melody-config').open=true;a.click('#melodyCloseSettings');assert.equal(a.d.querySelector('.melody-config').open,false);assert.deepEqual(a.errors,[]);
  }finally{a.w.close()}
