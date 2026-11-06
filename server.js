@@ -150,8 +150,26 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(root + path.sep) && file !== path.join(root, 'index.html')) { res.writeHead(403); return res.end('Forbidden'); }
   fs.readFile(file, (error, content) => {
     if (error) { res.writeHead(error.code === 'ENOENT' ? 404 : 500); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
-    res.end(content);
+    const headers = { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Content-Length': content.length };
+    const isAudio = ['.mp3', '.wav', '.ogg'].includes(path.extname(file).toLowerCase());
+    if (isAudio) headers['Accept-Ranges'] = 'bytes';
+    if (isAudio && req.headers.range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
+      let start, end;
+      if (match && (match[1] || match[2])) {
+        if (match[1]) { start = Number(match[1]); end = match[2] ? Number(match[2]) : content.length - 1; }
+        else { const suffix = Number(match[2]); start = Math.max(0, content.length - suffix); end = content.length - 1; }
+      }
+      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start >= content.length || end < start) {
+        res.writeHead(416, { 'Content-Range': `bytes */${content.length}`, 'Content-Length': 0 }); return res.end();
+      }
+      end = Math.min(end, content.length - 1);
+      headers['Content-Range'] = `bytes ${start}-${end}/${content.length}`;
+      headers['Content-Length'] = end - start + 1;
+      res.writeHead(206, headers); return res.end(req.method === 'HEAD' ? undefined : content.subarray(start, end + 1));
+    }
+    res.writeHead(200, headers);
+    res.end(req.method === 'HEAD' ? undefined : content);
   });
 });
 server.on('upgrade', (req, socket) => {

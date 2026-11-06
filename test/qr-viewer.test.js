@@ -7,6 +7,7 @@ function setup(){
  const errors=[],vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e));
  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only',virtualConsole:vc});
  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:true,json:async()=>({addresses:['192.168.0.2'],port:4173})});
+ w.Audio=class{play(){return Promise.resolve()}pause(){}};
  w.makeInviteQr=text=>'data:image/svg+xml,'+encodeURIComponent(text);
  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
  for(const file of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(file));

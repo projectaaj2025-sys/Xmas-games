@@ -96,7 +96,7 @@ test('melody board keeps three fields, a supergame, three scores and language se
     Object.defineProperty(fileInput, 'files', { value: [new window.File(['audio'], 'song.mp3', {type:'audio/mpeg'})] });
     fileInput.dispatchEvent(new window.Event('change', { bubbles: true }));
     click('#melodyPlay');
-    assert.equal(playing, 1);
+    assert.equal(playing, 2);
     click('[data-melody-score="2"][data-direction="1"]');
     assert.equal(payload().scores[2].score, 80);
     click('#melodyReveal');
@@ -136,8 +136,8 @@ test('projector displays the melody board and only a revealed answer', () => {
     assert.ok(stage.querySelector('.display-melody-board'));
     assert.match(stage.textContent, /Мелодия на 10 баллов/);
     assert.doesNotMatch(stage.textContent, /Тайная песня/);
-    data.answer='Тайная песня'; send();
-    assert.match(stage.textContent, /Ответ: Тайная песня/);
+    data.answer='Тайная песня'; data.answerArtist='Исполнитель'; send();
+    assert.match(stage.textContent, /Ответ: Тайная песня — Исполнитель/);
     assert.deepEqual(errors, []);
   } finally { dom.window.close(); }
 });
@@ -176,7 +176,8 @@ test('bundled melodies are available and playback uses them without exposing ans
     doc.querySelector('[data-melody-tour="2"]').click();
     assert.match(played.at(-1), /show-endround\.mp3$/);
     doc.querySelector('[data-melody-note="0"]').click();
-    assert.equal(doc.querySelector('#melodyPlay').disabled,true);
+    assert.equal(doc.querySelector('#melodyPlay').disabled,false);
+    assert.ok(doc.querySelector('#melodyExternalPlayer iframe'));
     assert.deepEqual(errors, []);
   } finally { w.close(); }
 });
@@ -283,7 +284,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
     assert.equal(w.MELODY_SONGS.russian.length,47); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,47);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
-    assert.match(doc.querySelector('.melody-song-list').textContent,/Новый год \(повтор названия\)/);
+    assert.match(doc.querySelector('.melody-song-list').textContent,/Новый год — Стекловата \(повтор названия\)/);
     doc.querySelector('[data-melody-note="0"]').click();
     assert.match(doc.querySelector('.melody-answer p').textContent,/Новогодняя/);
     assert.match(doc.querySelector('.melody-audio-controls a').href,/song\/9293226/);
