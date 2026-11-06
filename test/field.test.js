@@ -66,3 +66,26 @@ test('supergame opens five chosen letters, enforces the deadline and reports a w
     click('#fieldSuper');let now=100000;w.Date.now=()=>now;for(const ch of ['А','Б','В','Г','Д'])click(`[data-field-letter="${ch}"]`);now+=60001;answer('ВАЛЕНКИ');assert.match(state().message,/Время вышло/);
   }finally{w.close()}
 });
+
+test('field host and projector use a light background with readable text',()=>{
+  const dom=new JSDOM(`<style>${read('display.css')}</style><style>${read('field.css')}</style>
+    <div class="field-show"><header class="field-intro"><h2>Поле чудес</h2></header>
+    <div class="field-stage"><h3>Вопрос</h3><div class="field-status">Ход игрока</div></div>
+    <div class="field-console"><p>Назовите букву</p></div></div>
+    <div class="screen-stage"><div class="field-projection"><div class="field-stage"><h1>Вопрос</h1><p class="field-status">Ход игрока</p></div></div></div>`);
+  try {
+    const {document,getComputedStyle}=dom.window;
+    const rgb=css=>css.match(/\d+/g).slice(0,3).map(Number);
+    const luminance=([r,g,b])=>[r,g,b].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+    const backdrop=[230,241,248]; // darkest stop of the pale gradient
+    for(const sel of ['.field-show','.field-projection']) {
+      const bg=rgb(getComputedStyle(document.querySelector(sel)).backgroundColor);
+      assert.ok(luminance(bg)>.85,sel);
+    }
+    for(const sel of ['.field-intro h2','.field-stage h3','.field-status','.field-console p','.field-projection h1','.field-projection p.field-status']) {
+      const fg=rgb(getComputedStyle(document.querySelector(sel)).color);
+      const ratio=(luminance(backdrop)+.05)/(luminance(fg)+.05);
+      assert.ok(ratio>=4.5,`${sel}: contrast ${ratio.toFixed(2)}`);
+    }
+  } finally {dom.window.close()}
+});
