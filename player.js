@@ -13,6 +13,7 @@
   }
   const savedName = localStorage.getItem('snowyPlayerName') || '';
   let socket = null, playerName = '', joined = false, retryTimer = null, phoneRole = 'player', lastState = null, profileTimer = null, profileRequest = 0;
+  let melodyPendingToken='',melodyPendingTimer=null;
   $('#playerName').value = savedName;
   $('#manualRoomEntry').hidden = Boolean(room);
   $('#roomCodeInput').value = room.toUpperCase();
@@ -46,7 +47,7 @@
       if(data.type==='profile-error' && data.requestId===profileRequest){clearTimeout(profileTimer);$('#saveProfile').disabled=false;$('#profileFeedback').textContent='Не удалось сохранить. Проверьте имя и роль.';}
       if(data.type==='state'){lastState=data.payload;renderPlayerState(data.payload);}
     });
-    socket.addEventListener('close',()=>{clearTimeout(profileTimer);$('#saveProfile').disabled=false;if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Не удалось подключиться','disconnected');$('#phoneRoom').textContent='Проверьте связь, код комнаты и открытую страницу ведущего, затем попробуйте ещё раз.'}});
+    socket.addEventListener('close',()=>{clearTimeout(melodyPendingTimer);melodyPendingToken='';if($('#melodyBuzz'))$('#melodyBuzz').disabled=true;clearTimeout(profileTimer);$('#saveProfile').disabled=false;if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Не удалось подключиться','disconnected');$('#phoneRoom').textContent='Проверьте связь, код комнаты и открытую страницу ведущего, затем попробуйте ещё раз.'}});
     socket.addEventListener('error',()=>socket.close());
   }
   function updateProfileUI(){
@@ -63,8 +64,9 @@
   });
   function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function renderPlayerState(state){
-    if(state?.game==='field'){renderFieldPhone(state);return;}
-    $('#fieldPhone').hidden=true;$('#playerCardFace').hidden=false;document.querySelector('.phone-reminder').hidden=false;
+    if(state?.game==='field'){$('#melodyPhone').hidden=true;renderFieldPhone(state);return;}
+    if(state?.game==='melody'){renderMelodyPhone(state);return;}
+    $('#melodyPhone').hidden=true;$('#fieldPhone').hidden=true;$('#playerCardFace').hidden=false;document.querySelector('.phone-reminder').hidden=false;
     if(!state||state.game!=='guess'||state.guessMode!=='circle'||!state.playerView){
       $('#playerTurn').textContent='ЖДЁМ ВЕДУЩЕГО';$('#playerHeading').textContent=phoneRole==='viewer'?'Вы подключены как зритель':'Телефонный круг ещё не начался';
       $('#playerInstructions').textContent=phoneRole==='viewer'?'Вы можете наблюдать за «Полем чудес». Для участия в телефонном круге выберите роль игрока.':'Ведущий включит режим «Круг с телефонами». До этого можно оставить эту страницу открытой.';
@@ -79,6 +81,27 @@
     $('#playerWord').textContent=view.active?'ТВОЯ КАРТОЧКА':view.word||'';
     $('#playerHint').textContent=view.active?'Твоя карточка скрыта от тебя.':view.hint||'';
     $('#playerActions').hidden=!view.active;
+  }
+  function renderMelodyPhone(state){
+    $('#fieldPhone').hidden=true;$('#playerCardFace').hidden=true;$('#playerActions').hidden=true;document.querySelector('.phone-reminder').hidden=true;$('#playerHint').textContent='';
+    const box=$('#melodyPhone');box.hidden=false;$('#playerTurn').textContent='УГАДАЙ МЕЛОДИЮ';
+    const i=Array.isArray(state.phoneIds)?state.phoneIds.indexOf(playerId):-1,buzz=state.buzz||{},passed=Array.isArray(buzz.passed)&&buzz.passed.includes(i),active=i>=0&&buzz.active===i;
+    let heading,description;
+    if(phoneRole==='viewer'){heading='Вы зритель';description='Следите за игрой на экране ведущего.';}
+    else if(state.mode){heading='Дополнительный раунд';description='В этом раунде игрой управляет ведущий.';}
+    else if(i<0){heading='Вы подключены';description='Попросите ведущего назначить ваш телефон на место игрока.';}
+    else if(buzz.finished){heading='Ответ принят';description='Дождитесь следующей мелодии.';}
+    else if(active){heading='Вы отвечаете!';description='Назовите мелодию. Ведущий оценит ответ.';}
+    else if(passed){heading='Ход пропущен';description='Дождитесь следующей мелодии.';}
+    else if(buzz.eligible?.[i]===false){heading='Ответ уже оценён';description='Дождитесь следующей мелодии.';}
+    else if(buzz.active!==null&&buzz.active!==undefined){heading='Отвечает другой игрок';description='Дождитесь решения ведущего.';}
+    else if(buzz.open){heading='Нажмите, если знаете!';description='Отвечает тот, чей сигнал первым получит ведущий.';}
+    else {heading='Ждём мелодию';description='Ведущий откроет кнопку ответа.';}
+    $('#playerHeading').textContent=heading;$('#playerInstructions').textContent=description;
+    if(melodyPendingToken && melodyPendingToken!==buzz.token){melodyPendingToken='';clearTimeout(melodyPendingTimer);}
+    const enabled=phoneRole==='player'&&i>=0&&!passed&&buzz.eligible?.[i]!==false&&buzz.open&&typeof buzz.token==='string'&&!!buzz.token&&!melodyPendingToken&&socket?.readyState===WebSocket.OPEN;
+    box.innerHTML=`<button type="button" id="melodyBuzz" class="join-button phone-buzz" ${enabled?'':'disabled'}>♫ Я знаю!</button>`;
+    box.querySelector('#melodyBuzz').addEventListener('click',e=>{if(!enabled||!socket||socket.readyState!==WebSocket.OPEN)return;e.currentTarget.disabled=true;melodyPendingToken=buzz.token;$('#playerInstructions').textContent='Сигнал отправлен. Ждём подтверждения ведущего…';try{socket.send(JSON.stringify({type:'player-action',action:{kind:'melody-buzz',token:buzz.token}}));}catch{melodyPendingToken='';e.currentTarget.disabled=socket.readyState!==WebSocket.OPEN;$('#playerInstructions').textContent='Не удалось отправить сигнал. Проверьте связь и попробуйте снова.';return;}clearTimeout(melodyPendingTimer);melodyPendingTimer=setTimeout(()=>{if(melodyPendingToken===buzz.token){melodyPendingToken='';if(lastState?.game==='melody'&&lastState.buzz?.token===buzz.token){renderMelodyPhone(lastState);$('#playerInstructions').textContent='Нет подтверждения. Проверьте связь и попробуйте ещё раз.';}}},2500);});
   }
   let fieldPhonePhase='', fieldPhoneActive='';
   function renderFieldPhone(state){

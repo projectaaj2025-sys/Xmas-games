@@ -97,10 +97,8 @@ function handleMessage(peer, message) {
     if (state?.game === 'field' && (peer.role === 'viewer' || (peer.role === 'player' && state.activeId === peer.playerId))) {
       for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, role: peer.role });
     }
-    // Угадай мелодию
-    if (state?.game === 'melody' && peer.role === 'player') {
-      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, tour: state.tour, melodyIndex: state.melodyIndex });
-      broadcast(peer.room, { type: 'melody-update', action: data.action, playerId: peer.playerId, name: peer.playerName, tour: state.tour, melodyIndex: state.melodyIndex }, peer);
+    if (state?.game === 'melody' && peer.role === 'player' && data.action?.kind === 'melody-buzz') {
+      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, role: peer.role });
     }
   }
   // Ведущий отправляет обновления для новых игр

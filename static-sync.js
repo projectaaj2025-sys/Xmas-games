@@ -84,6 +84,8 @@
       } else if((member.role==='player'||member.role==='viewer') && data.type==='player-action') {
         if(this.state?.game==='field' && (member.role==='viewer' || (member.role==='player' && this.state.activeId===member.playerId)))
           this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name,role:member.role})});
+        if(member.role==='player' && this.state?.game==='melody' && data.action?.kind==='melody-buzz')
+          this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name,role:member.role})});
         if(member.role==='player' && this.state?.game==='guess' && this.state.guessMode==='circle' && this.state.activePlayerId===member.playerId && ['solved','pass'].includes(data.action))
           this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name})});
       }

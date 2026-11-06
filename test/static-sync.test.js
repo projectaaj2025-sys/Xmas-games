@@ -158,3 +158,23 @@ test('changing phone name and role in the circle preserves identity and points w
     player.document.querySelector('#profileRole').value='player';submit();await wait();await wait();assert.match(d.querySelector('.circle-player-list').textContent,/Анна[\s\S]*1 ★/);assert.equal(player.document.querySelector('#playerWord').textContent,'ТВОЯ КАРТОЧКА');
   }finally{for(const dom of doms)dom.window.close()}
 });
+
+test('melody buzzer accepts the first assigned phone, rejects stale and spectator signals, and supports host judging',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();const d=host.document;d.querySelector('[data-open="melody"]').click();await wait();
+    const url=d.querySelector('#playerInviteUrl').textContent;const a=page('player.html',url,['static-sync.js','player.js']),b=page('player.html',url,['static-sync.js','player.js']),v=page('player.html',url,['static-sync.js','player.js']);
+    for(const [w,name,role] of [[a,'Аня','player'],[b,'Борис','player'],[v,'Гость','viewer']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#phoneRole').value=role;w.document.querySelector('#joinButton').click()};await wait();await wait();
+    for(const [i,name] of [[0,'Аня'],[1,'Борис']]){const m=[...host.__hostSync.members].find(m=>m.name===name),select=d.querySelector(`[data-melody-seat="${i}"]`);select.value=m.playerId;select.dispatchEvent(new host.Event('change',{bubbles:true}));}
+    d.querySelector('[data-melody-note="0"]').click();d.querySelector('#melodyBuzzOpen').click();await wait();const oldToken=host.__hostSync.state.buzz.token;
+    assert.equal(a.document.querySelector('#melodyBuzz').disabled,false);assert.equal(v.document.querySelector('#melodyBuzz').disabled,true);
+    a.document.querySelector('#melodyBuzz').click();b.document.querySelector('#melodyBuzz').click();await wait();await wait();
+    assert.equal(host.__hostSync.state.buzz.active,0);assert.ok(d.querySelectorAll('.melody-player-score')[0].classList.contains('active'));assert.match(a.document.querySelector('#playerHeading').textContent,/отвечаете/);
+    d.querySelector('#melodyWrong').click();await wait();await wait();assert.equal(host.__hostSync.state.scores[0].score,-80);assert.deepEqual([...host.__hostSync.state.buzz.passed],[0]);assert.ok(d.querySelectorAll('.melody-player-score')[0].classList.contains('passed'));
+    const bob=[...host.__hostSync.members].find(m=>m.name==='Борис');bob.conn.other.send({type:'player-action',action:{kind:'melody-buzz',token:oldToken}});await wait();assert.equal(host.__hostSync.state.buzz.active,null);
+    b.document.querySelector('#melodyBuzz').click();await wait();assert.equal(host.__hostSync.state.buzz.active,1);d.querySelector('#melodyCorrect').click();await wait();assert.equal(host.__hostSync.state.scores[1].score,80);assert.equal(host.__hostSync.state.buzz.finished,true);
+    d.querySelector('#melodyDone').click();d.querySelector('[data-melody-note="1"]').click();assert.ok(!d.querySelectorAll('.melody-player-score')[0].classList.contains('passed'));
+    d.querySelector('[data-melody-answerer="2"]').click();d.querySelector('#melodyPass').click();assert.ok(d.querySelectorAll('.melody-player-score')[2].classList.contains('passed'));d.querySelector('[data-melody-unpass="2"]').click();assert.ok(!d.querySelectorAll('.melody-player-score')[2].classList.contains('passed'));await wait();await wait();
+  }finally{for(const dom of doms)dom.window.close()}
+});

@@ -96,3 +96,17 @@ test('auction bid and score survive pagehide and a new browser document',()=>{
     b.click('[data-open="melody"]');b.click('#resumeGame');assert.match(b.d.querySelector('.auction-bid').textContent,/5 нот/);assert.ok(b.d.querySelector('[data-auction-bid="4"]'));assert.deepEqual(b.errors,[]);
   }finally{b.w.close()}
 });
+
+test('melody resumes manual judging and passed status while closing stale phone buzzer',()=>{
+  const a=setup();let saved;try{
+    a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');a.click('[data-melody-answerer="0"]');a.click('#melodyWrong');assert.equal(a.state().scores[0].score,-80);assert.equal(a.state().buzz.open,true);const old=a.state().buzz.token;a.click('#backHome');saved=a.snapshot();
+    const b=setup(saved);try{b.click('[data-open="melody"]');b.click('#resumeGame');assert.equal(b.state().scores[0].score,-80);assert.deepEqual([...b.state().buzz.passed],[0]);assert.equal(b.state().buzz.open,false);assert.equal(b.state().buzz.token,'');b.click('#melodyBuzzOpen');assert.notEqual(b.state().buzz.token,old);b.click('[data-melody-answerer="1"]');assert.ok(b.d.querySelectorAll('.melody-player-score')[1].classList.contains('active'));b.click('#melodyCorrect');assert.equal(b.state().scores[1].score,80);assert.deepEqual(b.errors,[]);}finally{b.w.close()}
+  }finally{a.w.close()}
+});
+
+test('undoing an earlier penalty does not undo a later correct answer',()=>{
+  const a=setup();try{
+    a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');a.click('[data-melody-answerer="0"]');a.click('#melodyWrong');a.click('[data-melody-answerer="1"]');a.click('#melodyCorrect');
+    a.click('[data-melody-undo="0"]');assert.equal(a.state().scores[0].score,0);assert.equal(a.state().scores[1].score,80);assert.equal(a.state().buzz.finished,true);a.click('#melodyDone');assert.equal(a.state().rows[0][0].used,true);assert.deepEqual(a.errors,[]);
+  }finally{a.w.close()}
+});

@@ -40,3 +40,4 @@
 @media(prefers-reduced-motion:reduce){.field-wheel-art{transition-duration:.05s}}
 
 .field-clock{font-size:38px;font-weight:900;color:#79571f}.field-clock small{font-size:13px;letter-spacing:.08em}
+.field-score.passed{opacity:.5;filter:grayscale(.7)}.field-actions span{font-weight:800;color:#294c60}

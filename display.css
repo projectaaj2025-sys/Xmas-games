@@ -83,3 +83,4 @@
 @media(max-width:620px){.display-melody-row{grid-template-columns:minmax(75px,1fr) 4fr}.display-melody-notes{gap:1px}.display-melody-note{font-size:clamp(11px,3vw,20px)}}
 /* Keep the return-to-host control usable on narrow displays. */
 @media(max-width:700px){.screen-top{height:auto;min-height:58px;gap:6px;flex-wrap:wrap;padding:7px 12px}.screen-logo span{display:none}.screen-footer{height:auto;min-height:47px;gap:8px;flex-wrap:wrap}}
+.display-melody-scores>div.active{background:#ad5209;outline:3px solid #ffe274;outline-offset:-3px}.display-melody-scores>div.passed{opacity:.42;filter:grayscale(.7)}.display-melody-scores em{font-size:12px;font-style:normal;font-weight:900;color:#fff2aa}
