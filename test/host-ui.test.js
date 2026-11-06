@@ -19,8 +19,8 @@ test('all game frames identify this device as the host and the participant displ
   for(const game of ['memo','guess','croc','quiz','crossword','music','drive','field','melody']){
    click(`[data-open="${game}"]`);
    assert.match(d.querySelector('.host-screen-label').textContent,/экран[еа] ведущего/i,game);
-   assert.match(d.querySelector('#openDisplay').textContent,/экран участников/i,game);
-   assert.match(d.querySelector('.screen-instruction').textContent,/необязателен/,game);
+   assert.match(d.querySelector('#openViewerDisplay').textContent,/экран участников/i,game);
+   assert.match(d.querySelector('.screen-instruction').textContent,/только просмотр/,game);
    if(game==='field')assert.equal(d.querySelector('[data-field-seat="0"] option').textContent,'Управляет ведущий');
    click('#backHome');
   }

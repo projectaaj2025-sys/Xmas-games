@@ -283,13 +283,69 @@
   }
   function publish(state) { sendSync({type:'state', room:roomCode, payload:state}); }
   function updateScreenStatus(connected = true) { const status=$('#syncStatus');if(!status)return;const unavailable=!syncAvailable||!connected;const message=unavailable?(onlineSync?'Нет связи · проверьте интернет':'Нет связи'):screenCount?'Экран участников подключён':'Экран участников не подключён (необязательно)';status.innerHTML=`${unavailable?'○':'●'} ${message}`;status.classList.toggle('is-online',screenCount>0&&!unavailable); }
-  function screenToolbar() { return `<div class="screen-tools"><span class="host-screen-label">Вы на экране ведущего · управление игрой здесь</span><span class="sync-status" id="syncStatus">● Подключаемся…</span><button class="soft-button" id="openDisplay">Открыть экран участников</button><button class="soft-button" id="copyDisplay">Ссылка экрана участников</button><button class="soft-button" id="showScreenQr">QR экрана участников</button><div id="screenQrPanel" class="screen-qr-panel" hidden><img id="screenQrImage" alt="QR-код экрана участников"><span>Откройте экран участников на проекторе или втором устройстве</span></div><span class="screen-instruction">Дополнительный экран участников необязателен; управление остаётся у ведущего.</span></div>`; }
+  // A shared, accessible large view for phone and participant-display invitations.
+  let qrViewer=null, qrReturnFocus=null;
+  function closeLargeQr() {
+    if(!qrViewer)return;
+    qrViewer.remove();qrViewer=null;
+    if(qrReturnFocus?.isConnected)qrReturnFocus.focus();
+    qrReturnFocus=null;
+  }
+  function openLargeQr(image, label) {
+    if(!image || image.hidden || !image.getAttribute('src')){notify('QR-код пока недоступен. Попробуйте ещё раз.');return;}
+    closeLargeQr();qrReturnFocus=document.activeElement;
+    qrViewer=document.createElement('div');qrViewer.className='large-qr-backdrop';
+    qrViewer.innerHTML=`<section class="large-qr-dialog" role="dialog" aria-modal="true" aria-labelledby="largeQrTitle"><h2 id="largeQrTitle"></h2><p>Отсканируйте код камерой устройства</p><img alt=""><button type="button" id="closeLargeQr">Закрыть</button></section>`;
+    qrViewer.querySelector('#largeQrTitle').textContent=label;
+    const qr=qrViewer.querySelector('img');qr.src=image.src;qr.alt=image.alt;
+    qrViewer.addEventListener('click',event=>{if(event.target===qrViewer)closeLargeQr();});
+    qrViewer.querySelector('#closeLargeQr').addEventListener('click',closeLargeQr);
+    document.body.appendChild(qrViewer);qrViewer.querySelector('#closeLargeQr').focus();
+  }
+  document.addEventListener('keydown',event=>{
+    if(!qrViewer)return;
+    if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();closeLargeQr();}
+    else if(event.key==='Tab'){event.preventDefault();qrViewer.querySelector('#closeLargeQr').focus();}
+  },true);
+  let screenGuide=null, guideReturnFocus=null;
+  function closeHostScreenGuide(){
+    if(!screenGuide)return;
+    screenGuide.remove();screenGuide=null;
+    if(guideReturnFocus?.isConnected)guideReturnFocus.focus();
+    guideReturnFocus=null;
+  }
+  function toggleHostFullscreen(){
+    const action=document.fullscreenElement ? document.exitFullscreen?.bind(document) : document.documentElement.requestFullscreen?.bind(document.documentElement);
+    if(!action){notify('Полный экран недоступен в браузере. Можно использовать клавишу F11.');return;}
+    try{const result=action();if(result?.catch)result.catch(()=>notify('Не удалось включить полный экран. Попробуйте клавишу F11.'));}
+    catch{notify('Не удалось включить полный экран. Попробуйте клавишу F11.');}
+  }
+  function openHostScreenGuide(){
+    closeLargeQr();closeHostScreenGuide();guideReturnFocus=document.activeElement;
+    screenGuide=document.createElement('div');screenGuide.className='large-qr-backdrop';
+    screenGuide.innerHTML=`<section class="screen-guide" role="dialog" aria-modal="true" aria-labelledby="screenGuideTitle"><h2 id="screenGuideTitle">Управление на подключённом экране</h2><ol><li>Подключите экран к этому компьютеру и включите его в настройках отображения.</li><li>Если включён полный экран, сначала выйдите из него. При расширении экранов перетащите <strong>это окно игры</strong> на нужный экран. При дублировании оно уже видно на обоих.</li><li>На нужном экране нажмите «На весь экран». Игра останется в этом окне, и ведущий сможет нажимать кнопки.</li></ol><p>Отдельная страница «Экран участников» предназначена только для просмотра и не управляет игрой.</p><div><button type="button" id="guideFullscreen">На весь экран</button><button type="button" id="closeScreenGuide">Понятно</button></div></section>`;
+    screenGuide.addEventListener('click',e=>{if(e.target===screenGuide)closeHostScreenGuide();});
+    screenGuide.querySelector('#closeScreenGuide').addEventListener('click',closeHostScreenGuide);
+    screenGuide.querySelector('#guideFullscreen').addEventListener('click',()=>{closeHostScreenGuide();toggleHostFullscreen();});
+    document.body.appendChild(screenGuide);screenGuide.querySelector('#closeScreenGuide').focus();
+  }
+  document.addEventListener('keydown',event=>{
+    if(!screenGuide)return;
+    if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();closeHostScreenGuide();}
+    else if(event.key==='Tab'){
+      const buttons=[...screenGuide.querySelectorAll('button')],index=buttons.indexOf(document.activeElement);
+      if((!event.shiftKey&&index===buttons.length-1)||(event.shiftKey&&index<=0)){event.preventDefault();buttons[event.shiftKey?buttons.length-1:0].focus();}
+    }
+  },true);
+  function screenToolbar() { return `<div class="screen-tools"><span class="host-screen-label">Вы на экране ведущего · управление игрой здесь</span><button class="soft-button" id="openDisplay">Как вывести игру на экран</button><span class="sync-status" id="syncStatus">● Подключаемся…</span><button class="soft-button" id="openViewerDisplay">Экран участников · только просмотр</button><button class="soft-button" id="copyDisplay">Ссылка экрана участников</button><button class="soft-button" id="showScreenQr">QR экрана участников</button><div id="screenQrPanel" class="screen-qr-panel" hidden><img id="screenQrImage" alt="QR-код экрана участников"><span>Откройте экран участников на проекторе или втором устройстве</span><button type="button" class="soft-button" id="enlargeScreenQr">Увеличить QR</button></div><span class="screen-instruction">Для управления на подключённом мониторе перенесите это окно на него. Экран участников — только просмотр.</span></div>`; }
   function bindScreenTools() {
     updateScreenStatus();
-    $('#openDisplay')?.addEventListener('click', () => { const win = window.open(displayUrl, 'winter-game-screen'); if (!win) notify('Разрешите всплывающее окно или откройте ссылку на устройстве участников.'); });
+    $('#openDisplay')?.addEventListener('click', openHostScreenGuide);
+    $('#openViewerDisplay')?.addEventListener('click', () => { const win = window.open(displayUrl, 'winter-game-screen'); if (!win) notify('Разрешите всплывающее окно или откройте ссылку на устройстве участников.'); });
     $('#showScreenQr')?.addEventListener('click', () => { const panel=$('#screenQrPanel'); if(panel.hidden) { try { $('#screenQrImage').src=window.makeInviteQr(displayUrl); panel.hidden=false; } catch { notify('QR-код недоступен, используйте ссылку.'); } } else panel.hidden=true; });
+    $('#enlargeScreenQr')?.addEventListener('click',()=>openLargeQr($('#screenQrImage'),'QR-код экрана участников'));
     $('#copyDisplay')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(displayUrl); notify(`Ссылка скопирована · код ${roomCode}`); } catch { prompt('Скопируйте ссылку для экрана участников:', displayUrl); } });
-    $('#goFullscreen')?.addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); });
+    $('#goFullscreen')?.addEventListener('click', toggleHostFullscreen);
   }
   function publishMemo() {
     if (!memoryState) return;
@@ -379,7 +435,7 @@
     bindScreenTools();
     return $('#gameBody');
   }
-  function closeGame() { saveOpenGames(); if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;} fieldState=null; disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на экране ведущего.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  function closeGame() { closeLargeQr(); closeHostScreenGuide(); saveOpenGames(); if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;} fieldState=null; disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на экране ведущего.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
 // --- «Поле чудес»: ведущий хранит ответ только у себя ---
 let fieldState = null, fieldSuperTimer = null;
 const fieldSectors = [500, 350, 'Б', 600, 400, 'П', 750, 0, 550, '×2', 450, 800, 'Ш', 300, 650, '+', 900, 'Б', 250, 700, 1000, 400, 500, 850];
@@ -424,7 +480,7 @@ function renderField() {
   const s=fieldState, body=$('#gameBody'); if(!s||!body)return;
   const saved=saveField();
   const inviteOpen=Boolean(body.querySelector('.field-invite')?.open), seatsOpen=Boolean(body.querySelector('.field-reconnect')?.open), rulesOpen=Boolean(body.querySelector('.field-rules')?.open);
-  body.innerHTML=`<div class="field-show"><header class="field-intro"><div><span>✦ ЗИМНИЙ ВЫПУСК ✦</span><h2>Поле чудес</h2><p>Три тройки · финал · ${window.FIELD_QUESTIONS.length} заданий без повторов за игру</p></div><div class="field-badge">❄</div></header><p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><details class="field-invite"><summary>📱 Подключить игроков и зрителей · ${connectedPlayers.length} игроков</summary><p>Сканируйте QR на телефоне и выберите роль. Игрока назначьте на место в тройке. Без телефона ходом управляет ведущий на этом экране.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><small>${onlineSync?'Нужен интернет и открытая страница ведущего; качество соединения зависит от сети.':'Устройства должны быть в одной сети с ведущим.'}</small></details>${s.phase==='setup'?fieldSetup(s):fieldControls(s)+fieldReconnect(s)}<details class="field-rules"><summary>Правила и особенности адаптации</summary><p>Три отборочные тройки и финал. Верная буква открывает все совпадения и приносит очки за каждую. 0 — переход хода, Б — потеря очков и хода, + — открытие выбранной буквы, ×2 — умножение счёта при верной букве, П — приз или продолжение, Ш — помощь зрителя и 1500 за букву. Три верные буквы подряд — две шкатулки. Если остался один игрок, после трёх результативных ходов он называет слово. Призы виртуальные. Суперигра — упрощённая версия с одним словом, пятью буквами и минутой на ответ. <a href="https://homeofgames.ru/game/kapital-shou-pole-chudes" target="_blank" rel="noopener noreferrer">Правила передачи ↗</a></p></details>${s.reaction?`<div class="field-reaction">${escapeHtml(s.reaction)}</div>`:''}</div>`;
+  body.innerHTML=`<div class="field-show"><header class="field-intro"><div><span>✦ ЗИМНИЙ ВЫПУСК ✦</span><h2>Поле чудес</h2><p>Три тройки · финал · ${window.FIELD_QUESTIONS.length} заданий без повторов за игру</p></div><div class="field-badge">❄</div></header><p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><details class="field-invite"><summary>📱 Подключить игроков и зрителей · ${connectedPlayers.length} игроков</summary><p>Сканируйте QR на телефоне и выберите роль. Игрока назначьте на место в тройке. Без телефона ходом управляет ведущий на этом экране.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><small>${onlineSync?'Нужен интернет и открытая страница ведущего; качество соединения зависит от сети.':'Устройства должны быть в одной сети с ведущим.'}</small></details>${s.phase==='setup'?fieldSetup(s):fieldControls(s)+fieldReconnect(s)}<details class="field-rules"><summary>Правила и особенности адаптации</summary><p>Три отборочные тройки и финал. Верная буква открывает все совпадения и приносит очки за каждую. 0 — переход хода, Б — потеря очков и хода, + — открытие выбранной буквы, ×2 — умножение счёта при верной букве, П — приз или продолжение, Ш — помощь зрителя и 1500 за букву. Три верные буквы подряд — две шкатулки. Если остался один игрок, после трёх результативных ходов он называет слово. Призы виртуальные. Суперигра — упрощённая версия с одним словом, пятью буквами и минутой на ответ. <a href="https://homeofgames.ru/game/kapital-shou-pole-chudes" target="_blank" rel="noopener noreferrer">Правила передачи ↗</a></p></details>${s.reaction?`<div class="field-reaction">${escapeHtml(s.reaction)}</div>`:''}</div>`;
   if(inviteOpen)body.querySelector('.field-invite').open=true;
   if(seatsOpen&&body.querySelector('.field-reconnect'))body.querySelector('.field-reconnect').open=true;
   if(rulesOpen)body.querySelector('.field-rules').open=true;
@@ -1002,11 +1058,12 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
     const s=guessState,players=s.circlePlayers||[],active=players.find(player=>player.id===s.activePlayerId);
     const inviteUrl=appPageUrl(`player.html?room=${roomCode}`);
     const rows=players.length?players.map((player,index)=>`<div class="circle-player ${player.id===s.activePlayerId?'is-active':''}"><span class="circle-player-number">${index+1}</span><b>${escapeHtml(player.name)}</b><span class="circle-turn">${player.id===s.activePlayerId?'УГАДЫВАЕТ':'В КРУГУ'}</span><strong>${player.score||0} ★</strong></div>`).join(''):'<div class="circle-empty">Пока никто не подключился. Покажи QR или отправь адрес вместе с кодом комнаты.</div>';
-    return `<div class="guess-circle-layout"><section class="circle-host-panel"><div class="circle-round-label">ТЕЛЕФОННЫЙ КРУГ · РАУНД ${s.round||1}</div><h3>${active?`${escapeHtml(active.name)} угадывает`: 'Подключи участников'}</h3><p>${active?'Остальные участники увидят карточку активного игрока на своих телефонах. Сам угадывающий своей карточки не видит.':`Игроки вводят имена и получают случайные зимние карточки. ${onlineSync?'Для игры подключите телефоны к интернету.':'Телефоны должны быть в одной сети с ведущим.'}`}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа в телефонный круг" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение по QR-коду</b><p id="localInviteHint">Готовлю ссылку для телефонов…</p><div class="circle-invite"><span id="playerInviteUrl">${escapeHtml(inviteUrl)}</span><button class="soft-button" id="copyPlayerLink">Скопировать ссылку</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong><small>Можно ввести вручную после открытия страницы на телефоне</small></div></div></div><div class="circle-join-status">${players.length} ${players.length===1?'УЧАСТНИК ПОДКЛЮЧЁН':players.length>1?'УЧАСТНИКА ПОДКЛЮЧЕНО':'УЧАСТНИКОВ ПОДКЛЮЧЕНО'} · КОД ${roomCode}</div><div class="circle-player-list">${rows}</div><div class="circle-host-actions"><button class="solid-button" id="circleCorrect" ${!active?'disabled':''}>Угадал! +1 🎉</button><button class="soft-button" id="circlePass" ${!active?'disabled':''}>Пас · следующий участник →</button><button class="soft-button" id="circleNewRound" ${!players.length?'disabled':''}>Новый круг ↻</button></div><p class="circle-safety-note">${onlineSync?'Телефонам и компьютеру нужен интернет.':'Телефоны и компьютер должны быть в одной сети Wi-Fi.'} Оставьте игру ведущего открытой на время игры.</p></section><aside class="circle-phone-preview"><div class="phone-preview-frame"><div class="phone-preview-speaker"></div><div class="phone-preview-snow">❄</div><b>${active?'ТВОЯ ОЧЕРЕДЬ':'ЖДЁМ ИГРОКОВ'}</b><span>${active?'На своём ходу участник не увидит свою карточку.':'Телефон каждого участника покажет личную карточку.'}</span><div class="phone-preview-dots">●　●　●</div></div><div class="picker-title">КАРТОЧКИ НАЗНАЧАЮТСЯ ЛИЧНО</div></aside></div>`;
+    return `<div class="guess-circle-layout"><section class="circle-host-panel"><div class="circle-round-label">ТЕЛЕФОННЫЙ КРУГ · РАУНД ${s.round||1}</div><h3>${active?`${escapeHtml(active.name)} угадывает`: 'Подключи участников'}</h3><p>${active?'Остальные участники увидят карточку активного игрока на своих телефонах. Сам угадывающий своей карточки не видит.':`Игроки вводят имена и получают случайные зимние карточки. ${onlineSync?'Для игры подключите телефоны к интернету.':'Телефоны должны быть в одной сети с ведущим.'}`}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа в телефонный круг" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение по QR-коду</b><p id="localInviteHint">Готовлю ссылку для телефонов…</p><div class="circle-invite"><span id="playerInviteUrl">${escapeHtml(inviteUrl)}</span><button class="soft-button" id="copyPlayerLink">Скопировать ссылку</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong><small>Можно ввести вручную после открытия страницы на телефоне</small></div></div></div><div class="circle-join-status">${players.length} ${players.length===1?'УЧАСТНИК ПОДКЛЮЧЁН':players.length>1?'УЧАСТНИКА ПОДКЛЮЧЕНО':'УЧАСТНИКОВ ПОДКЛЮЧЕНО'} · КОД ${roomCode}</div><div class="circle-player-list">${rows}</div><div class="circle-host-actions"><button class="solid-button" id="circleCorrect" ${!active?'disabled':''}>Угадал! +1 🎉</button><button class="soft-button" id="circlePass" ${!active?'disabled':''}>Пас · следующий участник →</button><button class="soft-button" id="circleNewRound" ${!players.length?'disabled':''}>Новый круг ↻</button></div><p class="circle-safety-note">${onlineSync?'Телефонам и компьютеру нужен интернет.':'Телефоны и компьютер должны быть в одной сети Wi-Fi.'} Оставьте игру ведущего открытой на время игры.</p></section><aside class="circle-phone-preview"><div class="phone-preview-frame"><div class="phone-preview-speaker"></div><div class="phone-preview-snow">❄</div><b>${active?'ТВОЯ ОЧЕРЕДЬ':'ЖДЁМ ИГРОКОВ'}</b><span>${active?'На своём ходу участник не увидит свою карточку.':'Телефон каждого участника покажет личную карточку.'}</span><div class="phone-preview-dots">●　●　●</div></div><div class="picker-title">КАРТОЧКИ НАЗНАЧАЮТСЯ ЛИЧНО</div></aside></div>`;
   }
   async function setupPlayerInvite(){
     const hint=$('#localInviteHint'),image=$('#playerInviteQr'),placeholder=$('#localQrPlaceholder'),urlLabel=$('#playerInviteUrl'),title=$('#localInviteTitle');
     if(!hint||!image)return;
+    $('#enlargePlayerQr')?.addEventListener('click',()=>openLargeQr(image,'QR-код для подключения игроков'));
     try{
       await shareOriginReady;
       if(onlineSync){image.src=window.makeInviteQr(appPageUrl(`player.html?room=${roomCode}`));image.hidden=false;if(placeholder)placeholder.hidden=true;if(urlLabel)urlLabel.textContent=appPageUrl(`player.html?room=${roomCode}`);title.textContent='Сканируй QR-код, чтобы войти';hint.textContent='Откройте ссылку на телефоне и введите имя. Устройства должны иметь доступ к интернету.';return;}

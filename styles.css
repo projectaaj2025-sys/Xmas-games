@@ -496,3 +496,13 @@
 .host-screen-label{display:inline-flex;align-items:center;border:1px solid #afd2dd;border-radius:20px;background:#e9f7fb;color:#24536a;padding:6px 10px;font-size:13px;font-weight:900}
 .screen-tools .screen-instruction{flex-basis:100%;text-align:center;color:#536f82}
 .melody-revealed-answer{padding:12px 14px;border:1px solid #92c6b1;border-radius:12px;background:#e9f8ef;color:#225b42;font-size:16px}
+
+/* Large invitation QR, accessible from both phone and display invitations. */
+.large-qr-backdrop{position:fixed;inset:0;z-index:10000;background:rgba(22,36,54,.78);display:flex;align-items:center;justify-content:center;padding:16px}
+.large-qr-dialog{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(94vw,700px);max-height:94vh;overflow:auto;background:#fff;color:#243f51;border-radius:20px;padding:20px;box-shadow:0 18px 50px #0006;text-align:center}
+.large-qr-dialog h2{font-size:clamp(20px,3vw,28px);margin:0}.large-qr-dialog p{margin:0;color:#496478}
+.large-qr-dialog img{display:block;width:min(70vh,75vw,560px);max-width:100%;height:auto;aspect-ratio:1;background:#fff;padding:10px}
+.large-qr-dialog button{padding:10px 24px;border:1px solid #a9c7d5;border-radius:10px;background:#edf7fa;color:#234b5c;font-weight:800;cursor:pointer}
+.enlarge-player-qr{margin-bottom:7px}
+.screen-guide{width:min(94vw,650px);max-height:90vh;overflow:auto;padding:24px;border-radius:20px;background:#fff;color:#294357;box-shadow:0 18px 50px #0006}
+.screen-guide h2{margin:0 0 12px;font-size:clamp(22px,3vw,30px)}.screen-guide ol{padding-left:24px}.screen-guide li,.screen-guide p{line-height:1.5;margin:10px 0}.screen-guide p{padding:12px;border-radius:10px;background:#edf7fa}.screen-guide>div{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.screen-guide button{padding:11px 16px;border:1px solid #a9c7d5;border-radius:10px;background:#edf7fa;color:#234b5c;font-weight:800;cursor:pointer}.screen-guide #guideFullscreen{background:#246985;color:#fff;border-color:#246985}
