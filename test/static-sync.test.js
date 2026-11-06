@@ -111,7 +111,9 @@ test('field phones and spectators get safe state; only the active player can act
     // Inactive device forges an action, but the transport refuses it.
     bob.conn.other.send({type:'player-action',action:{kind:'spin'}});await wait();assert.equal(d.querySelector('#fieldSpin').disabled,false);
     v.document.querySelector('[data-reaction="👏"]').click();await wait();assert.match(d.querySelector('.field-reaction').textContent,/👏/);
-    a.document.querySelector('#phoneAnswer').value='АБРИКОС';a.document.querySelector('#phoneSolve').dispatchEvent(new a.Event('submit',{bubbles:true,cancelable:true}));await wait();
+    a.document.querySelector('#phoneAnswer').value='АБРИКОС';a.document.querySelector('#phoneSolve').dispatchEvent(new a.Event('submit',{bubbles:true,cancelable:true}));
+    // Host processing and screen broadcast are separate asynchronous deliveries.
+    for(let attempt=0;attempt<20 && !projector.document.querySelector('#screenStage').textContent.includes('АБРИКОС');attempt++) await wait();
     assert.match(projector.document.querySelector('#screenStage').textContent,/АБРИКОС/);assert.match(a.document.querySelector('#playerInstructions').textContent,/угадал/);
   }finally{for(const dom of doms)dom.window.close()}
 });
