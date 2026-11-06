@@ -494,7 +494,8 @@ const melodyRows = [[0, 1, 2], [3, 4], [5, 6], [7, 8]];
 function melodySong(state, index) {
   const position = (state.tour - 1) * 9 + index;
   const language = state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
-  return { title: window.MELODY_SONGS[language][position], language };
+  const source = language === 'russian' ? window.MELODY_RUSSIAN_SOURCES[position] : null;
+  return { title: window.MELODY_SONGS[language][position], language, source };
 }
 function melodyKey(state, index = state.selected) { return `${state.version}-${state.tour}-${index}`; }
 function stopMelodyAudio(clear = false) {
@@ -524,7 +525,7 @@ function renderMelody() {
   const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
   const uploadedFile = song && s.files[melodyKey(s)];
   const bundledUrl = song && window.MELODY_AUDIO?.[song.title];
-  const youtubeId = song && window.MELODY_YOUTUBE?.[song.title];
+  const youtubeId = song && (song.language === 'russian' ? song.source?.youtube : window.MELODY_YOUTUBE?.[song.title]);
   const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Инструментальный фрагмент · 16 секунд'} : null);
   body.innerHTML = `<div class="melody-show melody-screen-view">
     <details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
@@ -540,12 +541,13 @@ function renderMelody() {
       <div class="melody-board" aria-label="Игровое поле">${melodyRows.map((row,ri)=>`<div class="melody-board-row"><div class="melody-category">${melodyCategories[ri]}</div><div class="melody-notes">${row.map(i=>`<button type="button" class="melody-note-tile ${s.used[s.tour-1].includes(i)?'used':''} ${s.selected===i?'selected':''}" data-melody-note="${i}" ${s.used[s.tour-1].includes(i)?'disabled':''} aria-label="${escapeHtml(melodyCategories[ri])}, ${melodyValues[i]} баллов${s.used[s.tour-1].includes(i)?', сыграно':''}" aria-pressed="${s.selected===i}"><span>${melodyValues[i]}</span></button>`).join('')}</div></div>`).join('')}</div>
       <div class="melody-scoreboard">${s.names.map((name,i)=>`<div class="melody-player-score"><span class="melody-player-number">${i+1}</span><div><label><span class="sr-only">Имя игрока ${i+1}</span><input data-melody-name="${i}" maxlength="24" value="${escapeHtml(name)}"></label><strong>${s.scores[i]}</strong></div></div>`).join('')}</div>
     </div>
+    <details class="melody-song-list"><summary>Список песен для ведущего · содержит ответы</summary>${[1,2,3,4].map(tour=>`<h4>Тур ${tour}</h4><ol>${Array.from({length:9},(_,i)=>`<li>${escapeHtml(melodySong({...s,tour},i).title)}</li>`).join('')}</ol>`).join('')}<p>Повтор названия в русской подборке: «Новый год» (тур 3 и тур 4) — это разные записи. В английской и смешанной подборках повторов названий нет.</p></details>
     <section class="melody-host-panel" aria-live="polite"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${song ? `Мелодия на ${melodyValues[s.selected]} баллов` : 'Выберите ноту на поле'}</h3></div><span>${s.used[s.tour-1].length} / 9 сыграно</span></div>
-      ${song ? `<details class="melody-answer"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)} <small>· ${song.language === 'russian' ? 'русская' : 'английская'}</small></p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
-      <div class="melody-audio-controls">${youtubeId ? `<button type="button" id="melodyYoutube">▶ Слушать на YouTube</button>` : ''}<label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${(file || youtubeId)?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : youtubeId ? 'Оригинальная запись доступна онлайн через YouTube.' : 'Для этой песни записи пока нет: добавьте свой файл или найдите песню отдельно.'}</span></div>
+      ${song ? `<details class="melody-answer"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)}</p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + (song.source?.artist || '') + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
+      <div class="melody-audio-controls">${song.source?.source ? `<a class="melody-file" href="${escapeHtml(song.source.source)}" target="_blank" rel="noopener noreferrer">Слушать в источнике ↗</a>` : ''}${youtubeId ? `<button type="button" id="melodyYoutube">▶ Слушать на YouTube</button>` : ''}<label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${(file || youtubeId)?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : youtubeId ? 'Запись доступна онлайн через YouTube.' : song.source?.source ? 'Запись доступна на странице источника.' : 'Запись можно найти отдельно или добавить свой файл.'}</span></div>
       <div class="melody-judge"><span>Начислить или снять ${melodyValues[s.selected]} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button></div>`).join('')}</div>
       <div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ':'Показать ответ на экране'}</button><button type="button" id="melodyDone" ${selectedUsed?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Название песни будет видно только ведущему после открытия подсказки.</p>'}
-      <p class="melody-help">Английские песни доступны через YouTube; для семи есть и инструментальные фрагменты без интернета. Для русских песен пока необходим свой файл. Плеер YouTube может показывать название и рекламу — лучше использовать отдельный экран. Заставку и переход можно заменить своими файлами.</p>
+      <p class="melody-help">Английские песни доступны через YouTube; для семи есть и инструментальные фрагменты без интернета. Русские песни доступны по ссылкам на источники или YouTube; аудиофайлы можно добавить самостоятельно. Плеер YouTube может показывать название и рекламу — лучше использовать отдельный экран. Заставку и переход можно заменить своими файлами.</p>
     </section>
   </div>`;
   $('#melodyVersion').addEventListener('change', e => {
@@ -578,12 +580,70 @@ function renderMelody() {
 }
 function newMelodyState(version = 'russian') { return {version, tour:1, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[],[]], selected:null, revealed:false, files:{}, cues:{}}; }
 
+  // A separate, self-contained adaptation; the original PowerPoint is not converted.
+  const holidayQuiz = [
+    {q:'Как называется внучка Деда Мороза?',o:['Снегурочка','Золушка','Русалочка','Белоснежка'],a:0},
+    {q:'Какое дерево чаще всего украшают на Новый год?',o:['Берёзу','Ёлку','Пальму','Дуб'],a:1},
+    {q:'Как называется фигура из снежных шаров?',o:['Снеговик','Домовёнок','Гном','Дракон'],a:0}
+  ];
+  const holidayMovies = [
+    {q:'Куда семья забыла взять Кевина в фильме «Один дома»?',o:['В школу','В отпуск','В магазин','В парк'],a:1},
+    {q:'Как зовут почтальона в мультфильме «Зима в Простоквашино»?',o:['Печкин','Патрикеев','Сидоров','Матроскин'],a:0},
+    {q:'Кто украл Рождество в известной истории?',o:['Гринч','Карлсон','Пятачок','Чебурашка'],a:0}
+  ];
+  const holidayMusic = [
+    {id:'KCA3oUv1r4M',title:'Маленькой ёлочке холодно зимой'},
+    {id:'NRdGSXPmn2s',title:'Расскажи, Снегурочка'},
+    {id:'EaOu9c_WR7c',title:'Песенка о снежинке'}
+  ];
+  const holidayWords = [
+    {q:'Его лепят из снега во дворе.',answer:'СНЕГОВИК'},
+    {q:'Их дарят друг другу на праздник.',answer:'ПОДАРКИ'},
+    {q:'Ледяная звёздочка, которая падает с неба.',answer:'СНЕЖИНКА'}
+  ];
+  let holidayState = null;
+  function startHoliday() {
+    holidayState={round:0,index:0,score:0,chosen:null,letters:[],reveal:false,playing:false};
+    renderHoliday();
+  }
+  function renderHoliday() {
+    const s=holidayState, body=$('#gameBody');
+    const titles=['Викторина','Кино','Музыка','Поле чудес'];
+    if (s.round===4) {
+      body.innerHTML=`<section class="holiday-play"><span class="holiday-label">ИГРА ОКОНЧЕНА</span><h2>С Новым годом! ❄</h2><p>Командный счёт: <b>${s.score}</b> из 12</p><p>Спасибо за игру!</p><button id="holidayRestart" class="primary-button">Играть ещё раз</button><button id="holidayGuide" class="soft-button">К инструкции и комплекту</button></section>`;
+      $('#holidayRestart').onclick=startHoliday;
+      $('#holidayGuide').onclick=openHolidayInstructions;
+      return;
+    }
+    const list=[holidayQuiz,holidayMovies,holidayMusic,holidayWords][s.round], item=list[s.index];
+    let content='';
+    if (s.round<2) {
+      content=`<h2>${escapeHtml(item.q)}</h2><div class="holiday-answers">${item.o.map((option,i)=>`<button type="button" data-holiday-answer="${i}" ${s.chosen!==null?'disabled':''} class="${s.chosen!==null && i===item.a?'correct':s.chosen===i?'wrong':''}">${escapeHtml(option)}</button>`).join('')}</div>${s.chosen!==null?`<p class="holiday-feedback">${s.chosen===item.a?'Верно! +1 балл':'Не совсем. Правильный ответ подсвечен.'}</p>`:''}`;
+    } else if (s.round===2) {
+      content=`<h2>Продолжите песню</h2><p>Включите запись, остановите её в любом месте и предложите участникам продолжить. Ведущий оценивает ответ.</p><div class="holiday-audio"><button id="holidayListen" type="button">▶ Включить песню</button><button id="holidayStop" type="button">■ Остановить</button></div>${s.playing?`<iframe class="holiday-video" title="Песня" src="https://www.youtube-nocookie.com/embed/${item.id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`:''}${s.chosen===null?'<div class="holiday-judge"><button id="holidayRight">Верно +1</button><button id="holidayWrong">Не угадали</button></div>':`<p class="holiday-feedback">${s.chosen?'Верно! +1 балл':'Попробуйте следующую песню.'} Название: ${escapeHtml(item.title)}</p>`}<p class="holiday-small">Для воспроизведения нужен интернет; YouTube может ограничивать показ или показывать название.</p>`;
+    } else {
+      const done=[...item.answer].every(ch=>s.letters.includes(ch));
+      content=`<h2>${escapeHtml(item.q)}</h2><div class="holiday-word" aria-label="Загаданное слово">${[...item.answer].map(ch=>`<span>${s.reveal||s.letters.includes(ch)?ch:'&nbsp;'}</span>`).join('')}</div><div class="holiday-alphabet">${[...'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'].map(ch=>`<button type="button" data-holiday-letter="${ch}" ${s.letters.includes(ch)||s.reveal||done?'disabled':''}>${ch}</button>`).join('')}</div>${done?'<p class="holiday-feedback">Слово угадано! +1 балл</p>':s.reveal?`<p class="holiday-feedback">Ответ: ${item.answer}</p>`:'<button type="button" id="holidayRevealWord" class="soft-button">Показать слово</button>'}`;
+    }
+    const canNext=s.round<3 ? s.chosen!==null : s.reveal||[...item.answer].every(ch=>s.letters.includes(ch));
+    body.innerHTML=`<section class="holiday-play"><div class="holiday-play-top"><span class="holiday-label">РАУНД ${s.round+1} / 4 · ${titles[s.round]}</span><span>Счёт: <b>${s.score}</b></span></div><p class="holiday-progress">Задание ${s.index+1} из ${list.length}</p>${content}<div class="holiday-next"><button type="button" id="holidayNext" class="primary-button" ${canNext?'':'disabled'}>${s.index===list.length-1 ? (s.round===3?'Завершить игру':'Следующий раунд →') : 'Следующее задание →'}</button></div><p class="holiday-small">Браузерная адаптация по правилам комплекта; вопросы и медиа отличаются от оригинальной презентации.</p></section>`;
+    body.querySelectorAll('[data-holiday-answer]').forEach(button=>button.onclick=()=>{if(s.chosen!==null)return; s.chosen=Number(button.dataset.holidayAnswer); if(s.chosen===item.a)s.score++; renderHoliday();});
+    $('#holidayListen')?.addEventListener('click',()=>{s.playing=true;renderHoliday();});
+    $('#holidayStop')?.addEventListener('click',()=>{s.playing=false;renderHoliday();});
+    $('#holidayRight')?.addEventListener('click',()=>{s.chosen=true;s.score++;s.playing=false;renderHoliday();});
+    $('#holidayWrong')?.addEventListener('click',()=>{s.chosen=false;s.playing=false;renderHoliday();});
+    body.querySelectorAll('[data-holiday-letter]').forEach(button=>button.onclick=()=>{const ch=button.dataset.holidayLetter;if(s.letters.includes(ch)||s.reveal)return;s.letters.push(ch);if([...item.answer].every(c=>s.letters.includes(c)))s.score++;renderHoliday();});
+    $('#holidayRevealWord')?.addEventListener('click',()=>{s.reveal=true;renderHoliday();});
+    $('#holidayNext').onclick=()=>{if(!canNext)return;s.index++;if(s.index===list.length){s.round++;s.index=0;}s.chosen=null;s.letters=[];s.reveal=false;s.playing=false;renderHoliday();};
+  }
+
   function openHolidayInstructions() {
     const body = commonFrame('Новогодняя игра', 'ЧЕТЫРЕ ПРАЗДНИЧНЫХ РАУНДА', 'Познакомьтесь с правилами, прежде чем начать.', 'holiday-screen');
     body.innerHTML = `<section class="holiday-guide"><div class="holiday-guide-intro"><span>❄ ДЛЯ УЧЕНИКОВ</span><h2>Играем вместе!</h2><p>Играйте всей компанией и помогайте друг другу. Вас ждут четыре раунда — ведущий объяснит задание перед каждым из них.</p></div>
-      <ol class="holiday-round-list"><li><b>Новогодняя викторина</b><span>Читайте вопрос и выбирайте один правильный ответ из четырёх.</span></li><li><b>Кино-раунд</b><span>Отвечайте на вопросы о кино. При правильном ответе появится отрывок из фильма.</span></li><li><b>Музыкальный раунд</b><span>Послушайте песню и выберите её правильное продолжение.</span></li><li><b>Новогоднее Поле чудес</b><span>Угадайте слово по вопросу, называя буквы.</span></li></ol>
-      <div class="holiday-source"><h3>Оригинальная игра</h3><p>Игра находится в презентации PowerPoint (351 МБ). Из-за её размера Google Диск может предложить скачать файл вместо показа в браузере. Для интерактивных переходов откройте скачанную презентацию в PowerPoint и запустите показ слайдов.</p><div class="holiday-actions"><a class="primary-button" href="https://drive.google.com/file/d/1fmAdYjsFhZEPXMQMf3L66cHbBRHsyEd-/view" target="_blank" rel="noopener noreferrer">Открыть презентацию ↗</a><a class="holiday-download" href="https://drive.google.com/drive/folders/1ZG3EVOkOO_ovAt0RBEzLBdrJ5iSXvz_m" target="_blank" rel="noopener noreferrer">↓ Скачать комплект с Google Диска</a></div><p class="holiday-small">В папке находятся презентация и полная инструкция автора. На Google Диске выберите «Скачать всё» или скачайте файлы по отдельности.</p><a class="holiday-original-guide" href="https://drive.google.com/file/d/1d_QCnQ2ZRxIXZJkoDUgdgcO13K_TJz6j/view" target="_blank" rel="noopener noreferrer">Открыть полную инструкцию автора ↗</a></div>
+      <ol class="holiday-round-list"><li><b>Новогодняя викторина</b><span>Читайте вопрос и выбирайте один правильный ответ из четырёх.</span></li><li><b>Кино-раунд</b><span>Отвечайте на вопросы о новогоднем кино.</span></li><li><b>Музыкальный раунд</b><span>Послушайте песню, затем продолжите её после остановки.</span></li><li><b>Новогоднее Поле чудес</b><span>Угадайте слово по вопросу, называя буквы.</span></li></ol>
+      <div class="holiday-source"><h3>Играть на сайте</h3><p>Браузерная адаптация по правилам комплекта: четыре раунда и командный счёт. Вопросы отличаются от оригинала; в кино-раунде нет видеоотрывков.</p><button type="button" id="holidayStart" class="primary-button">Начать игру на сайте →</button><h3>Оригинальная игра</h3><p>Игра находится в презентации PowerPoint (351 МБ). Из-за её размера Google Диск может предложить скачать файл вместо показа в браузере. Для интерактивных переходов откройте скачанную презентацию в PowerPoint и запустите показ слайдов.</p><div class="holiday-actions"><a class="primary-button" href="https://drive.google.com/file/d/1fmAdYjsFhZEPXMQMf3L66cHbBRHsyEd-/view" target="_blank" rel="noopener noreferrer">Открыть презентацию ↗</a><a class="holiday-download" href="https://drive.google.com/drive/folders/1ZG3EVOkOO_ovAt0RBEzLBdrJ5iSXvz_m" target="_blank" rel="noopener noreferrer">↓ Скачать комплект с Google Диска</a></div><p class="holiday-small">В папке находятся презентация и полная инструкция автора. На Google Диске выберите «Скачать всё» или скачайте файлы по отдельности.</p><a class="holiday-original-guide" href="https://drive.google.com/file/d/1d_QCnQ2ZRxIXZJkoDUgdgcO13K_TJz6j/view" target="_blank" rel="noopener noreferrer">Открыть полную инструкцию автора ↗</a></div>
     </section>`;
+    $('#holidayStart').addEventListener('click', startHoliday);
     publish({game:'idle',revealed:false,instruction:'Ведущий готовит новогоднюю игру.'});
   }
 

@@ -220,3 +220,62 @@ test('custom intro and round-transition files can be played and released', () =>
     doc.querySelector('#backHome').click(); assert.deepEqual(revoked,['blob:cue1','blob:cue2']);
   } finally {w.close()}
 });
+
+test('holiday adaptation can be completed across four rounds with a reliable score', () => {
+  const errors=[]; const vc=new VirtualConsole(); vc.on('jsdomError', e=>errors.push(e));
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only',virtualConsole:vc});
+  const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false});
+  w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    const doc=w.document; doc.querySelector('[data-open="drive"]').click();
+    doc.querySelector('#holidayStart').click();
+    assert.equal(doc.querySelector('#holidayNext').disabled,true);
+    for (let i=0;i<6;i++) {
+      assert.match(doc.querySelector('.holiday-label').textContent,new RegExp(`РАУНД ${i<3?1:2}`));
+      const correct=[0,1,0,1,0,0][i];
+      doc.querySelector(`[data-holiday-answer="${correct}"]`).click();
+      assert.ok(doc.querySelector('.holiday-answers .correct'));
+      doc.querySelector('#holidayNext').click();
+    }
+    for (let i=0;i<3;i++) {
+      assert.match(doc.querySelector('.holiday-label').textContent,/РАУНД 3/);
+      doc.querySelector('#holidayListen').click();
+      assert.match(doc.querySelector('.holiday-video').src,/youtube-nocookie\.com\/embed/);
+      doc.querySelector('#holidayStop').click(); assert.equal(doc.querySelector('.holiday-video'),null);
+      doc.querySelector('#holidayRight').click(); doc.querySelector('#holidayNext').click();
+    }
+    for (const answer of ['СНЕГОВИК','ПОДАРКИ','СНЕЖИНКА']) {
+      assert.match(doc.querySelector('.holiday-label').textContent,/РАУНД 4/);
+      for (const letter of new Set(answer)) doc.querySelector(`[data-holiday-letter="${letter}"]`).click();
+      assert.match(doc.querySelector('.holiday-feedback').textContent,/\+1/);
+      doc.querySelector('#holidayNext').click();
+    }
+    assert.match(doc.querySelector('.holiday-play').textContent,/12 из 12/);
+    doc.querySelector('#holidayRestart').click(); assert.match(doc.querySelector('.holiday-play').textContent,/Счёт: 0/);
+    assert.deepEqual(errors,[]);
+  } finally {w.close()}
+});
+
+test('Russian melody sources follow the right note, including mixed mode', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false}); w.confirm=()=>true;
+  w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
+  w.Audio=class {play(){return Promise.resolve()} pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    assert.equal(w.MELODY_SONGS.russian.length,36); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,36);
+    assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,2);
+    const doc=w.document; doc.querySelector('[data-open="melody"]').click();
+    assert.match(doc.querySelector('.melody-song-list').textContent,/Повтор названия.*Новый год/);
+    doc.querySelector('[data-melody-note="0"]').click();
+    assert.match(doc.querySelector('.melody-answer p').textContent,/Новогодняя/);
+    assert.match(doc.querySelector('.melody-audio-controls a').href,/song\/9293226/);
+    doc.querySelector('#melodyYoutube').click();
+    assert.match(doc.querySelector('#melodyExternalPlayer iframe').src,/1-bxBXOE368/);
+    const select=doc.querySelector('#melodyVersion'); select.value='mixed'; select.dispatchEvent(new w.Event('change',{bubbles:true}));
+    doc.querySelector('[data-melody-note="1"]').click();
+    assert.match(doc.querySelector('.melody-answer p').textContent,/Last Christmas/);
+    assert.ok(doc.querySelector('#melodyYoutube'));
+  } finally {w.close()}
+});
