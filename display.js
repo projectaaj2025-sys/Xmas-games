@@ -6,9 +6,8 @@
   let socket;
   function connect() {
     if (!room) return;
-    if(location.hostname.endsWith('.github.io')){connection.className='screen-state disconnected';connection.innerHTML='<i></i> Для экрана нужен локальный Node-сервер';return;}
     const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    socket = new WebSocket(`${scheme}//${location.host}/sync`);
+    socket = location.protocol==='https:' && window.StaticSync ? new window.StaticSync(room,'client') : new WebSocket(`${scheme}//${location.host}/sync`);
     socket.addEventListener('open', () => socket.send(JSON.stringify({ type: 'join', room, role: 'screen' })));
     socket.addEventListener('message', event => {
       let data; try { data = JSON.parse(event.data); } catch { return; }
@@ -33,6 +32,12 @@
       return;
     }
     if (data.game === 'melody') {
+      if (data.mode === 'auction') {
+        const scores=Array.isArray(data.players)?data.players:[];
+        const prompt=data.phase==='setup'?'Выбор участников':data.phase==='bidding'?`Ход: ${safeText(data.turn)}`:data.phase==='guess'?`Отвечает: ${safeText(data.bidder)}`:data.phase==='finished'?'Торги завершены':'Очко разыграно';
+        stage.innerHTML=`<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>ТОРГИ ♫</b></div><h1>${prompt}</h1><p>${safeText(data.clue)}</p><p>${data.bid==null?'Ставки от 7 до 3 нот':`Ставка: ${safeText(data.bid)} нот`}</p>${data.answer?`<p>Ответ: ${safeText(data.answer)}</p>`:''}<div class="display-melody-scores">${scores.map((p,i)=>`<div><strong>${i+1}</strong><span><b>${safeText(p.name)}</b><small>${safeText(p.score)}</small></span></div>`).join('')}</div>${roomNote}`;
+        return;
+      }
       if (data.mode === 'super') {
         const status=data.status==='won'?'Все мелодии угаданы!':data.status==='lost'?'Суперигра завершена':'Семь мелодий за 30 секунд';
         stage.innerHTML=`<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>СУПЕРИГРА ★</b></div><h1>${safeText(data.seconds)} сек.</h1><p>${safeText(data.player)} · угадано ${safeText(data.correct)} / 7</p><p>${status}</p>${roomNote}`;

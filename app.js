@@ -5,13 +5,15 @@
   const toast = $('#toast');
   let toastTimeout;
   let syncSocket, pendingState, screenCount = 0, connectedPlayers = [], syncAvailable = true;
-  const roomCode = Math.random().toString(36).slice(2, 7).toUpperCase();
+  const roomCode = (()=>{ const bytes=new Uint8Array(8); if(window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes); else for(let i=0;i<8;i++) bytes[i]=Math.random()*256; return [...bytes].map(n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%32]).join(''); })();
   let shareBaseUrl=new URL('.',location.href);
   let displayUrl=new URL(`display.html?room=${roomCode}`,shareBaseUrl).href;
   let memoryState, guessState, crocState, quizState, crosswordState;
   let localAddressAvailable=true;
+  const onlineSync=location.protocol==='https:' && typeof window.StaticSync==='function';
   const appPageUrl=path=>new URL(path,shareBaseUrl).href;
   async function discoverShareOrigin(){
+    if(onlineSync) return shareBaseUrl.href;
     try{
       const response=await fetch('/api/network-info',{cache:'no-store'});if(!response.ok)throw new Error('LAN API unavailable');
       const info=await response.json();
@@ -260,12 +262,11 @@
   function shuffle(items) { const a = [...items]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function randomOther(length, previous) { let next = previous; while (next === previous) next = Math.floor(Math.random() * length); return next; }
   function fmtTime(seconds) { return `${String(Math.floor(seconds / 60)).padStart(2,'0')}:${String(seconds % 60).padStart(2,'0')}`; }
-  function sendSync(message) { if (syncSocket?.readyState === WebSocket.OPEN) syncSocket.send(JSON.stringify(message)); else pendingState = message; }
+  function sendSync(message) { pendingState = message; if (syncSocket?.readyState === WebSocket.OPEN) syncSocket.send(JSON.stringify(message)); }
   function connectSync() {
-    if(location.hostname.endsWith('.github.io')){syncAvailable=false;updateScreenStatus(false);return;}
     const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    syncSocket = new WebSocket(`${scheme}//${location.host}/sync`);
-    syncSocket.addEventListener('open', () => { syncAvailable=true; syncSocket.send(JSON.stringify({type:'join', room:roomCode, role:'host'})); if (pendingState) { syncSocket.send(JSON.stringify(pendingState)); pendingState = null; } });
+    syncSocket = onlineSync ? new window.StaticSync(roomCode,'host') : new WebSocket(`${scheme}//${location.host}/sync`);
+    syncSocket.addEventListener('open', () => { syncAvailable=true; syncSocket.send(JSON.stringify({type:'join', room:roomCode, role:'host'})); if (pendingState) syncSocket.send(JSON.stringify(pendingState)); });
     syncSocket.addEventListener('message', event => {
       let data; try { data = JSON.parse(event.data); } catch { return; }
       if (data.type === 'presence') {
@@ -279,11 +280,12 @@
     syncSocket.addEventListener('error', () => syncSocket.close());
   }
   function publish(state) { sendSync({type:'state', room:roomCode, payload:state}); }
-  function updateScreenStatus(connected = true) { const status=$('#syncStatus');if(!status)return;const unavailable=!syncAvailable||!connected;const message=unavailable?(location.hostname.endsWith('.github.io')?'GitHub Pages · сервер нужен':'Нет связи'):screenCount?'Экран подключён':'Экран не подключён';status.innerHTML=`${unavailable?'○':'●'} ${message}`;status.classList.toggle('is-online',screenCount>0&&!unavailable); }
-  function screenToolbar() { return `<div class="screen-tools"><span class="sync-status" id="syncStatus">● Подключаемся…</span><button class="soft-button" id="openDisplay">Подключить экран</button><button class="soft-button" id="copyDisplay">Скопировать ссылку</button><span class="screen-instruction">Откройте ссылку на проекторе или втором устройстве</span></div>`; }
+  function updateScreenStatus(connected = true) { const status=$('#syncStatus');if(!status)return;const unavailable=!syncAvailable||!connected;const message=unavailable?(onlineSync?'Нет связи · проверьте интернет':'Нет связи'):screenCount?'Экран подключён':'Экран не подключён';status.innerHTML=`${unavailable?'○':'●'} ${message}`;status.classList.toggle('is-online',screenCount>0&&!unavailable); }
+  function screenToolbar() { return `<div class="screen-tools"><span class="sync-status" id="syncStatus">● Подключаемся…</span><button class="soft-button" id="openDisplay">Подключить экран</button><button class="soft-button" id="copyDisplay">Скопировать ссылку</button><button class="soft-button" id="showScreenQr">QR экрана</button><div id="screenQrPanel" class="screen-qr-panel" hidden><img id="screenQrImage" alt="QR-код для экрана"><span>Отсканируйте, чтобы открыть экран</span></div><span class="screen-instruction">Откройте ссылку на проекторе или втором устройстве</span></div>`; }
   function bindScreenTools() {
     updateScreenStatus();
     $('#openDisplay')?.addEventListener('click', () => { const win = window.open(displayUrl, 'winter-game-screen'); if (!win) notify('Разрешите всплывающее окно или откройте ссылку на экране.'); });
+    $('#showScreenQr')?.addEventListener('click', () => { const panel=$('#screenQrPanel'); if(panel.hidden) { try { $('#screenQrImage').src=window.makeInviteQr(displayUrl); panel.hidden=false; } catch { notify('QR-код недоступен, используйте ссылку.'); } } else panel.hidden=true; });
     $('#copyDisplay')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(displayUrl); notify(`Ссылка скопирована · код ${roomCode}`); } catch { prompt('Скопируйте ссылку для экрана участников:', displayUrl); } });
     $('#goFullscreen')?.addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); });
   }
@@ -522,6 +524,7 @@ function disposeMelodyFiles() {
 function publishMelody() {
   const s = melodyState;
   if (!s) return;
+  if (s.tour===5) { publishAuction(); return; }
   if (s.tour===4) { publish({game:'melody',mode:'super',seconds:s.super.seconds,correct:7-s.super.queue.length,status:s.super.status,player:s.names[s.super.player]}); return; }
   const selectedSong = s.selected == null ? null : melodySong(s, s.selected);
   const categories=melodyCategories(s);
@@ -531,13 +534,14 @@ function renderMelody() {
   const s = melodyState;
   const body = $('#gameBody');
   if(s.tour===4) { renderMelodySuper(); return; }
+  if(s.tour===5) { renderMelodyAuction(); return; }
   const categories=melodyCategories(s);
   const song = s.selected == null ? null : melodySong(s, s.selected);
   const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
   const uploadedFile = song && s.files[melodyKey(s)];
   const bundledUrl = song && (song.language==='russian' ? window.MELODY_RUSSIAN_AUDIO?.[song.title] : window.MELODY_AUDIO?.[song.title]);
   const youtubeId = song && (song.language === 'russian' ? song.source?.youtube : window.MELODY_YOUTUBE?.[song.title]);
-  const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Встроенный инструментальный фрагмент'} : null);
+  const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Встроенная запись'} : null);
   body.innerHTML = `<div class="melody-show melody-screen-view">
     <details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
     <div class="melody-setup">
@@ -547,7 +551,7 @@ function renderMelody() {
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
     <div class="melody-stage">
       <div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Угадай мелодию</h2></div><strong>ТУР ${s.tour} <small>/ 3</small></strong></div>
-      <div class="melody-rounds" aria-label="Выбор тура">${[1,2,3].map(n=>`<button type="button" data-melody-tour="${n}" class="${s.tour===n?'active':''}" aria-pressed="${s.tour===n}">Тур ${n}</button>`).join('')}<button type="button" data-melody-tour="4">Суперигра ★</button></div>
+      <div class="melody-rounds" aria-label="Выбор тура">${[1,2,3].map(n=>`<button type="button" data-melody-tour="${n}" class="${s.tour===n?'active':''}" aria-pressed="${s.tour===n}">Тур ${n}</button>`).join('')}<button type="button" data-melody-tour="5">Торги ♫</button><button type="button" data-melody-tour="4">Суперигра ★</button></div>
       <p class="melody-board-hint">Выберите ноту и включите мелодию. Стоимость указана на ноте.</p>
       <div class="melody-board" aria-label="Игровое поле">${melodyRows.map((row,ri)=>`<div class="melody-board-row"><div class="melody-category">${escapeHtml(categories[ri])}</div><div class="melody-notes">${row.map(i=>`<button type="button" class="melody-note-tile ${s.used[s.tour-1].includes(i)?'used':''} ${s.selected===i?'selected':''}" data-melody-note="${i}" ${s.used[s.tour-1].includes(i)?'disabled':''} aria-label="${escapeHtml(categories[ri])}, ${melodyValue(s,i)} баллов${s.used[s.tour-1].includes(i)?', сыграно':''}" aria-pressed="${s.selected===i}"><span>${melodyValue(s,i)}</span></button>`).join('')}</div></div>`).join('')}</div>
       <div class="melody-scoreboard">${s.names.map((name,i)=>`<div class="melody-player-score"><span class="melody-player-number">${i+1}</span><div><label><span class="sr-only">Имя игрока ${i+1}</span><input data-melody-name="${i}" maxlength="24" value="${escapeHtml(name)}"></label><strong>${s.scores[i]}</strong></div></div>`).join('')}</div>
@@ -572,7 +576,7 @@ function renderMelody() {
   }
   $('#melodyMusicStop').addEventListener('click', () => stopMelodyAudio());
   $('#melodyReset').addEventListener('click', () => { if (!confirm('Начать новую игру и сбросить очки?')) return; disposeMelodyFiles(); melodyState = newMelodyState(s.version); renderMelody(); });
-  body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { const nextTour=Number(button.dataset.melodyTour); if(nextTour!==s.tour) playMelodyAudio(s.cues.transition?.url || 'assets/melody/audio/show-endround.mp3'); else stopMelodyAudio(); if(nextTour===4 && s.tour!==4 && s.super.status==='ready') s.super.player=s.scores.indexOf(Math.max(...s.scores)); s.tour=nextTour; s.selected=null; s.revealed=false; renderMelody(); }));
+  body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { const nextTour=Number(button.dataset.melodyTour); if(nextTour!==s.tour) playMelodyAudio(s.cues.transition?.url || 'assets/melody/audio/show-endround.mp3'); else stopMelodyAudio(); if(nextTour===5 && s.auction.phase==='setup') {const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);s.auction.players=ranked.slice(0,2);} if(nextTour===4 && s.tour!==4 && s.super.status==='ready' && s.auction.phase!=='finished') s.super.player=s.scores.indexOf(Math.max(...s.scores)); s.tour=nextTour; s.selected=null; s.revealed=false; renderMelody(); }));
   body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(); s.selected=Number(button.dataset.melodyNote); s.revealed=false; renderMelody(); }));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('change', () => { s.names[Number(input.dataset.melodyName)]=input.value.trim().slice(0,24) || `Игрок ${Number(input.dataset.melodyName)+1}`; renderMelody(); }));
   $('#melodyFile')?.addEventListener('change', e => { const chosen=e.target.files[0]; if (!chosen) return; const key=melodyKey(s); stopMelodyAudio(true); if(s.files[key]) URL.revokeObjectURL(s.files[key].url); s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
@@ -589,12 +593,73 @@ function renderMelody() {
   $('#melodyDone')?.addEventListener('click', () => { if(s.selected==null || selectedUsed) return; stopMelodyAudio(); s.used[s.tour-1].push(s.selected); s.selected=null; s.revealed=false; renderMelody(); if(s.used[s.tour-1].length===20) notify(s.tour<3?'Тур завершён! Выберите следующий тур.':'Тур завершён! Переходите к суперигре.'); });
   publishMelody();
 }
+// Bonus duel: a host-operated adaptation of the show's seven-to-three-note bidding.
+const auctionTracks={
+  russian:[
+    {index:3,clue:'Что случилось бы, если бы не было зимы?'},
+    {index:7,clue:'Вьюга в январе звучит в известной кинокомедии.'},
+    {index:5,clue:'Тройка уносит героя в звенящую снежную даль.'},
+    {index:0,clue:'Танцевальный хит о приближении Нового года.'},
+    {index:32,clue:'Маленькое деревце зимой переезжает из леса в дом.'}
+  ],
+  international:[
+    {index:4,clue:'Зимняя поездка под звон колокольчиков.'},
+    {index:6,clue:'Мечта о белом Рождестве.'},
+    {index:1,clue:'История прошлогоднего Рождества.'},
+    {index:14,clue:'Пусть за окном идёт снег.'},
+    {index:26,clue:'Пожелание весёлого Рождества.'}
+  ]
+};
+function auctionSong(s,i) {
+  const language=s.version==='mixed'?(i%2?'international':'russian'):s.version;
+  const track=auctionTracks[language][i],songIndex=track.index;
+  return {title:window.MELODY_SONGS[language][songIndex],language,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
+}
+function resetAuction(s){
+  const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);
+  s.auction={phase:'setup',players:ranked.slice(0,2),points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null};
+}
+function publishAuction(){
+  const s=melodyState,a=s.auction,song=auctionSong(s,a.track);
+  publish({game:'melody',mode:'auction',phase:a.phase,clue:song.clue,bid:a.bid,turn:s.names[a.players[a.turn]],bidder:a.bidder===null?'':s.names[a.players[a.bidder]],players:a.players.map((id,i)=>({name:s.names[id],score:a.points[i]})),answer:a.phase==='result'||a.phase==='finished'?song.title:''});
+}
+function renderMelodyAuction(){
+  const s=melodyState,a=s.auction,body=$('#gameBody'),song=auctionSong(s,a.track);
+  const setup=a.phase==='setup', bidding=a.phase==='bidding',guessing=a.phase==='guess',finished=a.phase==='finished';
+  const url=s.files['auction-'+a.track]?.url||(song.language==='russian'?window.MELODY_RUSSIAN_AUDIO?.[song.title]:window.MELODY_AUDIO?.[song.title]);
+  const youtube=song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title];
+  const phaseText=setup?'Выберите двух участников с лучшими результатами.':bidding?`Ход: ${escapeHtml(s.names[a.players[a.turn]])}`:guessing?`Отвечает: ${escapeHtml(s.names[a.players[a.bidder]])} · ${a.bid} нот`:finished?`Победитель: ${escapeHtml(s.names[a.players[a.lastWinner]])}`:`Очко получает ${escapeHtml(s.names[a.players[a.lastWinner]])}.`;
+  body.innerHTML=`<div class="melody-show melody-screen-view"><div class="melody-stage"><div class="melody-show-heading"><div><span>БОНУСНЫЙ РАУНД</span><h2>Торги ♫</h2></div><strong>ДО 3 ОЧКОВ</strong></div>
+    <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-auction-tour="${n}">Тур ${n}</button>`).join('')}<button class="active" type="button" aria-current="page">Торги ♫</button><button type="button" data-auction-tour="4">Суперигра ★</button></div>
+    <p class="melody-board-hint">${phaseText}</p><div class="auction-score">${a.players.map((p,i)=>`<div><b>${escapeHtml(s.names[p])}</b><strong>${a.points[i]}</strong></div>`).join('')}</div>
+    ${setup?'':`<p class="auction-clue">Подсказка: ${escapeHtml(song.clue)}</p><p class="auction-bid">${a.bid===null?'Первая ставка: от 7 до 3 нот':`Текущая ставка: ${a.bid} нот`}</p>`}</div>
+    <section class="melody-host-panel"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${setup?'Подготовка':bidding?'Назовите количество нот':guessing?'Проверьте ответ':'Результат'}</h3></div></div>
+    ${setup?`<p>Выберите двух игроков. Начинает первый; каждый называет меньше нот или уступает сопернику. Три ноты завершают торги. При ошибке очко получает соперник. Победа — три очка.</p><div class="auction-players">${a.players.map((player,i)=>`<label>Участник ${i+1}<select data-auction-player="${i}">${s.names.map((name,j)=>`<option value="${j}" ${player===j?'selected':''}>${escapeHtml(name)}</option>`).join('')}</select></label>`).join('')}</div><button type="button" id="auctionStart">Начать торги</button>`:''}
+    ${bidding?`<p>Ставка должна быть меньше предыдущей. Можно уступить после первой ставки.</p><div class="melody-actions">${[7,6,5,4,3].map(n=>`<button type="button" data-auction-bid="${n}" ${a.bid!==null&&n>=a.bid?'disabled':''}>${n} нот</button>`).join('')}<button type="button" id="auctionPass" ${a.bid===null?'disabled':''}>Уступить</button></div>`:''}
+    ${guessing?`<details class="melody-answer"><summary>Ответ ведущему</summary><p>${escapeHtml(song.title)}</p></details><div class="melody-audio-controls"><button type="button" id="auctionPlay" ${url||youtube?'':'disabled'}>▶ Включить мелодию</button><button type="button" id="auctionStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="auctionFile" accept="audio/*"></label></div><p>Записи не разбиты по нотам: ведущий останавливает воспроизведение самостоятельно после нужного числа нот.</p><div class="melody-actions"><button type="button" id="auctionCorrect">✓ Угадано</button><button type="button" id="auctionWrong">✕ Ошибка</button></div>`:''}
+    ${a.phase==='result'||finished?`<p>Ответ: <b>${escapeHtml(song.title)}</b></p><button type="button" id="auctionNext">${finished?'К суперигре ★':'Следующая мелодия →'}</button>`:''}
+    ${!setup?'<button type="button" class="auction-reset" id="auctionReset">Начать торги заново</button>':''}</section>${melodySongList(s)}</div>`;
+  body.querySelectorAll('[data-auction-tour]').forEach(button=>button.addEventListener('click',()=>{stopMelodyAudio(true);s.tour=Number(button.dataset.auctionTour);s.selected=null;s.revealed=false;renderMelody();}));
+  body.querySelectorAll('[data-auction-player]').forEach(select=>select.addEventListener('change',e=>{const side=Number(select.dataset.auctionPlayer),value=Number(e.target.value);if(value===a.players[1-side]){e.target.value=a.players[side];notify('Выберите двух разных игроков.');return;}a.players[side]=value;renderMelodyAuction();}));
+  $('#auctionStart')?.addEventListener('click',()=>{a.phase='bidding';renderMelodyAuction();});
+  body.querySelectorAll('[data-auction-bid]').forEach(button=>button.addEventListener('click',()=>{const bid=Number(button.dataset.auctionBid);if(!bidding||a.bid!==null&&bid>=a.bid)return;a.bid=bid;a.bidder=a.turn;if(bid===3)a.phase='guess';else a.turn=1-a.turn;renderMelodyAuction();}));
+  $('#auctionPass')?.addEventListener('click',()=>{if(a.bid!==null){a.phase='guess';renderMelodyAuction();}});
+  $('#auctionPlay')?.addEventListener('click',()=>{if(url)playMelodyAudio(url);else if(youtube){stopMelodyAudio(true);const player=$('#melodyExternalPlayer');player.hidden=false;player.innerHTML=`<p>Плеер ведущего · название может быть видно.</p><iframe title="Плеер торгов" src="https://www.youtube-nocookie.com/embed/${youtube}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;player.scrollIntoView?.({behavior:'smooth',block:'nearest'});}});
+  $('#auctionStop')?.addEventListener('click',()=>stopMelodyAudio(true));
+  $('#auctionFile')?.addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const key='auction-'+a.track;stopMelodyAudio(true);if(s.files[key])URL.revokeObjectURL(s.files[key].url);s.files[key]={url:URL.createObjectURL(file),name:file.name};renderMelodyAuction();});
+  function decide(correct){if(a.phase!=='guess')return;stopMelodyAudio(true);a.lastWinner=correct?a.bidder:1-a.bidder;a.points[a.lastWinner]++;a.phase=a.points[a.lastWinner]>=3?'finished':'result';if(a.phase==='finished')s.super.player=a.players[a.lastWinner];renderMelodyAuction();}
+  $('#auctionCorrect')?.addEventListener('click',()=>decide(true));$('#auctionWrong')?.addEventListener('click',()=>decide(false));
+  $('#auctionNext')?.addEventListener('click',()=>{if(finished){s.tour=4;renderMelody();return;}a.track++;a.turn=a.lastWinner;a.bid=null;a.bidder=null;a.phase='bidding';renderMelodyAuction();});
+  $('#auctionReset')?.addEventListener('click',()=>{if(!confirm('Начать торги заново?'))return;stopMelodyAudio(true);resetAuction(s);renderMelodyAuction();});
+  publishAuction();
+}
+
 // Answers in this list are intentionally available only to the host, never sent to the projector.
 function melodySongList(s) {
   const seen=new Set();
   const entry=song=>{const repeat=seen.has(song.title);seen.add(song.title);return `<li>${escapeHtml(song.title)}${repeat?' <small>(повтор названия)</small>':''}</li>`;};
   const rounds=[1,2,3].map(tour=>`<h4>Тур ${tour}</h4>${window.MELODY_LAYOUT[tour-1].map((row,ri)=>`<b>${escapeHtml(row.name)}</b><ol>${Array.from({length:5},(_,i)=>entry(melodySong({...s,tour},ri*5+i))).join('')}</ol>`).join('')}`).join('');
-  return `<details class="melody-song-list"><summary>Список песен для ведущего · содержит ответы</summary>${rounds}<h4>Суперигра</h4><ol>${Array.from({length:7},(_,i)=>entry(melodySong(s,i,true))).join('')}</ol><p>Отмечены повторные названия; одинаковые названия могут относиться к разным записям.</p></details>`;
+  return `<details class="melody-song-list"><summary>Список песен для ведущего · содержит ответы</summary>${rounds}<h4>Торги</h4><ol>${Array.from({length:5},(_,i)=>entry(auctionSong(s,i))).join('')}</ol><h4>Суперигра</h4><ol>${Array.from({length:7},(_,i)=>entry(melodySong(s,i,true))).join('')}</ol><p>Отмечены повторные названия; одинаковые названия могут относиться к разным записям.</p></details>`;
 }
 let melodySuperTimer=null;
 function stopSuperTimer() { if(melodySuperTimer!==null) {clearInterval(melodySuperTimer);melodySuperTimer=null;} }
@@ -629,13 +694,13 @@ function renderMelodySuper() {
   const url=song && (s.files['super-'+index]?.url || (song.language==='russian'?window.MELODY_RUSSIAN_AUDIO?.[song.title]:window.MELODY_AUDIO?.[song.title]));
   const message=supergame.status==='won'?'Победа! Все семь мелодий угаданы.':supergame.status==='lost'?'Суперигра окончена: ошибка или время истекло.':'Угадайте семь мелодий за 30 секунд. Можно пропустить мелодию и вернуться к ней. Ошибка завершает игру.';
   body.innerHTML=`<div class="melody-show melody-screen-view"><div class="melody-stage"><div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Суперигра ★</h2></div><strong id="superSeconds">${supergame.seconds}</strong></div>
-    <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-super-tour="${n}" ${running?'disabled':''}>Тур ${n}</button>`).join('')}<button class="active" type="button" aria-current="page">Суперигра ★</button></div>
+    <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-super-tour="${n}" ${running?'disabled':''}>Тур ${n}</button>`).join('')}<button type="button" data-super-tour="5" ${running?'disabled':''}>Торги ♫</button><button class="active" type="button" aria-current="page">Суперигра ★</button></div>
     <p class="melody-board-hint">${message}</p><div class="melody-super-status"><b>${7-supergame.queue.length} / 7 угадано</b><label>Финалист <select id="superPlayer" ${running?'disabled':''}>${s.names.map((name,i)=>`<option value="${i}" ${i===supergame.player?'selected':''}>${escapeHtml(name)}</option>`).join('')}</select></label></div></div>
     <section class="melody-host-panel"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${running?`Мелодия ${7-supergame.queue.length+1} из 7`:'Готовы к финалу?'}</h3></div></div>
     ${song && running?`<details class="melody-answer"><summary>Название для ведущего</summary><p>${escapeHtml(song.title)}</p></details><div class="melody-audio-controls"><button type="button" id="superPlay" ${(url||youtube)?'':'disabled'}>▶ Повторить мелодию</button><button type="button" id="superStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="superFile" accept="audio/*"></label><span>${url?'Встроенный фрагмент':youtube?'Запись YouTube':'Нет встроенной записи'}</span></div><div class="melody-actions"><button type="button" id="superCorrect">✓ Угадано</button><button type="button" id="superSkip">↻ Пропустить</button><button type="button" id="superWrong">✕ Ошибка</button></div>`:`<button type="button" id="superStart">▶ ${supergame.status==='ready'?'Начать суперигру':'Сыграть ещё раз'}</button>`}
     <p class="melody-help">Ведущий управляет звучанием и результатами. При переходе между мелодиями запись запускается автоматически. Онлайн-плеер может показывать название; для него нужен интернет. Суперигра — адаптация правил передачи для ведущего.</p></section>${melodySongList(s)}</div>`;
   $('#superPlayer').addEventListener('change',e=>{supergame.player=Number(e.target.value);publishMelody();});
-  body.querySelectorAll('[data-super-tour]').forEach(button=>button.addEventListener('click',()=>{stopSuperTimer();stopMelodyAudio(true);s.tour=Number(button.dataset.superTour);s.selected=null;s.revealed=false;renderMelody();}));
+  body.querySelectorAll('[data-super-tour]').forEach(button=>button.addEventListener('click',()=>{stopSuperTimer();stopMelodyAudio(true);s.tour=Number(button.dataset.superTour);if(s.tour===5 && s.auction.phase==='setup')resetAuction(s);s.selected=null;s.revealed=false;renderMelody();}));
   $('#superStart')?.addEventListener('click',()=>{stopSuperTimer();supergame.queue=[0,1,2,3,4,5,6];supergame.seconds=30;supergame.deadline=Date.now()+30000;supergame.status='running';renderMelodySuper();playSuperTrack();melodySuperTimer=setInterval(()=>checkSuperTime(s),250);});
   $('#superPlay')?.addEventListener('click',playSuperTrack);
   $('#superStop')?.addEventListener('click',()=>stopMelodyAudio(true));
@@ -646,7 +711,7 @@ function renderMelodySuper() {
   publishMelody();
 }
 
-function newMelodyState(version = 'russian') { return {version, tour:1, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
+function newMelodyState(version = 'russian') { return {version, tour:1, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
 
   // A separate, self-contained adaptation; the original PowerPoint is not converted.
   const holidayQuiz = [
@@ -723,7 +788,7 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
     if (kind==='field') { commonFrame('Поле чудес: Новый год','КОЛЕСО И БУКВЫ','Выберите режим и начинайте игру.','field-screen'); fieldState={...createContest(),mode:'screen',wheelSector:0,lettersRevealed:[],chests:[false,false],chestPrize:Math.floor(Math.random()*2),round:1,activePlayerId:0,viewerReactions:[],finished:false}; renderField(); }
     if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, три тура и суперигра.','melody-screen'); content.insertAdjacentHTML('beforeend', '<div id="melodyExternalPlayer" class="melody-external-player" hidden></div>'); melodyState=newMelodyState(kind==='melody-intl'?'international':'russian'); renderMelody(); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
-    if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],activePlayerId:0,round:1}; renderGuess(); }
+    if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],circleHistory:[],activePlayerId:0,round:1}; renderGuess(); }
     if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,cardFaceUp:false,cardFlipAnimating:false,taskSelected:false,deckMode:'simple',finished:false}; renderCroc(); }
     if (kind==='quiz') { const teams=createContest('teams',2); quizState={...teams,active:Math.floor(Math.random()*2),questions:window.QUIZ_QUESTIONS||[],used:[],selected:null,selectedOption:null,revealed:false,answerResult:null,finished:false}; renderQuiz(); }
     if (kind==='crossword') { crosswordState={puzzleIndex:0,values:{},checked:false,solved:{},message:'Выбери подсказку и вписывай по одной букве в клетку.'}; renderCrossword(); publish({game:'idle',revealed:false,instruction:'Новогодний кроссворд открыт на основном устройстве.'}); }
@@ -816,7 +881,7 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
   }
   function syncCirclePlayers(online) {
     if(!guessState || guessState.playMode!=='circle' || !modal.classList.contains('open')) return;
-    const old=guessState.circlePlayers||[];
+    const old=guessState.circleHistory||guessState.circlePlayers||[];
     const oldById=new Map(old.map(player=>[player.id,player]));
     const used=new Set(old.map(player=>player.card?.name).filter(Boolean));
     guessState.circlePlayers=online.map(member=>{
@@ -827,6 +892,8 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
       used.add(chosen.card.name);
       return {id:member.id,name:member.name,card:chosen.card,score:0};
     });
+    for(const player of guessState.circlePlayers) if(!oldById.has(player.id)) old.push(player);
+    guessState.circleHistory=old;
     if(!guessState.circlePlayers.some(player=>player.id===guessState.activePlayerId)) guessState.activePlayerId=guessState.circlePlayers[0]?.id||'';
     renderGuess();
   }
@@ -854,13 +921,14 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
     const s=guessState,players=s.circlePlayers||[],active=players.find(player=>player.id===s.activePlayerId);
     const inviteUrl=appPageUrl(`player.html?room=${roomCode}`);
     const rows=players.length?players.map((player,index)=>`<div class="circle-player ${player.id===s.activePlayerId?'is-active':''}"><span class="circle-player-number">${index+1}</span><b>${escapeHtml(player.name)}</b><span class="circle-turn">${player.id===s.activePlayerId?'УГАДЫВАЕТ':'В КРУГУ'}</span><strong>${player.score||0} ★</strong></div>`).join(''):'<div class="circle-empty">Пока никто не подключился. Покажи QR или отправь адрес вместе с кодом комнаты.</div>';
-    return `<div class="guess-circle-layout"><section class="circle-host-panel"><div class="circle-round-label">ТЕЛЕФОННЫЙ КРУГ · РАУНД ${s.round||1}</div><h3>${active?`${escapeHtml(active.name)} угадывает`: 'Подключи участников'}</h3><p>${active?'Остальные участники увидят карточку активного игрока на своих телефонах. Сам угадывающий своей карточки не видит.':'Игроки вводят имена и получают случайные зимние карточки. Для игры подключите устройства к одной Wi-Fi сети.'}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа в телефонный круг" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение по QR-коду</b><p id="localInviteHint">Проверяю адрес локальной сети…</p><div class="circle-invite"><span id="playerInviteUrl">${escapeHtml(inviteUrl)}</span><button class="soft-button" id="copyPlayerLink">Скопировать ссылку</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong><small>Можно ввести вручную после открытия страницы на телефоне</small></div></div></div><div class="circle-join-status">${players.length} ${players.length===1?'УЧАСТНИК ПОДКЛЮЧЁН':players.length>1?'УЧАСТНИКА ПОДКЛЮЧЕНО':'УЧАСТНИКОВ ПОДКЛЮЧЕНО'} · КОД ${roomCode}</div><div class="circle-player-list">${rows}</div><div class="circle-host-actions"><button class="solid-button" id="circleCorrect" ${!active?'disabled':''}>Угадал! +1 🎉</button><button class="soft-button" id="circlePass" ${!active?'disabled':''}>Пас · следующий участник →</button><button class="soft-button" id="circleNewRound" ${!players.length?'disabled':''}>Новый круг ↻</button></div><p class="circle-safety-note">Все телефоны должны быть в той же Wi-Fi сети, что и компьютер ведущего. Компьютер с игрой должен оставаться включён.</p></section><aside class="circle-phone-preview"><div class="phone-preview-frame"><div class="phone-preview-speaker"></div><div class="phone-preview-snow">❄</div><b>${active?'ТВОЯ ОЧЕРЕДЬ':'ЖДЁМ ИГРОКОВ'}</b><span>${active?'На своём ходу участник не увидит свою карточку.':'Телефон каждого участника покажет личную карточку.'}</span><div class="phone-preview-dots">●　●　●</div></div><div class="picker-title">КАРТОЧКИ НАЗНАЧАЮТСЯ ЛИЧНО</div></aside></div>`;
+    return `<div class="guess-circle-layout"><section class="circle-host-panel"><div class="circle-round-label">ТЕЛЕФОННЫЙ КРУГ · РАУНД ${s.round||1}</div><h3>${active?`${escapeHtml(active.name)} угадывает`: 'Подключи участников'}</h3><p>${active?'Остальные участники увидят карточку активного игрока на своих телефонах. Сам угадывающий своей карточки не видит.':`Игроки вводят имена и получают случайные зимние карточки. ${onlineSync?'Для игры подключите телефоны к интернету.':'Телефоны должны быть в одной сети с ведущим.'}`}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа в телефонный круг" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение по QR-коду</b><p id="localInviteHint">Готовлю ссылку для телефонов…</p><div class="circle-invite"><span id="playerInviteUrl">${escapeHtml(inviteUrl)}</span><button class="soft-button" id="copyPlayerLink">Скопировать ссылку</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong><small>Можно ввести вручную после открытия страницы на телефоне</small></div></div></div><div class="circle-join-status">${players.length} ${players.length===1?'УЧАСТНИК ПОДКЛЮЧЁН':players.length>1?'УЧАСТНИКА ПОДКЛЮЧЕНО':'УЧАСТНИКОВ ПОДКЛЮЧЕНО'} · КОД ${roomCode}</div><div class="circle-player-list">${rows}</div><div class="circle-host-actions"><button class="solid-button" id="circleCorrect" ${!active?'disabled':''}>Угадал! +1 🎉</button><button class="soft-button" id="circlePass" ${!active?'disabled':''}>Пас · следующий участник →</button><button class="soft-button" id="circleNewRound" ${!players.length?'disabled':''}>Новый круг ↻</button></div><p class="circle-safety-note">${onlineSync?'Телефонам и компьютеру нужен интернет.':'Телефоны и компьютер должны быть в одной сети Wi-Fi.'} Оставьте игру ведущего открытой на время игры.</p></section><aside class="circle-phone-preview"><div class="phone-preview-frame"><div class="phone-preview-speaker"></div><div class="phone-preview-snow">❄</div><b>${active?'ТВОЯ ОЧЕРЕДЬ':'ЖДЁМ ИГРОКОВ'}</b><span>${active?'На своём ходу участник не увидит свою карточку.':'Телефон каждого участника покажет личную карточку.'}</span><div class="phone-preview-dots">●　●　●</div></div><div class="picker-title">КАРТОЧКИ НАЗНАЧАЮТСЯ ЛИЧНО</div></aside></div>`;
   }
   async function setupPlayerInvite(){
     const hint=$('#localInviteHint'),image=$('#playerInviteQr'),placeholder=$('#localQrPlaceholder'),urlLabel=$('#playerInviteUrl'),title=$('#localInviteTitle');
     if(!hint||!image)return;
     try{
       await shareOriginReady;
+      if(onlineSync){image.src=window.makeInviteQr(appPageUrl(`player.html?room=${roomCode}`));image.hidden=false;if(placeholder)placeholder.hidden=true;if(urlLabel)urlLabel.textContent=appPageUrl(`player.html?room=${roomCode}`);title.textContent='Сканируй QR-код, чтобы войти';hint.textContent='Откройте ссылку на телефоне и введите имя. Устройства должны иметь доступ к интернету.';return;}
       if(!localAddressAvailable&&['localhost','127.0.0.1','::1'].includes(location.hostname))throw new Error('No local network address found');
       const response=await fetch('/api/qr.svg?text='+encodeURIComponent(appPageUrl(`player.html?room=${roomCode}`)),{cache:'no-store'});
       if(!response.ok)throw new Error('QR service unavailable');
@@ -869,8 +937,8 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
       title.textContent='Сканируй QR-код, чтобы войти';
       hint.textContent='Телефон откроет страницу участника. Устройства должны быть в одной Wi-Fi сети.';
     }catch{
-      title.textContent=location.hostname.endsWith('.github.io')?'Запусти локальную игру для телефонного режима':'Локальный QR пока недоступен';
-      hint.textContent=location.hostname.endsWith('.github.io')?'GitHub Pages подходит для одиночной игры. Для телефонов запусти Node.js-сервер на компьютере ведущего и открой его локальный адрес.':!localAddressAvailable?'Подключи компьютер к Wi-Fi и открой игру по локальному IP-адресу — тогда появится QR для телефонов.':'Телефонный режим требует локального Node.js-сервера с WebSocket; проверь, что сервер запущен и устройства в одной Wi-Fi сети.';
+      title.textContent='QR-код пока недоступен';
+      hint.textContent='Можно скопировать ссылку и отправить её участникам. Устройства должны быть в одной Wi-Fi сети.';
       if(image)image.hidden=true;if(placeholder){placeholder.hidden=false;placeholder.textContent='❄';}
       if(urlLabel)urlLabel.textContent=appPageUrl(`player.html?room=${roomCode}`);
     }

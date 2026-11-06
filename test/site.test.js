@@ -69,7 +69,7 @@ test('melody board keeps three fields, a supergame, three scores and language se
     const click = selector => { const element = doc.querySelector(selector); assert.ok(element, selector); element.click(); };
     const payload = () => socket.messages.filter(msg => msg.type === 'state').at(-1).payload;
     click('[data-open="melody"]');
-    assert.equal(doc.querySelectorAll('[data-melody-tour]').length, 4);
+    assert.equal(doc.querySelectorAll('[data-melody-tour]').length, 5);
     assert.equal(doc.querySelectorAll('[data-melody-note]').length, 20);
     assert.equal(doc.querySelectorAll('[data-melody-name]').length, 3);
     assert.equal(doc.querySelectorAll('#melodyVersion option').length, 3);
@@ -303,7 +303,7 @@ test('three 4 by 5 boards use the reference prices, distinct categories and per-
     assert.equal(d.querySelector('.melody-player-score strong').textContent,'80');
     d.querySelector('[data-melody-score="0"][data-direction="1"]').click();
     assert.equal(d.querySelector('.melody-player-score strong').textContent,'80');
-    assert.equal(d.querySelectorAll('.melody-song-list li').length,67);
+    assert.equal(d.querySelectorAll('.melody-song-list li').length,72);
     assert.ok([...d.querySelectorAll('.melody-song-list li')].some(li=>/повтор названия/.test(li.textContent)));
   } finally {w.close()}
 });
@@ -348,5 +348,42 @@ test('projector displays the supergame clock and progress without song titles', 
     socket.listeners.message({data:JSON.stringify({type:'state',payload:{game:'melody',mode:'super',seconds:12,correct:3,status:'running',player:'Игрок 1'}})});
     const stage=dom.window.document.querySelector('#screenStage');
     assert.match(stage.textContent,/СУПЕРИГРА/);assert.match(stage.textContent,/12 сек/);assert.match(stage.textContent,/3 \/ 7/);
+  } finally {dom.window.close()}
+});
+
+test('bonus auction enforces bids, awards mistakes to the opponent and sends the winner to supergame', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  let socket;w.WebSocket=class{constructor(){socket=this;this.readyState=1;this.listeners={};this.messages=[]}addEventListener(n,f){this.listeners[n]=f}send(m){this.messages.push(JSON.parse(m))}};w.WebSocket.OPEN=1;
+  w.Audio=class{play(){return Promise.resolve()}pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    socket.listeners.open();const d=w.document, click=s=>{const el=d.querySelector(s);assert.ok(el,s);el.click()};
+    const payload=()=>socket.messages.filter(m=>m.type==='state').at(-1).payload;
+    click('[data-open="melody"]');click('[data-melody-tour="5"]');
+    let select=d.querySelector('[data-auction-player="0"]');select.value='2';select.dispatchEvent(new w.Event('change'));
+    select=d.querySelector('[data-auction-player="1"]');select.value='2';select.dispatchEvent(new w.Event('change'));assert.equal(select.value,'1');
+    click('#auctionStart');assert.equal(d.querySelector('#auctionPass').disabled,true);
+    click('[data-auction-bid="7"]');assert.equal(d.querySelector('[data-auction-bid="7"]').disabled,true);
+    click('[data-auction-bid="5"]');assert.equal(d.querySelector('[data-auction-bid="5"]').disabled,true);
+    click('#auctionPass');const answer=d.querySelector('.melody-answer p').textContent;
+    assert.equal(payload().phase,'guess');assert.equal(payload().bid,5);assert.equal(payload().answer,'');assert.ok(!JSON.stringify(payload()).includes(answer));
+    click('#auctionWrong');assert.deepEqual(Array.from(payload().players,p=>p.score),[1,0]);assert.equal(payload().answer,answer);
+    click('#auctionNext');click('[data-auction-bid="3"]');assert.equal(payload().phase,'guess');click('#auctionCorrect');
+    click('#auctionNext');click('[data-auction-bid="3"]');click('#auctionCorrect');
+    assert.equal(payload().phase,'finished');assert.deepEqual(Array.from(payload().players,p=>p.score),[3,0]);
+    click('#auctionNext');assert.equal(payload().mode,'super');assert.equal(payload().player,'Игрок 3');
+  } finally {w.close()}
+});
+
+test('new bundled Russian clips are mapped to actual MP3 files', () => {
+  const dom=new JSDOM('',{runScripts:'outside-only'});
+  try {
+    dom.window.eval(read('melody-data.js'));
+    const audio=dom.window.MELODY_RUSSIAN_AUDIO;
+    for(const title of ['Пять минут','Три белых коня','Песенка о медведях','Песенка о снежинке','Снег идёт']) {
+      const data=fs.readFileSync(audio[title]);assert.ok(data.length>100000,title);
+      assert.ok(data.subarray(0,3).toString()==='ID3' || data[0]===0xff,title);
+    }
   } finally {dom.window.close()}
 });
