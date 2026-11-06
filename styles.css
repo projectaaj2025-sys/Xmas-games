@@ -514,12 +514,12 @@
 .melody-invite{margin:12px 0;padding:14px;border:1px solid #c9dee8;border-radius:14px;background:#f7fcff;color:#294c60}.melody-invite summary{font-weight:900;cursor:pointer}.melody-invite p{line-height:1.5}.melody-seat-list{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}.melody-seat-list label{display:grid;gap:4px;flex:1 1 160px;font-weight:800}.melody-seat-list select{padding:9px;border:1px solid #abc9d7;border-radius:8px;background:#fff;color:#294c60}.melody-player-score.active{background:#ad5209;outline:3px solid #ffe274;outline-offset:-3px}.melody-player-score.passed{opacity:.42;filter:grayscale(.65)}.melody-player-score small{display:block;font-weight:900;color:#fff2aa;font-size:12px}.melody-buzzer-panel{margin-top:14px;padding:12px;border:1px solid #f0dab2;border-radius:12px;background:#fff9ed}.melody-buzzer-panel p{margin:0 0 8px;color:#533823}.melody-buzzer-actions{display:flex;gap:8px;flex-wrap:wrap}.melody-score-correction{margin-top:14px}.melody-score-correction summary{cursor:pointer;font-weight:800}
 
 /* Compact host console: keep the board and judging side by side on a laptop. */
-.modal-content.melody-screen{padding:0 2vw 16px}
+.modal-content.melody-screen{max-width:1920px;padding:0 2vw 16px}
 .melody-screen .game-topbar{height:50px;margin-bottom:6px}
-.melody-screen-tools{max-width:1250px;margin:0 auto;color:#526985;font-size:13px}
+.melody-screen-tools{max-width:1920px;margin:0 auto;color:#526985;font-size:13px}
 .melody-screen-tools>summary,.melody-config>summary{cursor:pointer;font-weight:900;padding:7px 12px;border:1px solid #dce9f0;border-radius:9px;background:#fff;color:#486079}
 .melody-screen-tools .screen-tools{padding:8px}
-.melody-main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(330px,.75fr);grid-template-areas:'config config' 'stage panel';align-items:start;gap:10px;margin:8px auto 12px;padding:0}
+.melody-main{max-width:1920px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(330px,.75fr);grid-template-areas:'config config' 'stage panel';align-items:start;gap:10px;margin:8px auto 12px;padding:0}
 .melody-main>.melody-config{grid-area:config;min-width:0;color:#536887}
 .melody-main>.melody-stage{grid-area:stage;padding:12px 16px;border-width:3px;border-radius:16px}
 .melody-main>.melody-host-panel{grid-area:panel;margin:0;padding:14px;border-radius:14px}
@@ -555,7 +555,7 @@
 @media(max-width:850px){.melody-main{grid-template-columns:1fr;grid-template-areas:'config' 'stage' 'panel'}.melody-screen #melodyExternalPlayer:not([hidden]){width:min(220px,45vw)}}
 @media(max-height:700px) and (min-width:851px){.melody-screen .game-topbar{height:42px}.melody-main .melody-note-tile{width:min(100%,82px)}.melody-main .melody-show-heading h2{font-size:24px}.melody-main .melody-player-number{font-size:30px}.melody-main .melody-player-score strong{font-size:21px}}
 /* The auction and supergame use the same compact two-column host layout. */
-.melody-bonus{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(330px,.9fr);grid-template-areas:'saved saved' 'stage panel' 'list list';align-items:start;gap:10px;margin:8px auto 12px}
+.melody-bonus{max-width:1920px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(330px,.9fr);grid-template-areas:'saved saved' 'stage panel' 'list list';align-items:start;gap:10px;margin:8px auto 12px}
 .melody-bonus>.game-save-status{grid-area:saved;margin:0}
 .melody-bonus>.melody-stage{grid-area:stage;padding:14px 16px;border-width:3px}
 .melody-bonus>.melody-host-panel{grid-area:panel;margin:0;padding:14px}
@@ -566,3 +566,10 @@
 .melody-bonus .melody-host-panel p{margin:7px 0}
 .melody-bonus .melody-host-panel button,.melody-bonus .melody-file{padding:7px 9px}
 @media(max-width:850px){.melody-bonus{grid-template-columns:1fr;grid-template-areas:'saved' 'stage' 'panel' 'list'}}
+
+/* Make use of larger displays while keeping laptop controls within the viewport. */
+@media(min-width:851px) and (min-height:701px){
+  .melody-main .melody-note-tile{width:min(100%,clamp(100px,calc(40vh - 188px),165px));font-size:clamp(20px,2.2vw,36px)}
+  .melody-main .melody-show-heading h2{font-size:clamp(27px,2.4vw,42px)}
+  .melody-main .melody-show-heading strong{font-size:clamp(24px,2vw,32px)}
+}

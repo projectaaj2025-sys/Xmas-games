@@ -84,3 +84,20 @@
 /* Keep the return-to-host control usable on narrow displays. */
 @media(max-width:700px){.screen-top{height:auto;min-height:58px;gap:6px;flex-wrap:wrap;padding:7px 12px}.screen-logo span{display:none}.screen-footer{height:auto;min-height:47px;gap:8px;flex-wrap:wrap}}
 .display-melody-scores>div.active{background:#ad5209;outline:3px solid #ffe274;outline-offset:-3px}.display-melody-scores>div.passed{opacity:.42;filter:grayscale(.7)}.display-melody-scores em{font-size:12px;font-style:normal;font-weight:900;color:#fff2aa}
+
+/* Fit the full music board and scores on the participant screen without clipping. */
+body.showing-melody{height:100vh;height:100dvh;min-height:0}
+.screen-stage.melody-display{flex:1 1 0;min-height:0;width:calc(100% - 4vw);max-width:1920px;margin:8px auto;padding:clamp(10px,2vh,25px)}
+.screen-stage.melody-display:before,.screen-stage.melody-display:after{display:none}
+.display-melody-heading{width:100%;font-size:clamp(20px,4vh,42px)}
+.display-melody-board{width:100%;gap:4px;margin:clamp(5px,1vh,12px) 0}
+.display-melody-row{min-height:0;gap:clamp(4px,1vw,15px)}
+.display-melody-category{padding:5px;font-size:clamp(12px,2.4vh,26px)}
+.display-melody-notes{align-items:center}
+.display-melody-note{width:min(100%,clamp(70px,calc(25vh - 75px),165px));font-size:clamp(16px,3.5vh,36px)}
+.screen-stage .display-melody-prompt{width:100%;max-width:none;margin:clamp(5px,1vh,10px) 0;font-size:clamp(16px,2.8vh,27px);line-height:1.2}
+.display-melody-scores{width:100%}
+.display-melody-scores>div{padding:clamp(4px,1vh,10px)}
+.display-melody-scores strong{font-size:clamp(30px,6vh,70px)}
+.display-melody-scores small{font-size:clamp(20px,4vh,40px)}
+.melody-display .screen-code{margin-top:clamp(4px,1vh,10px);font-size:clamp(11px,1.8vh,16px)}
