@@ -115,3 +115,26 @@
 - `wonderful-christmastime.mp3` — Paul McCartney & The Wings, Wonderful Christmastime.
 
 Если время начала не указано, фрагмент взят с начала исходного файла. Наличие записей в источниках не подтверждает разрешение правообладателей на повторное публичное распространение; оно не проверено.
+
+## Расширенная праздничная подборка без повторов
+
+Для дополнительных 14 фрагментов взяты записи из [LayanJethwa/christmas-music-player](https://github.com/LayanJethwa/christmas-music-player/tree/4d9e182373a0255aff9fe5d56bbeaf642fc88a90/christmas-music). Указанные названия и исполнители есть в именах и метаданных исходных файлов. Все фрагменты перекодированы в MP3 128 кбит/с, по 25 секунд:
+
+- `driving-home.mp3` — Chris Rea, Driving Home for Christmas, с 30-й секунды;
+- `holly-jolly.mp3` — Burl Ives, A Holly Jolly Christmas, с начала;
+- `christmas-lights.mp3` — Coldplay, Christmas Lights, с 45-й секунды;
+- `mistletoe.mp3` — Justin Bieber, Mistletoe, с 30-й секунды;
+- `have-yourself.mp3` — Frank Sinatra, Have Yourself a Merry Little Christmas, с начала;
+- `santa-baby.mp3` — Eartha Kitt, Santa Baby, с начала;
+- `sleigh-ride.mp3` — Ella Fitzgerald, Sleigh Ride, с начала;
+- `shake-up-christmas.mp3` — Train, Shake Up Christmas, с 35-й секунды;
+- `little-drummer-boy.mp3` — The Harry Simeone Chorale, The Little Drummer Boy, с начала;
+- `first-noel.mp3` — Johnny Mathis, The First Noel, с начала;
+- `merry-christmas-everybody.mp3` — Slade, Merry Christmas Everybody, с 30-й секунды;
+- `auld-lang-syne.mp3` — Guy Lombardo, Auld Lang Syne, с начала;
+- `here-comes-santa-claus.mp3` — Elvis Presley, Here Comes Santa Claus, с начала;
+- `i-saw-mommy-kissing-santa.mp3` — Jackson 5, I Saw Mommy Kissing Santa Claus, с начала.
+
+`eto-novy-god.mp3` — начало 27-секундного файла `song_15.mp3` из [KViachaslav/muzloto](https://github.com/KViachaslav/muzloto/tree/246c1b57083ae7e8c57d3901470bef8214d4edec/songs); его название «Это Новый год» и исполнитель «Волшебники двора» указаны в метаданных и [списке песен источника](https://github.com/KViachaslav/muzloto/blob/246c1b57083ae7e8c57d3901470bef8214d4edec/список%20песен.txt).
+
+Эти источники не подтверждают разрешение правообладателей на повторное публичное распространение фонограмм; такое разрешение не проверено.
