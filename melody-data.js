@@ -36,7 +36,12 @@ window.MELODY_SONGS = {
     "Маленькой ёлочке холодно зимой",
     "Расскажи, Снегурочка",
     "Новый год",
-    "О мой год!"
+    "О мой год!",
+    "Зима в сердце",
+    "Снег",
+    "Синий иней",
+    "Диалог у новогодней ёлки",
+    "Новогодняя песня"
 ],
   "international": [
     "All I Want for Christmas Is You",
@@ -310,7 +315,12 @@ window.MELODY_RUSSIAN_SOURCES = [
     "artist": "Олег Попков",
     "source": "https://rus.hitmos.fm/song/10737957",
     "youtube": null
-  }
+  },
+  {"artist":"Моя Мишель", "source":null, "youtube":null},
+  {"artist":"Филипп Киркоров (минус)", "source":null, "youtube":null},
+  {"artist":"Премьер-Министр", "source":null, "youtube":null},
+  {"artist":"Из фильма «Москва слезам не верит»", "source":null, "youtube":null},
+  {"artist":"The Limba, JONY, Егор Крид, А4", "source":null, "youtube":null}
 ];
 
 // Three boards, each with four themed rows and five fixed positions.
@@ -324,15 +334,15 @@ window.MELODY_LAYOUT = [
   ],
   [
     {name:'У ёлки', ru:[10,22,32,33,17], en:[3,12,17,22,20]},
-    {name:'Снежные истории', ru:[13,25,27,28,29], en:[6,14,27,28,29]},
+    {name:'Снежные истории', ru:[13,37,27,28,29], en:[6,14,27,28,29]},
     {name:'Встречаем Новый год', ru:[20,26,34,35,12], en:[1,9,10,11,13]},
-    {name:'Праздничное настроение', ru:[0,18,19,24,31], en:[0,2,3,19,21]}
+    {name:'Праздничное настроение', ru:[0,40,19,24,31], en:[0,2,3,19,21]}
   ],
   [
-    {name:'Зимние картины', ru:[1,9,16,25,27], en:[6,14,27,28,29]},
+    {name:'Зимние картины', ru:[36,9,16,25,38], en:[6,14,27,28,29]},
     {name:'Добрые истории', ru:[3,5,6,7,8], en:[4,28,29,33,34]},
     {name:'Загадаем желание', ru:[2,15,23,26,30], en:[1,9,15,21,32]},
-    {name:'Праздник у ёлки', ru:[0,11,12,22,34], en:[0,2,3,12,13]}
+    {name:'Праздник у ёлки', ru:[0,11,12,39,34], en:[0,2,3,12,13]}
   ]
 ];
 window.MELODY_SUPER_TRACKS = {
@@ -340,6 +350,10 @@ window.MELODY_SUPER_TRACKS = {
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  'Зима в сердце':'assets/melody/audio/zima-v-serdtse.mp3',
+  'Снег':'assets/melody/audio/sneg-kirkorov.mp3',
+  'Синий иней':'assets/melody/audio/siniy-iney.mp3',
+  'Диалог у новогодней ёлки':'assets/melody/audio/dialog-u-elki.mp3',
   'Новогодняя':'assets/melody/audio/novogodnyaya.mp3',
   'Зима-холода':'assets/melody/audio/zima-holoda.mp3',
   'Расскажи, Снегурочка':'assets/melody/audio/rasskazhi-snegurochka.mp3',
@@ -356,4 +370,7 @@ window.MELODY_RUSSIAN_AUDIO = {
 };
 
 // 'Новый год' appears twice; bind this recording to Стекловата only.
-window.MELODY_RUSSIAN_AUDIO_BY_INDEX = {34:'assets/melody/audio/novy-god-steklovata.mp3'};
+window.MELODY_RUSSIAN_AUDIO_BY_INDEX = {
+  34:'assets/melody/audio/novy-god-steklovata.mp3',
+  40:'assets/melody/audio/novogodnyaya-pesnya-a4.mp3'
+};
