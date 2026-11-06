@@ -101,6 +101,10 @@
     }
     stage.innerHTML = `<div class="screen-stars">✦　❄　✧　❄　✦</div><div class="screen-kicker">${safeText(data.gameLabel || 'НОВОГОДНЯЯ ИГРА')}</div><div class="screen-emoji">${data.image?`<img src="${safeText(data.image)}" alt="">`:safeText(data.emoji || '❄️')}</div><h1 class="screen-word">${safeText(data.word || '')}</h1><div class="screen-mode">${safeText(data.mode || 'ЗИМНЕЕ СЛОВО')}</div>${Number.isFinite(data.timer)?`<div class="screen-clock">${safeText(String(Math.floor(data.timer/60)).padStart(2,'0'))}:${safeText(String(data.timer%60).padStart(2,'0'))}</div>`:''}<div class="screen-team">${safeText(data.team || '')}</div><p class="screen-hint">${safeText(data.instruction || 'Удачи!')}</p>${roomNote}`;
   }
+  document.querySelector('#screenBackHost').addEventListener('click', () => {
+    try { if(window.opener && !window.opener.closed){window.opener.focus();return;} } catch {}
+    document.querySelector('#screenHint').textContent='Переключитесь на вкладку или окно, где ведущий открыл игру. Управление находится там.';
+  });
   document.querySelector('#screenFullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.();
   });

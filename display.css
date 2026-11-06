@@ -81,3 +81,5 @@
 @media(max-width:620px){.display-melody-row{grid-template-columns:minmax(80px,1fr) 2.4fr;gap:5px;min-height:60px}.display-melody-category{font-size:12px;padding:5px}.display-melody-notes{gap:2px}}
 .display-melody-row{grid-template-columns:minmax(140px,1fr) 4fr}.display-melody-notes{grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(2px,1vw,14px)}
 @media(max-width:620px){.display-melody-row{grid-template-columns:minmax(75px,1fr) 4fr}.display-melody-notes{gap:1px}.display-melody-note{font-size:clamp(11px,3vw,20px)}}
+/* Keep the return-to-host control usable on narrow displays. */
+@media(max-width:700px){.screen-top{height:auto;min-height:58px;gap:6px;flex-wrap:wrap;padding:7px 12px}.screen-logo span{display:none}.screen-footer{height:auto;min-height:47px;gap:8px;flex-wrap:wrap}}
