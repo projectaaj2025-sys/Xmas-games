@@ -660,40 +660,6 @@ function renderMelodyScreen(state) {
           ` }
         </ul>
       </div>
-    `;
-  }
-            <li>«Зимний лес» (Тур 1, Мелодия 8)</li>
-            <li>«Рождество» (Тур 1, Мелодия 9)</li>
-            <li>«Снежная королева» (Тур 2, Мелодия 1)</li>
-            <li>«Огни города» (Тур 2, Мелодия 2)</li>
-            <li>«Новогодние огни» (Тур 2, Мелодия 3)</li>
-            <li>«Праздник» (Тур 2, Мелодия 4)</li>
-            <li>«Загадочный лес» (Тур 2, Мелодия 5)</li>
-            <li>«Зимняя сказка» (Тур 2, Мелодия 6)</li>
-            <li>«Снег» (Тур 2, Мелодия 7)</li>
-            <li>«Колокольчики» (Тур 2, Мелодия 8)</li>
-            <li>«Новогодняя ночь» (Тур 2, Мелодия 9)</li>
-            <li>«Зимний сад» (Тур 3, Мелодия 1)</li>
-            <li>«Снежные горы» (Тур 3, Мелодия 2)</li>
-            <li>«Зимний ветер» (Тур 3, Мелодия 3)</li>
-            <li>«Новогодний подарок» (Тур 3, Мелодия 4)</li>
-            <li>«Зимняя сказка» (Тур 3, Мелодия 5)</li>
-            <li>«Новогодний танец» (Тур 3, Мелодия 6)</li>
-            <li>«Снежные шары» (Тур 3, Мелодия 7)</li>
-            <li>«Зимний рассвет» (Тур 3, Мелодия 8)</li>
-            <li>«Новогодний фейерверк» (Тур 3, Мелодия 9)</li>
-            <li>«Зимняя сказка» (Тур 4, Мелодия 1)</li>
-            <li>«Новогодний праздник» (Тур 4, Мелодия 2)</li>
-            <li>«Снежный балет» (Тур 4, Мелодия 3)</li>
-            <li>«Зимняя сказка» (Тур 4, Мелодия 4)</li>
-            <li>«Новогодний карнавал» (Тур 4, Мелодия 5)</li>
-            <li>«Зимний ветер» (Тур 4, Мелодия 6)</li>
-            <li>«Снег» (Тур 4, Мелодия 7)</li>
-            <li>«Зимний лес» (Тур 4, Мелодия 8)</li>
-            <li>«Новогодний фейерверк» (Тур 4, Мелодия 9)</li>
-          ` }
-        </ul>
-      </div>
     </div>
   `;
 }
@@ -738,15 +704,15 @@ function renderMelodyViewer(state) {
       closeGame(); // Закрываем модал, так как это внешняя ссылка
       return;
     }
-    if (kind==='field') { fieldState={...createContest(),mode:'screen',wheelSector:0,lettersRevealed:[],chests:[false,false],chestPrize:Math.floor(Math.random()*2),round:1,activePlayerId:0,viewerReactions:[],finished:false}; renderField(); }
-    if (kind==='melody') { melodyState={...createContest(),tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false,version:'russian'}; renderMelody(); }
-    if (kind==='melody-intl') { melodyState={...createContest(),tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false,version:'international'}; renderMelody(); }
+    if (kind==='field') { commonFrame('Поле чудес: Новый год','КОЛЕСО И БУКВЫ','Выберите режим и начинайте игру.','field-screen'); fieldState={...createContest(),mode:'screen',wheelSector:0,lettersRevealed:[],chests:[false,false],chestPrize:Math.floor(Math.random()*2),round:1,activePlayerId:0,viewerReactions:[],finished:false}; renderField(); }
+    if (kind==='melody') { commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Узнавайте мелодии всей компанией.','melody-screen'); melodyState={...createContest(),mode:'screen',tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false,version:'russian'}; renderMelody(); }
+    if (kind==='melody-intl') { commonFrame('Угадай мелодию: Иностранные песни','МУЗЫКАЛЬНАЯ ИГРА','Узнавайте мелодии всей компанией.','melody-screen'); melodyState={...createContest(),mode:'screen',tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false,version:'international'}; renderMelody(); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],activePlayerId:0,round:1}; renderGuess(); }
     if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,cardFaceUp:false,cardFlipAnimating:false,taskSelected:false,deckMode:'simple',finished:false}; renderCroc(); }
     if (kind==='quiz') { const teams=createContest('teams',2); quizState={...teams,active:Math.floor(Math.random()*2),questions:window.QUIZ_QUESTIONS||[],used:[],selected:null,selectedOption:null,revealed:false,answerResult:null,finished:false}; renderQuiz(); }
     if (kind==='crossword') { crosswordState={puzzleIndex:0,values:{},checked:false,solved:{},message:'Выбери подсказку и вписывай по одной букве в клетку.'}; renderCrossword(); publish({game:'idle',revealed:false,instruction:'Новогодний кроссворд открыт на основном устройстве.'}); }
-  }  }
+  }
   document.querySelectorAll('[data-open]').forEach(button=>button.addEventListener('click',()=>openGame(button.dataset.open)));
   $('#modalClose').addEventListener('click',closeGame);
   modal.addEventListener('click',event=>{if(event.target===modal)closeGame();});
