@@ -15,7 +15,7 @@ window.MELODY_SONGS = {
     "Снег-снежок",
     "Это новый год",
     "Снегом стать",
-    "Зима",
+    "Зима (Потолок ледяной)",
     "С Новым годом, Россия!",
     "Белая зима",
     "Белые снежинки",
@@ -23,7 +23,7 @@ window.MELODY_SONGS = {
     "Новый год",
     "Старый год",
     "Праздник к нам приходит",
-    "Ёлочка",
+    "В лесу родилась ёлочка",
     "В этот Новый год",
     "Новогодний поцелуй",
     "Снег падает",
@@ -202,8 +202,8 @@ window.MELODY_RUSSIAN_SOURCES = [
     "youtube": null
   },
   {
-    "artist": "Инна Маликова и Новые Самоцветы",
-    "source": "https://rus.hitmos.fm/song/10733860",
+    "artist": "Эдуард Хиль (минусовка)",
+    "source": null,
     "youtube": null
   },
   {
@@ -242,8 +242,8 @@ window.MELODY_RUSSIAN_SOURCES = [
     "youtube": "eptzcBeAOnk"
   },
   {
-    "artist": "Балаган Лимитед",
-    "source": "https://rus.hitmos.fm/song/10737949",
+    "artist": "детская песня",
+    "source": null,
     "youtube": null
   },
   {
@@ -332,7 +332,7 @@ window.MELODY_LAYOUT = [
     {name:'Зимние картины', ru:[1,9,16,25,27], en:[6,14,27,28,29]},
     {name:'Добрые истории', ru:[3,5,6,7,8], en:[4,28,29,33,34]},
     {name:'Загадаем желание', ru:[2,15,23,26,30], en:[1,9,15,21,32]},
-    {name:'Танцуем на празднике', ru:[0,11,12,22,34], en:[0,2,3,12,13]}
+    {name:'Праздник у ёлки', ru:[0,11,12,22,34], en:[0,2,3,12,13]}
   ]
 ];
 window.MELODY_SUPER_TRACKS = {
@@ -340,6 +340,12 @@ window.MELODY_SUPER_TRACKS = {
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  'Новогодняя':'assets/melody/audio/novogodnyaya.mp3',
+  'Зима-холода':'assets/melody/audio/zima-holoda.mp3',
+  'Расскажи, Снегурочка':'assets/melody/audio/rasskazhi-snegurochka.mp3',
+  'Маленькой ёлочке холодно зимой':'assets/melody/audio/malenkoy-elochke.mp3',
+  'В лесу родилась ёлочка':'assets/melody/audio/v-lesu-rodilas-elochka.mp3',
+  'Зима (Потолок ледяной)':'assets/melody/audio/potolok-ledyanoy.mp3',
   'Пять минут':'assets/melody/audio/pyat-minut.mp3',
   'Три белых коня':'assets/melody/audio/tri-belyh-konya.mp3',
   'Песенка о медведях':'assets/melody/audio/pesenka-o-medvedyah.mp3',
@@ -348,3 +354,6 @@ window.MELODY_RUSSIAN_AUDIO = {
   'Кабы не было зимы':'assets/melody/audio/kaby-ne-bylo-zimy.mp3',
   'Звенит январская вьюга':'assets/melody/audio/zvenit-yanvarskaya-vyuga.mp3'
 };
+
+// 'Новый год' appears twice; bind this recording to Стекловата only.
+window.MELODY_RUSSIAN_AUDIO_BY_INDEX = {34:'assets/melody/audio/novy-god-steklovata.mp3'};
