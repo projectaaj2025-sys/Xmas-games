@@ -503,6 +503,10 @@ function melodySong(state, index, superGame = false) {
   const source=language === 'russian' ? window.MELODY_RUSSIAN_SOURCES[songIndex] : null;
   return {title:window.MELODY_SONGS[language][songIndex],language,source,songIndex};
 }
+function bundledMelodyUrl(song) {
+  if(!song) return null;
+  return song.language==='russian' ? (window.MELODY_RUSSIAN_AUDIO_BY_INDEX?.[song.songIndex] || window.MELODY_RUSSIAN_AUDIO?.[song.title]) : window.MELODY_AUDIO?.[song.title];
+}
 function melodyValue(state,index=state.selected) { return melodyValues[state.tour-1][index]; }
 function melodyCategories(state) {return window.MELODY_LAYOUT[state.tour-1].map(row=>row.name);}
 function melodyKey(state, index = state.selected) { return `${state.version}-${state.tour}-${index}`; }
@@ -539,7 +543,7 @@ function renderMelody() {
   const song = s.selected == null ? null : melodySong(s, s.selected);
   const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
   const uploadedFile = song && s.files[melodyKey(s)];
-  const bundledUrl = song && (song.language==='russian' ? window.MELODY_RUSSIAN_AUDIO?.[song.title] : window.MELODY_AUDIO?.[song.title]);
+  const bundledUrl = bundledMelodyUrl(song);
   const youtubeId = song && (song.language === 'russian' ? song.source?.youtube : window.MELODY_YOUTUBE?.[song.title]);
   const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Встроенная запись'} : null);
   body.innerHTML = `<div class="melody-show melody-screen-view">
@@ -613,7 +617,7 @@ const auctionTracks={
 function auctionSong(s,i) {
   const language=s.version==='mixed'?(i%2?'international':'russian'):s.version;
   const track=auctionTracks[language][i],songIndex=track.index;
-  return {title:window.MELODY_SONGS[language][songIndex],language,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
+  return {title:window.MELODY_SONGS[language][songIndex],language,songIndex,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
 }
 function resetAuction(s){
   const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);
@@ -626,7 +630,7 @@ function publishAuction(){
 function renderMelodyAuction(){
   const s=melodyState,a=s.auction,body=$('#gameBody'),song=auctionSong(s,a.track);
   const setup=a.phase==='setup', bidding=a.phase==='bidding',guessing=a.phase==='guess',finished=a.phase==='finished';
-  const url=s.files['auction-'+a.track]?.url||(song.language==='russian'?window.MELODY_RUSSIAN_AUDIO?.[song.title]:window.MELODY_AUDIO?.[song.title]);
+  const url=s.files['auction-'+a.track]?.url||bundledMelodyUrl(song);
   const youtube=song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title];
   const phaseText=setup?'Выберите двух участников с лучшими результатами.':bidding?`Ход: ${escapeHtml(s.names[a.players[a.turn]])}`:guessing?`Отвечает: ${escapeHtml(s.names[a.players[a.bidder]])} · ${a.bid} нот`:finished?`Победитель: ${escapeHtml(s.names[a.players[a.lastWinner]])}`:`Очко получает ${escapeHtml(s.names[a.players[a.lastWinner]])}.`;
   body.innerHTML=`<div class="melody-show melody-screen-view"><div class="melody-stage"><div class="melody-show-heading"><div><span>БОНУСНЫЙ РАУНД</span><h2>Торги ♫</h2></div><strong>ДО 3 ОЧКОВ</strong></div>
@@ -679,7 +683,7 @@ function playSuperTrack() {
   const s=melodyState;if(!s || !checkSuperTime(s)) return;
   const index=s.super.queue[0], song=melodySong(s,index,true);
   const uploaded=s.files['super-'+index];
-  const url=uploaded?.url || (song.language==='russian'?window.MELODY_RUSSIAN_AUDIO?.[song.title]:window.MELODY_AUDIO?.[song.title]);
+  const url=uploaded?.url || bundledMelodyUrl(song);
   const youtube=song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title];
   if(url) playMelodyAudio(url);
   else if(youtube) {
@@ -691,7 +695,7 @@ function renderMelodySuper() {
   const s=melodyState, body=$('#gameBody'), supergame=s.super;
   const index=supergame.queue[0], song=index===undefined?null:melodySong(s,index,true), running=supergame.status==='running';
   const youtube=song && (song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title]);
-  const url=song && (s.files['super-'+index]?.url || (song.language==='russian'?window.MELODY_RUSSIAN_AUDIO?.[song.title]:window.MELODY_AUDIO?.[song.title]));
+  const url=song && (s.files['super-'+index]?.url || bundledMelodyUrl(song));
   const message=supergame.status==='won'?'Победа! Все семь мелодий угаданы.':supergame.status==='lost'?'Суперигра окончена: ошибка или время истекло.':'Угадайте семь мелодий за 30 секунд. Можно пропустить мелодию и вернуться к ней. Ошибка завершает игру.';
   body.innerHTML=`<div class="melody-show melody-screen-view"><div class="melody-stage"><div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Суперигра ★</h2></div><strong id="superSeconds">${supergame.seconds}</strong></div>
     <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-super-tour="${n}" ${running?'disabled':''}>Тур ${n}</button>`).join('')}<button type="button" data-super-tour="5" ${running?'disabled':''}>Торги ♫</button><button class="active" type="button" aria-current="page">Суперигра ★</button></div>

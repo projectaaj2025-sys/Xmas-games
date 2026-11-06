@@ -387,3 +387,34 @@ test('new bundled Russian clips are mapped to actual MP3 files', () => {
     }
   } finally {dom.window.close()}
 });
+
+test('game cards show features and player counts, never estimated duration', () => {
+  const dom=new JSDOM(read('index.html'));
+  try {
+    const cards=[...dom.window.document.querySelectorAll('.game-card')];assert.ok(cards.length>0);
+    for(const card of cards){
+      const meta=card.querySelector('.game-meta');assert.ok(meta);
+      assert.doesNotMatch(meta.textContent, /⏱|\d\s*[–-]\s*\d+\s*(?:минут|час)/i);
+      assert.ok(meta.querySelectorAll('span').length>=2);
+    }
+  } finally {dom.window.close()}
+});
+
+test('new Russian recordings are playable, with duplicate titles mapped to the right artist', () => {
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  const played=[];w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
+  try {
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    for(const [i,title] of w.MELODY_SONGS.russian.entries()) {
+      const path=w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title];
+      if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
+    }
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,14);
+    for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
+    const d=w.document;d.querySelector('[data-open="melody"]').click();
+    d.querySelector('[data-melody-note="3"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,true);
+    d.querySelector('[data-melody-tour="2"]').click();d.querySelector('[data-melody-note="12"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/novy-god-steklovata\.mp3$/);
+  } finally {w.close()}
+});

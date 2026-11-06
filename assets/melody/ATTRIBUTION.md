@@ -39,3 +39,12 @@
 - `sneg-idet.mp3` — 18-секундный фрагмент (с 20-й секунды) записи, обозначенной в исходном [Indy660/player_for_viktoria](https://github.com/Indy660/player_for_viktoria/tree/HEAD/public/music) как «Глюк-oZa - Снег идет.mp3».
 
 В перечисленных репозиториях разрешение правообладателей на повторную публичную публикацию этих фонограмм и произведений не подтверждено; доступность файлов сама по себе не является лицензией.
+
+## Ещё семь русских записей и фрагментов
+
+- `zima-holoda.mp3`, `rasskazhi-snegurochka.mp3`, `novogodnyaya.mp3` — файлы 2, 45, 50 из [музыкального лото](https://github.com/yook/lotto/tree/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs), названия и исполнители сверены с [каталогом](https://github.com/yook/lotto/blob/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs.js). Запись «Зима-холода» также содержит метаданные с названием и исполнителем.
+- `malenkoy-elochke.mp3` — [файл](https://github.com/chizzgar/universal_monoBrowStand/blob/1fc9c76c15fe19bfbb28af2e045631b42404ae29/multipleChoice/multipleChoice_2/sound/multipleChoice_2/DO_3-4_17_2_11.mp3) из викторины; название указано в [описании задания](https://github.com/chizzgar/universal_monoBrowStand/blob/1fc9c76c15fe19bfbb28af2e045631b42404ae29/multipleChoice/multipleChoice_2/js-data/multipleChoice_2.js) и в метаданных.
+- `v-lesu-rodilas-elochka.mp3`, `potolok-ledyanoy.mp3` — фрагменты из игры [Guess-The-Melody-Game-New-Year](https://github.com/faVnItKaIsy/Guess-The-Melody-Game-New-Year/tree/5115e6a44249b1c1ceb0a9d19366f6ab056bc047/мелодии). «Потолок ледяной» — минусовка, обозначенная в метаданных как Эдуард Хиль.
+- `novy-god-steklovata.mp3` — 30-секундный фрагмент с 30-й секунды записи [«Стекловата — Новый год»](https://github.com/0-A-0/Player/tree/5bc67a540dfa401267058a3abbd221424e3cf3fb/src). Она назначена только позиции группы «Стекловата» и не подменяет одноимённую песню группы «Вирус».
+
+У этих источников нет подтверждённой лицензии правообладателей на повторное публичное размещение записей; наличие файлов в репозиториях не является разрешением. Перед публичным использованием необходимо проверить права.
