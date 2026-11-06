@@ -12,7 +12,7 @@
     localStorage.setItem(tokenKey,reconnectToken);
   }
   const savedName = localStorage.getItem('snowyPlayerName') || '';
-  let socket = null, playerName = '', joined = false, retryTimer = null;
+  let socket = null, playerName = '', joined = false, retryTimer = null, phoneRole = 'player';
   $('#playerName').value = savedName;
   $('#manualRoomEntry').hidden = Boolean(room);
   $('#roomCodeInput').value = room.toUpperCase();
@@ -28,7 +28,7 @@
     clearTimeout(retryTimer);
     const scheme=location.protocol==='https:'?'wss:':'ws:';
     socket=location.protocol==='https:' && window.StaticSync ? new window.StaticSync(room,'client') : new WebSocket(`${scheme}//${location.host}/sync`);
-    socket.addEventListener('open',()=>socket.send(JSON.stringify({type:'join',room,role:'player',playerId,reconnectToken,name:playerName})));
+    socket.addEventListener('open',()=>socket.send(JSON.stringify({type:'join',room,role:phoneRole,playerId,reconnectToken,name:playerName})));
     socket.addEventListener('message',event=>{
       let data;try{data=JSON.parse(event.data)}catch{return}
       if(data.type==='joined'){
@@ -42,6 +42,8 @@
   }
   function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function renderPlayerState(state){
+    if(state?.game==='field'){renderFieldPhone(state);return;}
+    $('#fieldPhone').hidden=true;$('#playerCardFace').hidden=false;document.querySelector('.phone-reminder').hidden=false;
     if(!state||state.game!=='guess'||state.guessMode!=='circle'||!state.playerView){
       $('#playerTurn').textContent='ЖДЁМ ВЕДУЩЕГО';$('#playerHeading').textContent='Телефонный круг ещё не начался';
       $('#playerInstructions').textContent='Ведущий включит режим «Круг с телефонами». До этого можно оставить эту страницу открытой.';
@@ -57,9 +59,40 @@
     $('#playerHint').textContent=view.active?'Твоя карточка скрыта от тебя.':view.hint||'';
     $('#playerActions').hidden=!view.active;
   }
+  let fieldPhonePhase='', fieldPhoneActive='';
+  function renderFieldPhone(state){
+    const existing=$('#phoneAnswer');const keep=existing && fieldPhonePhase===state.phase && fieldPhoneActive===state.activeId;const draft=keep?existing.value:'';const focused=keep&&document.activeElement===existing;
+    fieldPhonePhase=state.phase;fieldPhoneActive=state.activeId;
+    const active=phoneRole==='player'&&state.activeId===playerId&&!!state.activeId;
+    $('#playerCardFace').hidden=true;$('#playerActions').hidden=true;document.querySelector('.phone-reminder').hidden=true;$('#playerHint').textContent='';
+    $('#playerTurn').textContent=`ПОЛЕ ЧУДЕС · ${state.round}`;
+    $('#playerHeading').textContent=phoneRole==='viewer'?'Вы зритель':active?'Ваш ход!':'Следим за игрой';
+    $('#playerInstructions').textContent=state.message||'Ждём начала тура.';
+    const box=$('#fieldPhone');box.hidden=false;
+    const board=(state.board||[]).map(t=>t.space?'<span class="phone-field-space"></span>':`<button class="phone-field-tile" data-plus="${t.index}" ${!active||state.phase!=='plus'||t.letter?'disabled':''}>${esc(t.letter||'')}</button>`).join('');
+    let controls='';
+    if(phoneRole==='viewer') controls=`<div class="phone-field-actions">${['👏','🎉','❤️','😮'].map(r=>`<button data-reaction="${r}">${r}</button>`).join('')}</div>`;
+    else if(active){
+      if(state.phase==='spin')controls+='<button class="join-button" data-field-action="spin">Крутить барабан ↻</button>';
+      if(['letter','superLetters'].includes(state.phase))controls+=`<div class="phone-field-letters">${[...'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'].map(l=>`<button data-letter="${l}" ${(state.guessed||[]).includes(l)?'disabled':''}>${l}</button>`).join('')}</div>`;
+      if(state.phase==='prize')controls+='<div class="phone-field-actions"><button data-prize="take">Взять приз и выбыть</button><button data-prize="continue">Продолжить · 2000</button></div>';
+      if(state.phase==='chest')controls+='<div class="phone-field-actions"><button data-chest="0">🎁 Шкатулка 1</button><button data-chest="1">🎁 Шкатулка 2</button></div>';
+      if(['spin','letter','solveOnly','superSolve'].includes(state.phase))controls+='<form id="phoneSolve" class="phone-field-solve"><input id="phoneAnswer" maxlength="80" placeholder="Слово целиком" autocomplete="off"><button>Ответить</button></form>';
+    }
+    box.innerHTML=`<p class="phone-field-question">${esc(state.question||'Ведущий готовит тройку.')}</p><div class="phone-field-board">${board}</div><p>${state.seconds!=null&&state.phase==='superSolve'?`${esc(state.seconds)} секунд`:state.sector?`Сектор: ${esc(state.sector)}`:''}</p><div class="phone-field-scores">${(state.players||[]).map((p,i)=>`<span class="${i===state.activeIndex&&!p.out?'active':''}">${esc(p.name)} · ${p.score}${p.out?' · выбыл':''}</span>`).join('')}</div>${controls}`;
+    const answer=box.querySelector('#phoneAnswer');if(answer&&keep){answer.value=draft;if(focused){answer.focus();answer.setSelectionRange(draft.length,draft.length);}}
+    box.querySelector('[data-field-action="spin"]')?.addEventListener('click',()=>sendField({kind:'spin'}));
+    box.querySelectorAll('[data-letter]').forEach(b=>b.addEventListener('click',()=>sendField({kind:'letter',value:b.dataset.letter})));
+    box.querySelectorAll('[data-plus]').forEach(b=>b.addEventListener('click',()=>sendField({kind:'plus',value:+b.dataset.plus})));
+    box.querySelectorAll('[data-prize]').forEach(b=>b.addEventListener('click',()=>sendField({kind:'prize',value:b.dataset.prize})));
+    box.querySelectorAll('[data-chest]').forEach(b=>b.addEventListener('click',()=>sendField({kind:'chest',value:+b.dataset.chest})));
+    box.querySelectorAll('[data-reaction]').forEach(b=>b.addEventListener('click',()=>sendField({kind:'reaction',value:b.dataset.reaction})));
+    box.querySelector('#phoneSolve')?.addEventListener('submit',e=>{e.preventDefault();sendField({kind:'solve',value:$('#phoneAnswer').value});});
+  }
+  function sendField(action){if(!socket||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type:'player-action',action}));}
   function sendAction(action){if(!socket||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type:'player-action',action,playerId}));$('#playerActions').hidden=true;$('#playerHeading').textContent='Ход передан ведущему…';}
   $('#joinButton').addEventListener('click',()=>{
-    playerName=$('#playerName').value.trim().slice(0,24);
+    playerName=$('#playerName').value.trim().slice(0,24); phoneRole=$('#phoneRole').value;
     if(!room){room=$('#roomCodeInput').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(room.length<4){$('#phoneRoom').textContent='Введи код комнаты из сообщения ведущего.';$('#roomCodeInput').focus();return;}$('#roomCode').textContent=room;$('#phoneRoom').textContent=`КОМНАТА ${room}`;}
     if(!playerName){$('#playerName').focus();return;}
     localStorage.setItem('snowyPlayerName',playerName);status('Подключаемся…');connect();

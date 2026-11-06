@@ -56,9 +56,9 @@
     receive(member,data) {
       if(!data || typeof data!=='object')return;
       if(data.type==='join' && !member.role){
-        if(!['player','screen'].includes(data.role))return;
+        if(!['player','viewer','screen'].includes(data.role))return;
         member.role=data.role;
-        if(member.role==='player') {
+        if(member.role==='player' || member.role==='viewer') {
           // Reconnects prove possession of a private random token; public IDs cannot be claimed.
           const token=typeof data.reconnectToken==='string' && /^[a-f0-9]{64}$/.test(data.reconnectToken) ? data.reconnectToken : null;
           if(token && this.identities.has(token)) member.playerId=this.identities.get(token);
@@ -69,13 +69,15 @@
           }
           member.name=String(data.name||'Игрок').trim().slice(0,24)||'Игрок';
           // A reconnected player replaces their stale channel instead of appearing twice.
-          for(const other of [...this.members])if(other!==member&&other.role==='player'&&other.playerId===member.playerId){this.members.delete(other);other.conn.close();}
+          for(const other of [...this.members])if(other!==member&&other.role===member.role&&other.playerId===member.playerId){this.members.delete(other);other.conn.close();}
         }
         this.sendMember(member,{type:'joined',role:member.role,playerId:member.playerId});
         this.presence();
         if(this.state)this.sendMember(member,{type:'state',payload:privateState(this.state,member)});
-      } else if(member.role==='player' && data.type==='player-action') {
-        if(this.state?.game==='guess' && this.state.guessMode==='circle' && this.state.activePlayerId===member.playerId && ['solved','pass'].includes(data.action))
+      } else if((member.role==='player'||member.role==='viewer') && data.type==='player-action') {
+        if(this.state?.game==='field' && (member.role==='viewer' || (member.role==='player' && this.state.activeId===member.playerId)))
+          this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name,role:member.role})});
+        if(member.role==='player' && this.state?.game==='guess' && this.state.guessMode==='circle' && this.state.activePlayerId===member.playerId && ['solved','pass'].includes(data.action))
           this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name})});
       }
     }

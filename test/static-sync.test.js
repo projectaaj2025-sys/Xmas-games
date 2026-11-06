@@ -67,7 +67,7 @@ test('HTTPS host, phones and projector cooperate through the static transport',a
     return w;
   }
   try {
-    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','app.js']);await wait();
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();
     const d=host.document;d.querySelector('[data-open="guess"]').click();d.querySelector('[data-guess-mode="circle"]').click();await wait();
     assert.match(d.querySelector('#playerInviteQr').src,/^data:image\/svg\+xml/);
     const url=d.querySelector('#playerInviteUrl').textContent,room=new URL(url).searchParams.get('room');assert.equal(room.length,8);
@@ -90,4 +90,28 @@ test('HTTPS host, phones and projector cooperate through the static transport',a
     assert.match(d.querySelector('.circle-player-list').textContent,/Alice[\s\S]*1 ★/);
   } finally {for(const dom of doms)dom.window.close()}
   function PeerFor(w){return w.__hostSync}
+});
+
+test('field phones and spectators get safe state; only the active player can act',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();
+    host.FIELD_QUESTIONS=[{question:'Тайный вопрос',answer:'АБРИКОС'}];const d=host.document;d.querySelector('[data-open="field"]').click();await wait();
+    const url=d.querySelector('#playerInviteUrl').textContent,room=new URL(url).searchParams.get('room');assert.match(d.querySelector('#playerInviteQr').src,/^data:image\/svg/);
+    const a=page('player.html',url,['static-sync.js','player.js']), b=page('player.html',url,['static-sync.js','player.js']),v=page('player.html',url,['static-sync.js','player.js']);
+    const projector=page('display.html',`https://example.com/Xmas-games/display.html?room=${room}`,['static-sync.js','display.js']);
+    for(const [w,name,role] of [[a,'Аня','player'],[b,'Борис','player'],[v,'Зритель','viewer']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#phoneRole').value=role;w.document.querySelector('#joinButton').click()}
+    await wait();await wait();const members=[...host.__hostSync.members];const alice=members.find(m=>m.name==='Аня'),bob=members.find(m=>m.name==='Борис');
+    for(const [i,m] of [[0,alice],[1,bob]]){const select=d.querySelector(`[data-field-seat="${i}"]`);select.value=m.playerId;select.dispatchEvent(new host.Event('change',{bubbles:true}));}
+    d.querySelector('#fieldStart').click();await wait();
+    assert.equal(a.document.querySelector('[data-field-action="spin"]').disabled,false);assert.equal(b.document.querySelector('[data-field-action="spin"]'),null);
+    assert.ok(v.document.querySelector('[data-reaction="👏"]'));assert.ok(!v.document.querySelector('[data-field-action="spin"]'));
+    assert.match(projector.document.querySelector('#screenStage').textContent,/Тайный вопрос/);assert.ok(!projector.document.querySelector('#screenStage').textContent.includes('АБРИКОС'));
+    // Inactive device forges an action, but the transport refuses it.
+    bob.conn.other.send({type:'player-action',action:{kind:'spin'}});await wait();assert.equal(d.querySelector('#fieldSpin').disabled,false);
+    v.document.querySelector('[data-reaction="👏"]').click();await wait();assert.match(d.querySelector('.field-reaction').textContent,/👏/);
+    a.document.querySelector('#phoneAnswer').value='АБРИКОС';a.document.querySelector('#phoneSolve').dispatchEvent(new a.Event('submit',{bubbles:true,cancelable:true}));await wait();
+    assert.match(projector.document.querySelector('#screenStage').textContent,/АБРИКОС/);assert.match(a.document.querySelector('#playerInstructions').textContent,/угадал/);
+  }finally{for(const dom of doms)dom.window.close()}
 });
