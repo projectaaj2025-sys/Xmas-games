@@ -1362,3 +1362,68 @@ Object.assign(window.MELODY_AUDIO, {
   "Pink Pony Club": "assets/melody/audio/modern-en-27.mp3",
   "Love Story": "assets/melody/audio/modern-en-28.mp3"
 });
+
+// Seasonal refresh: retain the published board for safe saved-game migration.
+window.MELODY_PREVIOUS_NEW_YEAR_LAYOUT = window.MELODY_NEW_YEAR_LAYOUT;
+window.MELODY_SONGS.russian.push('Иней');
+window.MELODY_RUSSIAN_SOURCES.push({artist:'Ваня Дмитриенко и Yanix',source:null,youtube:null});
+window.MELODY_RUSSIAN_AUDIO['Иней'] = 'assets/melody/candidates/ru-iney.mp3';
+window.MELODY_SONGS.international.push(
+  'Snowman','Christmas Tree Farm','Christmas Without You','Snow Flower',
+  'Cozy Little Christmas','Step Into Christmas','Christmas (Baby Please Come Home)',
+  'You Make It Feel Like Christmas','Believe','Christmas Must Be Something More',
+  'I Wish It Could Be Christmas Everyday',"Thank God It's Christmas",'Christmas Time','Christmas Wrapping'
+);
+window.MELODY_INTERNATIONAL_ARTISTS.push(
+  'Sia','Taylor Swift','Ava Max','V и Peakboy',
+  'Katy Perry','Elton John','Darlene Love','Gwen Stefani и Blake Shelton',
+  'Josh Groban','Taylor Swift','Roy Wood и Wizzard','Queen','Bryan Adams','The Waitresses'
+);
+Object.assign(window.MELODY_AUDIO, {
+  'Snowman':'assets/melody/candidates/sia-snowman.mp3',
+  'Christmas Tree Farm':'assets/melody/candidates/taylor-christmas-tree-farm.mp3',
+  'Christmas Without You':'assets/melody/candidates/ava-christmas-without-you.mp3',
+  'Snow Flower':'assets/melody/candidates/v-snow-flower.mp3',
+  'Cozy Little Christmas':'assets/melody/candidates/katy-cozy-little-christmas.mp3',
+  'Step Into Christmas':'assets/melody/candidates/elton-step-into-christmas.mp3',
+  'Christmas (Baby Please Come Home)':'assets/melody/candidates/darlene-christmas-baby.mp3',
+  'You Make It Feel Like Christmas':'assets/melody/candidates/gwen-you-make-it-feel.mp3',
+  'Believe':'assets/melody/candidates/groban-believe.mp3',
+  'Christmas Must Be Something More':'assets/melody/candidates/taylor-christmas-must-be.mp3',
+  'I Wish It Could Be Christmas Everyday':'assets/melody/candidates/wizzard-i-wish.mp3',
+  "Thank God It's Christmas":'assets/melody/candidates/queen-thank-god.mp3',
+  'Christmas Time':'assets/melody/candidates/adams-christmas-time.mp3',
+  'Christmas Wrapping':'assets/melody/candidates/waitresses-christmas-wrapping.mp3'
+});
+{
+  const ru=index=>({language:'russian',index});
+  const en=index=>({language:'international',index});
+  window.MELODY_NEW_YEAR_LAYOUT = [
+    [
+      {name:'Новогодние хиты',songs:[ru(0),ru(4),ru(5),ru(6),en(36)]},
+      {name:'Ёлка и зима',songs:[ru(1),ru(3),ru(22),ru(32),ru(33)]},
+      {name:'Праздничная классика',songs:[ru(39),ru(14),ru(38),en(1),en(0)]},
+      {name:'Рождественские хиты',songs:[en(3),en(37),en(4),en(26),en(6)]}
+    ],
+    [
+      {name:'Зимние мелодии',songs:[ru(7),ru(34),ru(37),ru(40),ru(136)]},
+      {name:'Снег и мороз',songs:[ru(10),ru(9),en(14),en(17),en(8)]},
+      {name:'Праздничные истории',songs:[ru(42),ru(161),en(5),en(10),en(15)]},
+      {name:'Рождественское настроение',songs:[en(38),en(7),en(12),en(28),en(11)]}
+    ],
+    [
+      {name:'Зимняя сказка',songs:[en(23),en(24),en(32),en(34),ru(41)]},
+      {name:'У праздничной ёлки',songs:[en(42),en(43),en(46),en(47),en(100)]},
+      {name:'Новые рождественские песни',songs:[en(101),en(102),en(103),en(104),en(105)]},
+      {name:'Зарубежные хиты',songs:[en(20),en(22),en(39),en(40),en(41)]}
+    ]
+  ];
+  window.MELODY_NEW_YEAR_AUCTION_TRACKS = [
+    {...ru(54),clue:'Детская песня о том, что наступил Новый год.'},
+    {...en(45),clue:'Традиционная песня, которую в англоязычных странах поют на Новый год.'},
+    {...en(44),clue:'Британская группа поздравляет всех с Рождеством.'},
+    {...en(106),clue:'Американская певица просит любимого приехать к Рождеству.'},
+    {...en(107),clue:'Рождественский дуэт Gwen Stefani и Blake Shelton.'}
+  ];
+  window.MELODY_NEW_YEAR_SUPER_TRACKS = [ru(36),en(108),en(109),en(110),en(111),en(112),en(113)];
+}

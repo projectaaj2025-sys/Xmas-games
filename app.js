@@ -534,6 +534,7 @@
     ],
   };
   const modernCatalogRevision=1;
+  const seasonalCatalogRevision=1;
   const uniqueCatalogRevision=1;
   const melodyCatalogRevision=2;
   const holidayCatalogRevision=2;
@@ -647,7 +648,7 @@
   function migrateModernMelodySave(s) {
     const mode=s.version,holiday=mode==='newyear';
     const old=holiday?beforeModernLayouts.holiday:mode==='children'?beforeModernLayouts.children:beforeModernLayouts.standard;
-    const updated=holiday?window.MELODY_NEW_YEAR_LAYOUT:mode==='children'?window.MELODY_CHILDREN_LAYOUT:window.MELODY_LAYOUT;
+    const updated=holiday?window.MELODY_PREVIOUS_NEW_YEAR_LAYOUT:mode==='children'?window.MELODY_CHILDREN_LAYOUT:window.MELODY_LAYOUT;
     const boards=layout=>layout.map(round=>round.flatMap((row,ri)=>Array.from({length:5},(_,i)=>{
       if(holiday){const song=row.songs[i];return (song.language==='russian'?'ru':'en')+song.index;}
       const language=mode==='children'||mode==='russian'||(mode==='mixed'&&(ri*5+i)%2===0)?'ru':'en';
@@ -676,6 +677,35 @@
     return {...s,modernCatalogRevision,used,selected,revealed:selected===null?false:s.revealed,
       attempts:remap(s.attempts),judged:remap(s.judged),auction,super:supergame};
   }
+  function needsSeasonalMelodyMigration(s) {
+    return s.version==='newyear' && s.seasonalCatalogRevision!==seasonalCatalogRevision;
+  }
+  function migrateSeasonalMelodySave(s) {
+    const boards=layout=>layout.map(round=>round.flatMap(row=>row.songs.map(song=>song.language+':'+song.index)));
+    const from=boards(window.MELODY_PREVIOUS_NEW_YEAR_LAYOUT),to=boards(window.MELODY_NEW_YEAR_LAYOUT);
+    const destination=(tour,note)=>{
+      if(!Number.isInteger(note)||note<0||note>=20||tour<1||tour>3)return null;
+      const song=from[tour-1][note];
+      if(from[tour-1].indexOf(song)!==from[tour-1].lastIndexOf(song))return null;
+      const target=to[tour-1].indexOf(song);return target<0?null:target;
+    };
+    const used=s.used.map((notes,i)=>[...new Set(notes.map(n=>destination(i+1,n)).filter(n=>n!==null))]);
+    const remap=source=>{
+      const result={};
+      for(const [key,value] of Object.entries(source||{})){
+        const match=key.match(/^newyear-(\d+)-(\d+)(-\d+)?$/);
+        if(!match){result[key]=value;continue;}
+        const note=destination(Number(match[1]),Number(match[2]));
+        if(note!==null)result[`newyear-${match[1]}-${note}${match[3]||''}`]=value;
+      }
+      return result;
+    };
+    const selected=s.selected!==null&&s.tour<=3?destination(s.tour,s.selected):null;
+    return {...s,seasonalCatalogRevision,used,selected,revealed:selected===null?false:s.revealed,
+      attempts:remap(s.attempts),judged:remap(s.judged),
+      auction:{...s.auction,phase:'setup',points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null},
+      super:{...s.super,status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],deadline:0}};
+  }
   function migrateMelodySave(s) {
     let current;
     if(s.version==='newyear')current=needsHolidayMigration(s)?migrateHolidaySave(s):s;
@@ -683,7 +713,8 @@
       const legacy=migrateLegacyMelodySave(s);
       current=needsUniqueMelodyMigration(legacy)?migrateUniqueMelodySave(legacy):legacy;
     }
-    return needsModernMelodyMigration(current)?migrateModernMelodySave(current):current;
+    const modern=needsModernMelodyMigration(current)?migrateModernMelodySave(current):current;
+    return needsSeasonalMelodyMigration(modern)?migrateSeasonalMelodySave(modern):modern;
   }
   function saveField() {
     if(!fieldState)return false;
@@ -694,7 +725,7 @@
   }
   function saveMelody() {
     if(!melodyState)return false;
-    const s={...melodyState,catalogRevision:melodyCatalogRevision,holidayCatalogRevision,uniqueCatalogRevision,modernCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
+    const s={...melodyState,catalogRevision:melodyCatalogRevision,holidayCatalogRevision,uniqueCatalogRevision,modernCatalogRevision,seasonalCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
     if(s.super.status==='running') {s.super.seconds=superRemaining(melodyState);s.super.status=s.super.seconds?'paused':'lost';s.super.deadline=0;}
     return writeGameSave('melody',s);
   }
@@ -706,7 +737,7 @@
     if(!saved){start(null);return;}
     const body=$('#gameBody'),reset=$('#resetCurrentGame');if(reset)reset.hidden=true;
     const begin=s=>{if(reset)reset.hidden=false;start(game==='melody' && s ? migrateMelodySave(s) : s);};
-    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && (needsUniqueMelodyMigration(saved)||needsModernMelodyMigration(saved))?'<p>Подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по однозначным песням в том же туре; убранные и повторявшиеся песни и их отметки могут исчезнуть. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}${game==='melody' && needsHolidayMigration(saved) && !needsModernMelodyMigration(saved)?'<p>Праздничная подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по песням в том же туре; убранные из тура песни и их отметки исчезнут. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
+    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && (needsUniqueMelodyMigration(saved)||needsModernMelodyMigration(saved)||needsSeasonalMelodyMigration(saved))?'<p>Подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по однозначным песням в том же туре; убранные и повторявшиеся песни и их отметки могут исчезнуть. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}${game==='melody' && needsHolidayMigration(saved) && !needsModernMelodyMigration(saved)?'<p>Праздничная подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по песням в том же туре; убранные из тура песни и их отметки исчезнут. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
     $('#resumeGame').addEventListener('click',()=>begin(saved));
     $('#newSavedGame').addEventListener('click',()=>{if(confirm('Начать заново и удалить сохранённый прогресс этой игры?'))begin(null);});
     publish({game:'idle',revealed:false,instruction:'Ведущий выбирает сохранённую игру.'});
@@ -1233,7 +1264,7 @@ function renderMelodySuper() {
   publishMelody();
 }
 
-function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, holidayCatalogRevision, modernCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
+function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, holidayCatalogRevision, modernCatalogRevision, seasonalCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
 
   // A separate, self-contained adaptation; the original PowerPoint is not converted.
   const holidayQuiz = [

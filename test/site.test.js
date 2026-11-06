@@ -288,7 +288,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
-    assert.equal(w.MELODY_SONGS.russian.length,161); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,161);
+    assert.equal(w.MELODY_SONGS.russian.length,162); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,162);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.doesNotMatch(doc.querySelector('.melody-song-list').textContent,/Стекловата|Новогодняя песня — The Limba/);
@@ -436,7 +436,7 @@ test('Russian recordings are playable and updated notes have matching audio', ()
       if(path){const data=fs.readFileSync(path);assert.ok(data.length>80000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
     assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,43);
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,161);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,162);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Одиночество');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-31\.mp3$/);
@@ -542,9 +542,14 @@ test('holiday-only mode has distinct seasonal songs and local playback in every 
     select.value='newyear';select.dispatchEvent(new w.Event('change',{bubbles:true}));
     assert.match(d.querySelector('.melody-config').textContent,/повторы между турами, торгами и суперигрой исключены/);
     const list=d.querySelector('.melody-song-list').textContent;
-    assert.doesNotMatch(list,/Стекловата|Федерико Феллини|Новогодняя песня — The Limba/);
+    assert.doesNotMatch(list,/Федерико Феллини|Солнце Монако|Ягода малинка|Espresso|Царица/);
     const entries=[...d.querySelectorAll('.melody-song-list li')].map(li=>li.textContent.split(' — ')[0]);
     assert.equal(entries.length,72);assert.equal(new Set(entries).size,72,'no repeated songs across rounds, auction and supergame');
+    const allowedRu=new Set([0,1,3,4,5,6,7,9,10,14,22,32,33,34,36,37,38,39,40,41,42,54,136,161]);
+    const allowedEn=new Set([0,1,3,4,5,6,7,8,10,11,12,14,15,17,20,22,23,24,26,28,32,34,36,37,38,39,40,41,42,43,44,45,46,47,...Array.from({length:14},(_,i)=>100+i)]);
+    const all=[...w.MELODY_NEW_YEAR_LAYOUT.flatMap(round=>round.flatMap(row=>row.songs)),...w.MELODY_NEW_YEAR_AUCTION_TRACKS,...w.MELODY_NEW_YEAR_SUPER_TRACKS];
+    for(const track of all)assert.ok((track.language==='russian'?allowedRu:allowedEn).has(track.index),`non-seasonal song ${track.language}:${track.index}`);
+
     assert.doesNotMatch(list,/повтор названия/);
     assert.match(list,/Happy New Year — ABBA/);assert.match(list,/Новогодняя — Дискотека Авария/);
     for(let tour=1;tour<=3;tour++){
@@ -624,12 +629,12 @@ test('the refreshed selections feature recognisable recent hits without losing t
       international:['Espresso','Cruel Summer','Heat Waves','Shake It Off','Starboy'],
       mixed:['Хлопья летят наверх','Espresso','Плачу на техно','Get Lucky'],
       children:['Юность','Солнышко','Матушка','Отпусти и забудь','Голубой вагон'],
-      newyear:['Хлопья летят наверх','Тает лёд','Царица','Espresso','Happy New Year','В лесу родилась ёлочка']};
+      newyear:['Хлопья летят наверх','Иней','Snowman','Christmas Tree Farm','Happy New Year','В лесу родилась ёлочка']};
     for(const [mode,expected] of Object.entries(names)){
       const select=d.querySelector('#melodyVersion');select.value=mode;select.dispatchEvent(new w.Event('change',{bubbles:true}));
       const text=d.querySelector('.melody-song-list').textContent;
       for(const title of expected)assert.ok(text.includes(title),`${mode}: ${title}`);
-      assert.doesNotMatch(text,/Стекловата|Федерико Феллини|повтор названия/);
+      assert.doesNotMatch(text,mode==='newyear'?/Федерико Феллини|повтор названия/:/Стекловата|Федерико Феллини|повтор названия/);
       assert.equal(d.querySelectorAll('.melody-song-list li').length,72);
     }
   }finally{w.close()}

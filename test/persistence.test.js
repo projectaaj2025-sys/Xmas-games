@@ -171,7 +171,7 @@ test('legacy holiday progress follows matching songs and warns before bonus rese
   const a=setup();let saved;try{
     a.click('[data-open="melody"]');const select=a.d.querySelector('#melodyVersion');select.value='newyear';select.dispatchEvent(new a.w.Event('change',{bubbles:true}));
     a.click('#backHome');saved=a.snapshot();const data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
-    delete s.holidayCatalogRevision;delete s.modernCatalogRevision;s.names=['Аня','Борис','Света'];s.scores=[80,40,-20];
+    delete s.holidayCatalogRevision;delete s.modernCatalogRevision;delete s.seasonalCatalogRevision;s.names=['Аня','Борис','Света'];s.scores=[80,40,-20];
     s.used=[[0,4,11],[],[0]];s.selected=10;s.revealed=true;
     s.judged={'newyear-1-10-0':80,'newyear-1-4-1':40,'newyear-3-0-2':-20};
     s.attempts={'newyear-1-10':{active:null,passed:[0],open:false,finished:false,token:''},'newyear-3-0':{active:null,passed:[2],open:false,finished:false,token:''}};
@@ -237,7 +237,7 @@ test('previously published songs migrate safely in every mode after the modern u
   const examples={russian:{tour:1,retained:0,removed:1},international:{tour:1,retained:0,removed:5},mixed:{tour:1,retained:1,removed:2},children:{tour:1,retained:15,removed:18},newyear:{tour:2,retained:0,removed:1}};
   for(const [version,{tour,retained,removed}] of Object.entries(examples)){
     const saved={...base},data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
-    s.version=version;s.tour=tour;delete s.modernCatalogRevision;s.catalogRevision=2;s.uniqueCatalogRevision=1;s.holidayCatalogRevision=2;
+    s.version=version;s.tour=tour;delete s.modernCatalogRevision;delete s.seasonalCatalogRevision;s.catalogRevision=2;s.uniqueCatalogRevision=1;s.holidayCatalogRevision=2;
     s.names=['Аня','Борис','Света'];s.scores=[80,-40,30];s.used=[[],[],[]];s.used[tour-1]=[retained,removed];s.selected=removed;s.revealed=true;
     s.judged={[`${version}-${tour}-${retained}-0`]:80,[`${version}-${tour}-${removed}-1`]:-40};
     s.attempts={[`${version}-${tour}-${removed}`]:{active:null,passed:[1],open:false,finished:false,token:''}};
@@ -253,4 +253,29 @@ test('previously published songs migrate safely in every mode after the modern u
       assert.equal(current.modernCatalogRevision,1);assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
     }finally{b.w.close()}
   }
+});
+
+test('seasonal holiday refresh preserves matching notes and scores, and resets bonus phases',()=>{
+  const a=setup();let saved;
+  try{
+    a.click('[data-open="melody"]');const select=a.d.querySelector('#melodyVersion');select.value='newyear';select.dispatchEvent(new a.w.Event('change',{bubbles:true}));
+    a.click('#backHome');saved=a.snapshot();
+  }finally{a.w.close()}
+  const data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
+  delete s.seasonalCatalogRevision;s.modernCatalogRevision=1;s.holidayCatalogRevision=2;s.tour=2;
+  s.names=['Аня','Борис','Света'];s.scores=[90,40,-20];s.used=[[],[0,1],[]];s.selected=1;s.revealed=true;
+  s.attempts={'newyear-2-0':{active:null,passed:[],open:false,finished:true,token:''},'newyear-2-1':{active:null,passed:[],open:false,finished:true,token:''}};
+  s.judged={'newyear-2-0-0':true,'newyear-2-1-1':true};s.auction.phase='result';s.auction.points=[2,3];s.super.status='won';
+  saved['snowy-host-melody-v1']=JSON.stringify(data);
+  const b=setup(saved);
+  try{
+    b.click('[data-open="melody"]');assert.match(b.d.querySelector('.game-resume').textContent,/Торги и суперигра/);b.click('#resumeGame');b.click('#backHome');
+    const current=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
+    assert.deepEqual(current.names,['Аня','Борис','Света']);assert.deepEqual(current.scores,[90,40,-20]);
+    assert.deepEqual(current.used[1],[0]);assert.equal(current.selected,null);assert.equal(current.revealed,false);
+    assert.ok(current.attempts['newyear-2-0']);assert.equal(current.attempts['newyear-2-1'],undefined);
+    assert.equal(current.judged['newyear-2-0-0'],true);assert.equal(current.judged['newyear-2-1-1'],undefined);
+    assert.equal(current.auction.phase,'setup');assert.deepEqual(current.auction.points,[0,0]);assert.equal(current.super.status,'ready');assert.equal(current.seasonalCatalogRevision,1);
+    assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
+  }finally{b.w.close()}
 });
