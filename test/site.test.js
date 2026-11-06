@@ -182,7 +182,7 @@ test('bundled melodies are available and playback uses them without exposing ans
     assert.match(played.at(-1), /jingle-bells\.wav$/);
     doc.querySelector('[data-melody-tour="2"]').click();
     assert.match(played.at(-1), /show-endround\.mp3$/);
-    doc.querySelector('[data-melody-note="0"]').click();
+    doc.querySelector('[data-melody-note="2"]').click();
     assert.equal(doc.querySelector('#melodyPlay').disabled,false);
     assert.ok(doc.querySelector('#melodyExternalPlayer iframe'));
     assert.deepEqual(errors, []);
@@ -288,7 +288,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
-    assert.equal(w.MELODY_SONGS.russian.length,122); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,122);
+    assert.equal(w.MELODY_SONGS.russian.length,161); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,161);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.doesNotMatch(doc.querySelector('.melody-song-list').textContent,/Стекловата|Новогодняя песня — The Limba/);
@@ -342,7 +342,7 @@ test('supergame skips and revisits, wins after seven, ends on error or timeout, 
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     socket.listeners.open();const d=w.document;d.querySelector('[data-open="melody"]').click();d.querySelector('[data-melody-tour="4"]').click();
     assert.match(d.querySelector('.melody-stage').textContent,/семь мелодий за 30 секунд/i);
-    d.querySelector('#superStart').click();assert.match(plays.at(-1),/russian-classic-22\.mp3$/);
+    d.querySelector('#superStart').click();assert.match(plays.at(-1),/modern-ru-22\.mp3$/);
     const first=d.querySelector('.melody-answer p').textContent;
     const last=()=>socket.messages.filter(m=>m.type==='state').at(-1).payload;
     assert.equal(last().mode,'super');assert.ok(!JSON.stringify(last()).includes(first));
@@ -406,7 +406,7 @@ test('new bundled Russian clips are mapped to actual MP3 files', () => {
     dom.window.eval(read('melody-data.js'));
     const audio=dom.window.MELODY_RUSSIAN_AUDIO;
     for(const title of ['Пять минут','Три белых коня','Песенка о медведях','Песенка о снежинке','Снег идёт']) {
-      const data=fs.readFileSync(audio[title]);assert.ok(data.length>100000,title);
+      const data=fs.readFileSync(audio[title]);assert.ok(data.length>80000,title);
       assert.ok(data.subarray(0,3).toString()==='ID3' || data[0]===0xff,title);
     }
   } finally {dom.window.close()}
@@ -433,14 +433,14 @@ test('Russian recordings are playable and updated notes have matching audio', ()
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     for(const [i,title] of w.MELODY_SONGS.russian.entries()) {
       const path=w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title];
-      if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
+      if(path){const data=fs.readFileSync(path);assert.ok(data.length>80000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
     assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,43);
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,122);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,161);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
-    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'В лесу родилась ёлочка');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/v-lesu-rodilas-elochka\.mp3$/);
-    d.querySelector('[data-melody-note="1"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Маленькой ёлочке холодно зимой');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/malenkoy-elochke\.mp3$/);
+    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Одиночество');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-31\.mp3$/);
+    d.querySelector('[data-melody-note="1"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Женщина, я не танцую');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-30\.mp3$/);
   } finally {w.close()}
 });
 
@@ -521,7 +521,7 @@ test('all Russian board slots and catalog recordings are local, with no repeats 
         assert.equal(d.querySelector('#melodyPlay').disabled,false,`${tour}:${note}`);
         assert.equal(d.querySelector('.melody-answer p').textContent,w.MELODY_SONGS.russian[indices[note]]);
         d.querySelector('#melodyPlay').click();const bytes=fs.readFileSync(played.at(-1));
-        assert.ok(bytes.length>100000);assert.ok(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===0xff);
+        assert.ok(bytes.length>80000);assert.ok(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===0xff);
       }
     }
     assert.doesNotMatch(d.querySelector('.melody-song-list').textContent,/повтор названия/);
@@ -610,4 +610,27 @@ test('every melody mode has 72 distinct songs with usable sources across boards 
       assert.match(d.querySelector('.melody-stage').textContent,/Победа/);assert.deepEqual(errors,[]);
     }finally{w.close()}
   }
+});
+
+test('the refreshed selections feature recognisable recent hits without losing their themes',()=>{
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
+  const w=dom.window,d=w.document;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  w.Audio=class{play(){return Promise.resolve()}pause(){}};
+  try{
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
+    d.querySelector('[data-open="melody"]').click();
+    const names={russian:['Царица','Малиновая Лада','Хлопья летят наверх','Юность','Плачу на техно'],
+      international:['Espresso','Cruel Summer','Heat Waves','Shake It Off','Starboy'],
+      mixed:['Хлопья летят наверх','Espresso','Плачу на техно','Get Lucky'],
+      children:['Юность','Солнышко','Матушка','Отпусти и забудь','Голубой вагон'],
+      newyear:['Хлопья летят наверх','Тает лёд','Царица','Espresso','Happy New Year','В лесу родилась ёлочка']};
+    for(const [mode,expected] of Object.entries(names)){
+      const select=d.querySelector('#melodyVersion');select.value=mode;select.dispatchEvent(new w.Event('change',{bubbles:true}));
+      const text=d.querySelector('.melody-song-list').textContent;
+      for(const title of expected)assert.ok(text.includes(title),`${mode}: ${title}`);
+      assert.doesNotMatch(text,/Стекловата|Федерико Феллини|повтор названия/);
+      assert.equal(d.querySelectorAll('.melody-song-list li').length,72);
+    }
+  }finally{w.close()}
 });

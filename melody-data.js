@@ -256,22 +256,22 @@ window.MELODY_RUSSIAN_SOURCES = [
 // Each row's arrays point into the Russian and international catalogues above.
 window.MELODY_LAYOUT = [
   [
-    {name:"Новогодние хиты", ru:[0, 32, 22, 4, 5], en:[0, 1, 2, 3, 4]},
-    {name:"Снег и зима", ru:[1, 33, 14, 38, 10], en:[6, 14, 27, 28, 29]},
-    {name:"Любимые мелодии", ru:[3, 6, 7, 2, 17], en:[5, 17, 26, 34, 36]},
+    {name:"Хиты у ёлки", ru:[0, 151, 152, 4, 5], en:[0, 1, 2, 3, 4]},
+    {name:"Хиты и зима", ru:[1, 33, 153, 38, 154], en:[73, 14, 87, 88, 89]},
+    {name:"Любимые мелодии", ru:[3, 6, 7, 155, 17], en:[72, 80, 26, 34, 36]},
     {name:"Танцуем вместе", ru:[50, 12, 18, 19, 47], en:[37, 38, 39, 40, 41]},
   ],
   [
-    {name:"Знакомые песни", ru:[8, 9, 16, 20, 21], en:[7, 8, 9, 10, 11]},
-    {name:"Классика и хиты", ru:[23, 24, 26, 29, 39], en:[12, 13, 15, 16, 18]},
-    {name:"Песни из кино", ru:[41, 43, 44, 45, 46], en:[19, 20, 21, 22, 23]},
-    {name:"Праздничное настроение", ru:[48, 49, 51, 52, 53], en:[24, 25, 30, 31, 32]},
+    {name:"Знакомые песни", ru:[156, 9, 157, 158, 21], en:[74, 75, 9, 10, 11]},
+    {name:"Классика и хиты", ru:[23, 24, 26, 29, 39], en:[76, 77, 78, 79, 81]},
+    {name:"Вместе поём", ru:[41, 159, 160, 45, 46], en:[82, 83, 21, 22, 84]},
+    {name:"Праздничное настроение", ru:[48, 49, 51, 52, 53], en:[85, 86, 90, 91, 32]},
   ],
   [
-    {name:"Знакомые припевы", ru:[11, 13, 15, 54, 94], en:[33, 35, 42, 43, 44]},
-    {name:"Классика кино", ru:[95, 96, 97, 98, 99], en:[45, 46, 47, 48, 49]},
-    {name:"Песни на все времена", ru:[100, 101, 102, 103, 104], en:[50, 51, 52, 53, 54]},
-    {name:"Золотые хиты", ru:[105, 106, 107, 108, 109], en:[55, 56, 57, 58, 59]},
+    {name:"Знакомые припевы", ru:[11, 13, 15, 54, 122], en:[92, 93, 94, 95, 96]},
+    {name:"Поп-хиты", ru:[123, 124, 125, 126, 127], en:[97, 98, 99, 48, 49]},
+    {name:"Хиты последних лет", ru:[128, 129, 130, 131, 132], en:[50, 51, 52, 53, 54]},
+    {name:"Музыка для вечеринки", ru:[133, 134, 135, 136, 137], en:[55, 56, 57, 58, 59]},
   ],
 ];
 // Holiday-only selection. Indices explicitly name the language of each song.
@@ -287,15 +287,15 @@ window.MELODY_LAYOUT = [
       {name:'Рождественские хиты', songs:[en(3),en(37),en(4),en(26),en(6)]}
     ],
     [
-      {name:'Любимые песни из кино', songs:[ru(7),ru(8),ru(2),ru(17),ru(16)]},
+      {name:'Кино и зимние хиты', songs:[ru(7),ru(143),ru(2),ru(17),ru(136)]},
       {name:'Снег и мороз', songs:[ru(10),ru(9),en(14),en(17),en(8)]},
       {name:'Поём вместе', songs:[ru(12),ru(19),ru(23),ru(21),ru(18)]},
       {name:'Рождественское настроение', songs:[en(38),en(7),en(12),en(28),en(11)]}
     ],
     [
-      {name:'Праздничное караоке', songs:[ru(20),ru(24),ru(26),ru(29),ru(41)]},
+      {name:'Праздничное караоке', songs:[ru(149),ru(24),ru(26),ru(29),ru(41)]},
       {name:'Танцуем вместе', songs:[ru(47),ru(48),ru(49),ru(50),ru(51)]},
-      {name:'Знакомые припевы', songs:[ru(52),ru(53),en(5),en(10),en(15)]},
+      {name:'Популярные хиты', songs:[ru(52),ru(53),en(72),en(73),en(76)]},
       {name:'Зарубежные хиты', songs:[en(20),en(22),en(39),en(40),en(41)]}
     ]
   ];
@@ -306,7 +306,7 @@ window.MELODY_LAYOUT = [
     {...en(45),clue:'Традиционная песня, которую в англоязычных странах поют на Новый год.'},
     {...en(44),clue:'Британская группа поздравляет всех с Рождеством.'}
   ];
-  window.MELODY_NEW_YEAR_SUPER_TRACKS = [ru(13),ru(36),en(42),en(43),en(46),en(47),en(32)];
+  window.MELODY_NEW_YEAR_SUPER_TRACKS = [ru(13),ru(36),ru(139),ru(142),ru(144),ru(145),ru(150)];
 }
 // Separate local versions for the holiday selection; other modes keep their existing sources.
 window.MELODY_NEW_YEAR_AUDIO = {
@@ -331,13 +331,13 @@ window.MELODY_CHILDREN_LAYOUT = [
     {name:"У новогодней ёлки", ru:[22, 32, 33, 3, 6]},
     {name:"Любимые мультфильмы", ru:[41, 43, 44, 45, 46]},
     {name:"Снежные песни", ru:[5, 4, 14, 7, 39]},
-    {name:"Детские песни", ru:[55, 56, 57, 58, 59]},
+    {name:"Детские и семейные песни", ru:[55, 56, 57, 148, 59]},
   ],
   [
     {name:"Зимние истории", ru:[8, 2, 54, 1, 9]},
-    {name:"Детские мелодии", ru:[60, 61, 62, 63, 64]},
-    {name:"Поём вместе", ru:[65, 66, 67, 68, 69]},
-    {name:"Песни из фильмов", ru:[70, 71, 72, 73, 74]},
+    {name:"Семейные мелодии", ru:[149, 61, 62, 63, 146]},
+    {name:"Поём вместе", ru:[65, 66, 15, 50, 69]},
+    {name:"Хиты для всей семьи", ru:[70, 71, 51, 53, 74]},
   ],
   [
     {name:"Знакомые мелодии", ru:[10, 12, 16, 17, 19]},
@@ -348,7 +348,7 @@ window.MELODY_CHILDREN_LAYOUT = [
 ];
 window.MELODY_CHILDREN_SUPER_TRACKS = [87,88,89,90,91,92,93];
 window.MELODY_SUPER_TRACKS = {
-  russian:[115,116,117,118,119,120,121],
+  russian:[143,144,145,146,147,148,149],
   international:[65,66,67,68,69,70,71]
 };
 window.MELODY_RUSSIAN_AUDIO = {
@@ -974,4 +974,391 @@ Object.assign(window.MELODY_RUSSIAN_AUDIO, {
   "Берёзовый сок": "assets/melody/audio/russian-classic-26.mp3",
   "Соловьиная роща": "assets/melody/audio/russian-classic-27.mp3",
   "Аист на крыше": "assets/melody/audio/russian-classic-28.mp3"
+});
+
+// Contemporary additions; old indices are retained for saved-game migration.
+window.MELODY_SONGS.russian.push(...[
+  "Плачу на техно",
+  "Перемирие",
+  "Выпускной (Медлячок)",
+  "Мама, я танцую",
+  "Роман",
+  "Краш",
+  "Зацепила",
+  "Самая самая",
+  "Маршрутка",
+  "Спектакль окончен",
+  "Зеленоглазое такси",
+  "Искала",
+  "Чумачечая весна",
+  "SuperSTAR",
+  "Хлопья летят наверх",
+  "Лондон",
+  "Салют, Вера",
+  "Царица",
+  "Грустный дэнс",
+  "Покинула чат",
+  "Малиновая Лада",
+  "Тает лёд",
+  "Прованс",
+  "Мой мармеладный",
+  "Алёшка",
+  "Я сошла с ума",
+  "Солнышко",
+  "Юность",
+  "Пожары"
+]);
+window.MELODY_RUSSIAN_SOURCES.push(...[
+  {
+    "artist": "Cream Soda и ХЛЕБ · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "ВИА Гра · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Баста · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Две Маши · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Винтаж · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Клава Кока и NILETTO · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Артур Пирожков · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Егор Крид · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "IOWA · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Полина Гагарина · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "IOWA · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Земфира · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Потап и Настя · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "LOBODA · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "FEDUK · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Тимати и Григорий Лепс · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Валерий Меладзе · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Анна Асти · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Artik & Asti и Артём Качер · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Клава Кока · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "GAYAZOV$ BROTHER$",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Грибы",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Ёлка",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Катя Лель",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Руки Вверх!",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "t.A.T.u.",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Демо",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Dabro",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "XOLIDAYBOY",
+    "source": null,
+    "youtube": null
+  }
+]);
+Object.assign(window.MELODY_RUSSIAN_AUDIO, {
+  "Плачу на техно": "assets/melody/audio/modern-ru-01.mp3",
+  "Перемирие": "assets/melody/audio/modern-ru-02.mp3",
+  "Выпускной (Медлячок)": "assets/melody/audio/modern-ru-03.mp3",
+  "Мама, я танцую": "assets/melody/audio/modern-ru-04.mp3",
+  "Роман": "assets/melody/audio/modern-ru-05.mp3",
+  "Краш": "assets/melody/audio/modern-ru-06.mp3",
+  "Зацепила": "assets/melody/audio/modern-ru-07.mp3",
+  "Самая самая": "assets/melody/audio/modern-ru-08.mp3",
+  "Маршрутка": "assets/melody/audio/modern-ru-09.mp3",
+  "Спектакль окончен": "assets/melody/audio/modern-ru-10.mp3",
+  "Зеленоглазое такси": "assets/melody/audio/modern-ru-11.mp3",
+  "Искала": "assets/melody/audio/modern-ru-12.mp3",
+  "Чумачечая весна": "assets/melody/audio/modern-ru-13.mp3",
+  "SuperSTAR": "assets/melody/audio/modern-ru-14.mp3",
+  "Хлопья летят наверх": "assets/melody/audio/modern-ru-15.mp3",
+  "Лондон": "assets/melody/audio/modern-ru-16.mp3",
+  "Салют, Вера": "assets/melody/audio/modern-ru-17.mp3",
+  "Царица": "assets/melody/audio/modern-ru-18.mp3",
+  "Грустный дэнс": "assets/melody/audio/modern-ru-19.mp3",
+  "Покинула чат": "assets/melody/audio/modern-ru-20.mp3",
+  "Малиновая Лада": "assets/melody/audio/modern-ru-21.mp3",
+  "Тает лёд": "assets/melody/audio/modern-ru-22.mp3",
+  "Прованс": "assets/melody/audio/modern-ru-23.mp3",
+  "Мой мармеладный": "assets/melody/audio/modern-ru-24.mp3",
+  "Алёшка": "assets/melody/audio/modern-ru-25.mp3",
+  "Я сошла с ума": "assets/melody/audio/modern-ru-26.mp3",
+  "Солнышко": "assets/melody/audio/modern-ru-27.mp3",
+  "Юность": "assets/melody/audio/modern-ru-28.mp3",
+  "Пожары": "assets/melody/audio/modern-ru-29.mp3"
+});
+window.MELODY_SONGS.international.push(...[
+  "Shake It Off",
+  "Blank Space",
+  "Cruel Summer",
+  "Anti-Hero",
+  "Espresso",
+  "Good Luck, Babe!",
+  "Heat Waves",
+  "Starboy",
+  "Where Are Ü Now",
+  "Unwritten",
+  "I Don’t Wanna Live Forever",
+  "Applause",
+  "Let Me Love You",
+  "Feel So Close",
+  "Pocketful of Sunshine",
+  "Hung Up",
+  "Mr. Brightside",
+  "Get Lucky",
+  "Diamonds",
+  "Wake Me Up"
+]);
+window.MELODY_INTERNATIONAL_ARTISTS.push(...[
+  "Taylor Swift · известная версия",
+  "Taylor Swift · известная версия",
+  "Taylor Swift · известная версия",
+  "Taylor Swift · известная версия",
+  "Sabrina Carpenter · известная версия",
+  "Chappell Roan · известная версия",
+  "Glass Animals · известная версия",
+  "The Weeknd · известная версия",
+  "Skrillex, Diplo и Justin Bieber · известная версия",
+  "Natasha Bedingfield · известная версия",
+  "ZAYN и Taylor Swift · известная версия",
+  "Lady Gaga · известная версия",
+  "DJ Snake и Justin Bieber · известная версия",
+  "Calvin Harris · известная версия",
+  "Natasha Bedingfield · известная версия",
+  "Madonna",
+  "The Killers",
+  "Daft Punk и Pharrell Williams · известная версия",
+  "Rihanna · известная версия",
+  "Avicii и Aloe Blacc · известная версия"
+]);
+Object.assign(window.MELODY_AUDIO, {
+  "Shake It Off": "assets/melody/audio/modern-en-01.mp3",
+  "Blank Space": "assets/melody/audio/modern-en-02.mp3",
+  "Cruel Summer": "assets/melody/audio/modern-en-03.mp3",
+  "Anti-Hero": "assets/melody/audio/modern-en-04.mp3",
+  "Espresso": "assets/melody/audio/modern-en-05.mp3",
+  "Good Luck, Babe!": "assets/melody/audio/modern-en-06.mp3",
+  "Heat Waves": "assets/melody/audio/modern-en-07.mp3",
+  "Starboy": "assets/melody/audio/modern-en-08.mp3",
+  "Where Are Ü Now": "assets/melody/audio/modern-en-09.mp3",
+  "Unwritten": "assets/melody/audio/modern-en-10.mp3",
+  "I Don’t Wanna Live Forever": "assets/melody/audio/modern-en-11.mp3",
+  "Applause": "assets/melody/audio/modern-en-12.mp3",
+  "Let Me Love You": "assets/melody/audio/modern-en-13.mp3",
+  "Feel So Close": "assets/melody/audio/modern-en-14.mp3",
+  "Pocketful of Sunshine": "assets/melody/audio/modern-en-15.mp3",
+  "Hung Up": "assets/melody/audio/modern-en-16.mp3",
+  "Mr. Brightside": "assets/melody/audio/modern-en-17.mp3",
+  "Get Lucky": "assets/melody/audio/modern-en-18.mp3",
+  "Diamonds": "assets/melody/audio/modern-en-19.mp3",
+  "Wake Me Up": "assets/melody/audio/modern-en-20.mp3"
+});
+
+// Additional familiar pop and rock hits for the first two rounds.
+window.MELODY_SONGS.russian.push(...[
+  "Женщина, я не танцую",
+  "Одиночество",
+  "Красиво",
+  "Знак Водолея",
+  "Ай-яй-яй",
+  "Серебро",
+  "Невеста",
+  "Выхода нет",
+  "Попытка № 5",
+  "Мама Люба"
+]);
+window.MELODY_RUSSIAN_SOURCES.push(...[
+  {
+    "artist": "Стас Костюшкин · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Слава · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Валерий Меладзе · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Винтаж · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Руки Вверх! · известная версия",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Би-2",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Глюкоза",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Сплин",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "ВИА Гра",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "SEREBRO",
+    "source": null,
+    "youtube": null
+  }
+]);
+Object.assign(window.MELODY_RUSSIAN_AUDIO, {
+  "Женщина, я не танцую": "assets/melody/audio/modern-ru-30.mp3",
+  "Одиночество": "assets/melody/audio/modern-ru-31.mp3",
+  "Красиво": "assets/melody/audio/modern-ru-32.mp3",
+  "Знак Водолея": "assets/melody/audio/modern-ru-33.mp3",
+  "Ай-яй-яй": "assets/melody/audio/modern-ru-34.mp3",
+  "Серебро": "assets/melody/audio/modern-ru-35.mp3",
+  "Невеста": "assets/melody/audio/modern-ru-36.mp3",
+  "Выхода нет": "assets/melody/audio/modern-ru-37.mp3",
+  "Попытка № 5": "assets/melody/audio/modern-ru-38.mp3",
+  "Мама Люба": "assets/melody/audio/modern-ru-39.mp3"
+});
+
+// Additional international pop and rock hits.
+window.MELODY_SONGS.international.push(...[
+  "Basket Case",
+  "I Miss You",
+  "Please Please Please",
+  "That’s So True",
+  "Habits (Stay High)",
+  "In Too Deep",
+  "Pink Pony Club",
+  "Love Story"
+]);
+window.MELODY_INTERNATIONAL_ARTISTS.push(...[
+  "Green Day · известная версия",
+  "blink-182 · известная версия",
+  "Sabrina Carpenter · известная версия",
+  "Gracie Abrams · известная версия",
+  "Tove Lo · известная версия",
+  "Sum 41",
+  "Chappell Roan · известная версия",
+  "Taylor Swift · известная версия"
+]);
+Object.assign(window.MELODY_AUDIO, {
+  "Basket Case": "assets/melody/audio/modern-en-21.mp3",
+  "I Miss You": "assets/melody/audio/modern-en-22.mp3",
+  "Please Please Please": "assets/melody/audio/modern-en-23.mp3",
+  "That’s So True": "assets/melody/audio/modern-en-24.mp3",
+  "Habits (Stay High)": "assets/melody/audio/modern-en-25.mp3",
+  "In Too Deep": "assets/melody/audio/modern-en-26.mp3",
+  "Pink Pony Club": "assets/melody/audio/modern-en-27.mp3",
+  "Love Story": "assets/melody/audio/modern-en-28.mp3"
 });
