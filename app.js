@@ -584,42 +584,42 @@ function renderMelodyScreen(state) {
         <p>Финалисты выбирают мелодию</p>
         <ul>
           ${state.version === 'international' ? `
-            <li>«Jingle Bells» (Тур 1, Мелодия 1)</li>
-            <li>«Silent Night» (Тур 1, Мелодия 2)</li>
-            <li>«Joy to the World» (Тур 1, Мелодия 3)</li>
-            <li>«O Holy Night» (Тур 1, Мелодия 4)</li>
-            <li>«Deck the Halls» (Тур 1, Мелодия 5)</li>
-            <li>«We Wish You a Merry Christmas» (Тур 1, Мелодия 6)</li>
-            <li>«The First Noel» (Тур 1, Мелодия 7)</li>
-            <li>«Hark! The Herald Angels Sing» (Тур 1, Мелодия 8)</li>
-            <li>«God Rest Ye Merry, Gentlemen» (Тур 1, Мелодия 9)</li>
-            <li>«Away in a Manger» (Тур 2, Мелодия 1)</li>
-            <li>«O Come, All Ye Faithful» (Тур 2, Мелодия 2)</li>
-            <li>«It Came Upon the Midnight Clear» (Тур 2, Мелодия 3)</li>
-            <li>«What Child Is This?» (Тур 2, Мелодия 4)</li>
-            <li>«Angels We Have Heard on High» (Tур 2, Мелодия 5)</li>
-            <li>«Good King Wenceslas» (Тур 2, Мелодия 6)</li>
-            <li>«I Saw Three Ships» (Тур 2, Мелодия 7)</li>
-            <li>«The Holly and the Ivy» (Тур 2, Мелодия 8)</li>
-            <li>«Ding Dong Merrily on High» (Тур 2, Мелодия 9)</li>
-            <li>«Go Tell It on the Mountain» (Тур 3, Мелодия 1)</li>
-            <li>«O Little Town of Bethlehem» (Тур 3, Мелодия 2)</li>
-            <li>«We Three Kings» (Тур 3, Мелодия 3)</li>
-            <li>«The Little Drummer Boy» (Тур 3, Мелодия 4)</li>
-            <li>«Mary Did You Know?» (Тур 3, Мелодия 5)</li>
-            <li>«Do You Hear What I Hear?» (Тур 3, Мелодия 6)</li>
-            <li>«Have Yourself a Merry Little Christmas» (Тур 3, Мелодия 7)</li>
-            <li>«White Christmas» (Тур 3, Мелодия 8)</li>
-            <li>«Let It Snow! Let It Snow! Let It Snow!» (Тур 3, Мелодия 9)</li>
+            <li>«All I Want for Christmas Is You» (Тур 1, Мелодия 1)</li>
+            <li>«Last Christmas» (Тур 1, Мелодия 2)</li>
+            <li>«Feliz Navidad» (Тур 1, Мелодия 3)</li>
+            <li>«Rockin' Around the Christmas Tree» (Тур 1, Мелодия 4)</li>
+            <li>«Jingle Bells» (Тур 1, Мелодия 5)</li>
+            <li>«Silent Night» (Тур 1, Мелодия 6)</li>
+            <li>«White Christmas» (Тур 1, Мелодия 7)</li>
+            <li>«It's the Most Wonderful Time of the Year» (Тур 1, Мелодия 8)</li>
+            <li>«The Christmas Song» (Тур 1, Мелодия 9)</li>
+            <li>«Santa Tell Me» (Тур 2, Мелодия 1)</li>
+            <li>«Driving Home for Christmas» (Тур 2, Мелодия 2)</li>
+            <li>«Happy Xmas (War Is Over)» (Тур 2, Мелодия 3)</li>
+            <li>«Wonderful Christmastime» (Тур 2, Мелодия 4)</li>
+            <li>«Merry Christmas Everyone» (Тур 2, Мелодия 5)</li>
+            <li>«Let It Snow! Let It Snow! Let It Snow!» (Тур 2, Мелодия 6)</li>
+            <li>«A Holly Jolly Christmas» (Тур 2, Мелодия 7)</li>
+            <li>«O Holy Night» (Тур 2, Мелодия 8)</li>
+            <li>«Deck the Halls» (Тур 2, Мелодия 9)</li>
+            <li>«Do They Know It’s Christmas?» (Тур 3, Мелодия 1)</li>
+            <li>«Fairytale of New York» (Тур 3, Мелодия 2)</li>
+            <li>«Christmas Lights» (Тур 3, Мелодия 3)</li>
+            <li>«Underneath the Tree» (Тур 3, Мелодия 4)</li>
+            <li>«Mistletoe» (Тур 3, Мелодия 5)</li>
+            <li>«Joy to the World» (Тур 3, Мелодия 6)</li>
+            <li>«Hark! The Herald Angels Sing» (Тур 3, Мелодия 7)</li>
+            <li>«God Rest Ye Merry, Gentlemen» (Тур 3, Мелодия 8)</li>
+            <li>«We Wish You a Merry Christmas» (Тур 3, Мелодия 9)</li>
             <li>«Winter Wonderland» (Тур 4, Мелодия 1)</li>
-            <li>«Santa Claus Is Comin' to Town» (Тур 4, Мелодия 2)</li>
-            <li>«Rudolph the Red-Nosed Reindeer» (Тур 4, Мелодия 3)</li>
-            <li>«Frosty the Snowman» (Тур 4, Мелодия 4)</li>
-            <li>«Feliz Navidad» (Тур 4, Мелодия 5)</li>
-            <li>«Rockin' Around the Christmas Tree» (Тур 4, Мелодия 6)</li>
-            <li>«It's the Most Wonderful Time of the Year» (Tur 4, Мелодия 7)</li>
-            <li>«A Holly Jolly Christmas» (Тур 4, Мелодия 8)</li>
-            <li>«All I Want for Christmas Is You» (Тур 4, Мелодия 9)</li>
+            <li>«Rudolph the Red-Nosed Reindeer» (Тур 4, Мелодия 2)</li>
+            <li>«Frosty the Snowman» (Тур 4, Мелодия 3)</li>
+            <li>«Carol of the Bells» (Тур 4, Мелодия 4)</li>
+            <li>«Mary Did You Know?» (Тур 4, Мелодия 5)</li>
+            <li>«Have Yourself a Merry Little Christmas» (Тур 4, Мелодия 6)</li>
+            <li>«I Saw Three Ships» (Тур 4, Мелодия 7)</li>
+            <li>«Away in a Manger» (Тур 4, Мелодия 8)</li>
+            <li>«Ding Dong Merrily on High» (Тур 4, Мелодия 9)</li>
           ` : `
             <li>«Зимний вальс» (Тур 1, Мелодия 1)</li>
             <li>«Снежинки кружатся» (Тур 1, Мелодия 2)</li>
@@ -628,6 +628,40 @@ function renderMelodyScreen(state) {
             <li>«Снеговик» (Тур 1, Мелодия 5)</li>
             <li>«Новогодний карнавал» (Тур 1, Мелодия 6)</li>
             <li>«Подарки» (Тур 1, Мелодия 7)</li>
+            <li>«Зимний лес» (Тур 1, Мелодия 8)</li>
+            <li>«Рождество» (Тур 1, Мелодия 9)</li>
+            <li>«Снежная королева» (Тур 2, Мелодия 1)</li>
+            <li>«Огни города» (Тур 2, Мелодия 2)</li>
+            <li>«Новогодние огни» (Тур 2, Мелодия 3)</li>
+            <li>«Праздник» (Тур 2, Мелодия 4)</li>
+            <li>«Загадочный лес» (Тур 2, Мелодия 5)</li>
+            <li>«Зимняя сказка» (Тур 2, Мелодия 6)</li>
+            <li>«Снег» (Тур 2, Мелодия 7)</li>
+            <li>«Колокольчики» (Тур 2, Мелодия 8)</li>
+            <li>«Новогодняя ночь» (Тур 2, Мелодия 9)</li>
+            <li>«Зимний сад» (Тур 3, Мелодия 1)</li>
+            <li>«Снежные горы» (Тур 3, Мелодия 2)</li>
+            <li>«Зимний ветер» (Тур 3, Мелодия 3)</li>
+            <li>«Новогодний подарок» (Тур 3, Мелодия 4)</li>
+            <li>«Зимняя сказка» (Тур 3, Мелодия 5)</li>
+            <li>«Новогодний танец» (Тур 3, Мелодия 6)</li>
+            <li>«Снежные шары» (Тур 3, Мелодия 7)</li>
+            <li>«Зимний рассвет» (Тур 3, Мелодия 8)</li>
+            <li>«Новогодний фейерверк» (Тур 3, Мелодия 9)</li>
+            <li>«Зимняя сказка» (Тур 4, Мелодия 1)</li>
+            <li>«Новогодний праздник» (Тур 4, Мелодия 2)</li>
+            <li>«Снежный балет» (Тур 4, Мелодия 3)</li>
+            <li>«Зимняя сказка» (Тур 4, Мелодия 4)</li>
+            <li>«Новогодний карнавал» (Тур 4, Мелодия 5)</li>
+            <li>«Зимний ветер» (Тур 4, Мелодия 6)</li>
+            <li>«Снег» (Тур 4, Мелодия 7)</li>
+            <li>«Зимний лес» (Тур 4, Мелодия 8)</li>
+            <li>«Новогодний фейерверк» (Тур 4, Мелодия 9)</li>
+          ` }
+        </ul>
+      </div>
+    `;
+  }
             <li>«Зимний лес» (Тур 1, Мелодия 8)</li>
             <li>«Рождество» (Тур 1, Мелодия 9)</li>
             <li>«Снежная королева» (Тур 2, Мелодия 1)</li>
