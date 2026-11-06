@@ -89,3 +89,12 @@ test('field host and projector use a light background with readable text',()=>{
     }
   } finally {dom.window.close()}
 });
+
+test('host can play offline, rename, skip with visible turn, and judge a spoken answer',()=>{
+  const {w,d,click,state}=setup();try{
+    w.FIELD_QUESTIONS=[{question:'Вопрос',answer:'БАРАБАН'}];click('[data-open="field"]');const name=d.querySelector('[data-field-name="0"]');name.value='Мария';name.dispatchEvent(new w.Event('input',{bubbles:true}));click('#fieldStart');
+    assert.match(d.querySelector('.field-score.active').textContent,/Мария/);click('#fieldSkip');assert.equal(state().activeIndex,1);assert.equal(state().lastPassed,0);assert.ok(d.querySelectorAll('.field-score')[0].classList.contains('passed'));assert.match(d.querySelector('.field-score.active').textContent,/Игрок 2/);
+    w.confirm=()=>false;click('#fieldWrong');assert.equal(state().players[1].out,false);w.confirm=()=>true;click('#fieldWrong');assert.equal(state().players[1].out,true);assert.equal(state().activeIndex,2);assert.ok(d.querySelectorAll('.field-score')[1].classList.contains('out'));
+    assert.ok(!JSON.stringify(state()).includes('БАРАБАН'));click('#fieldRight');assert.equal(state().phase,'over');assert.match(state().message,/Игрок 3/);
+  }finally{w.close()}
+});

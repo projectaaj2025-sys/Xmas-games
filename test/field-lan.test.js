@@ -34,3 +34,15 @@ test('LAN profile updates report viewer counts and preserve connection identity'
     player.ws.send(JSON.stringify({type:'profile-update',name:'   ',role:'player',requestId:4}));await delay(35);assert.equal(player.messages.filter(m=>m.type==='profile-error').at(-1).requestId,4);assert.equal(host.messages.filter(m=>m.type==='presence').at(-1).viewers.length,2);
   }finally{for(const ws of sockets)ws.close();child.kill()}
 });
+
+test('LAN routes melody buzzer only from player connections',async()=>{
+  const port=await freePort(),child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port)},stdio:['ignore','pipe','pipe']});const sockets=[];
+  try{
+    await Promise.race([once(child.stdout,'data'),delay(3000).then(()=>{throw Error('server did not start')})]);
+    async function connect(role,name,id){const ws=new WebSocket(`ws://127.0.0.1:${port}/sync`),messages=[];sockets.push(ws);ws.addEventListener('message',e=>messages.push(JSON.parse(e.data)));await once(ws,'open');ws.send(JSON.stringify({type:'join',room:'TESTROOM',role,name,playerId:id}));await delay(35);return {ws,messages}}
+    const host=await connect('host'),player=await connect('player','Аня','alice'),viewer=await connect('viewer','Гость','guest');
+    host.ws.send(JSON.stringify({type:'state',payload:{game:'melody',buzz:{open:true,token:'token'}}}));await delay(35);
+    viewer.ws.send(JSON.stringify({type:'player-action',action:{kind:'melody-buzz',token:'token'}}));player.ws.send(JSON.stringify({type:'player-action',action:{kind:'melody-buzz',token:'token'}}));await delay(35);
+    const actions=host.messages.filter(m=>m.type==='player-action');assert.equal(actions.length,1);assert.equal(actions[0].playerId,'alice');assert.equal(actions[0].role,'player');
+  }finally{for(const ws of sockets)ws.close();child.kill()}
+});
