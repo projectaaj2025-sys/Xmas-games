@@ -115,7 +115,7 @@ test('legacy Russian save migrates by song without moving results onto replaceme
   const a=setup();let saved;try{
     a.click('[data-open="melody"]');a.click('#backHome');saved=a.snapshot();
     const data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
-    delete s.catalogRevision;s.names=['Аня','Борис','Света'];s.scores=[80,-50,30];
+    delete s.catalogRevision;delete s.uniqueCatalogRevision;s.names=['Аня','Борис','Света'];s.scores=[80,-50,30];
     // In the old first board, notes 1 and 2 were A4 and Steklovata; note 7 remains unchanged.
     s.used=[[0,2,7],[],[]];s.selected=1;s.revealed=true;
     s.judged={'russian-1-1-0':80,'russian-1-2-1':-50,'russian-1-7-2':30};
@@ -135,18 +135,18 @@ test('legacy Russian save migrates by song without moving results onto replaceme
   }finally{b.w.close()}
 });
 
-test('legacy mixed saves preserve unchanged English attempts; family and English have no migration warning',()=>{
+test('legacy mixed, family and English saves warn and preserve unambiguous songs',()=>{
   const a=setup();let base;try{a.click('[data-open="melody"]');a.click('#backHome');base=a.snapshot()}finally{a.w.close()}
   for(const version of ['mixed','children','international']){
-    const saved={...base},data=JSON.parse(saved['snowy-host-melody-v1']);delete data.state.catalogRevision;
+    const saved={...base},data=JSON.parse(saved['snowy-host-melody-v1']);delete data.state.catalogRevision;delete data.state.uniqueCatalogRevision;
     data.state.version=version;data.state.used=[[1,2],[],[]];data.state.selected=1;data.state.scores=[42,0,0];
     data.state.judged={[`${version}-1-1-0`]:42};data.state.attempts={[`${version}-1-1`]:{active:null,passed:[0],open:false,finished:false,token:''}};
     saved['snowy-host-melody-v1']=JSON.stringify(data);
     const b=setup(saved);try{
-      b.click('[data-open="melody"]');assert.equal(/Подборка обновилась/.test(b.d.querySelector('.game-resume').textContent),version==='mixed');b.click('#resumeGame');
+      b.click('[data-open="melody"]');assert.match(b.d.querySelector('.game-resume').textContent,/Подборка обновилась/);b.click('#resumeGame');
       const s=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
       assert.equal(s.selected,1);assert.equal(s.judged[`${version}-1-1-0`],42);assert.ok(s.used[0].includes(1));assert.equal(s.scores[0],42);
-      if(version==='mixed')assert.ok(!s.used[0].includes(2));else assert.ok(s.used[0].includes(2));
+      if(version==='children')assert.ok(s.used[0].includes(2));else assert.ok(!s.used[0].includes(2));
       assert.deepEqual(b.errors,[]);
     }finally{b.w.close()}
   }
@@ -190,4 +190,44 @@ test('legacy holiday progress follows matching songs and warns before bonus rese
     assert.equal(s.auction.phase,'setup');assert.deepEqual(s.auction.points,[0,0]);assert.equal(s.super.status,'ready');assert.equal(s.super.seconds,30);
     assert.equal(s.holidayCatalogRevision,2);assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
   }finally{b.w.close()}
+});
+
+test('published standard layouts migrate by identity, discard ambiguous duplicates and reset bonus phases',()=>{
+  const a=setup();let base;try{a.click('[data-open="melody"]');a.click('#backHome');base=a.snapshot()}finally{a.w.close()}
+  for(const version of ['russian','mixed','children','international']){
+    const saved={...base},data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
+    s.version=version;s.catalogRevision=2;delete s.uniqueCatalogRevision;
+    s.names=['Аня','Борис','Света'];s.scores=[80,40,-20];s.tour=version==='russian'?2:1;
+    s.auction.phase='result';s.auction.lastWinner=0;s.auction.points=[2,1];
+    s.super.status='paused';s.super.seconds=17;s.super.queue=[2,3,4,5,6];
+    if(version==='russian'){
+      // Round 2: МакSим and Женя Белоусов move to positions 4 and 3; the old New Year song is removed from that round.
+      s.used=[[],[0,10,11],[]];s.selected=10;s.revealed=true;
+      s.judged={'russian-2-10-0':80,'russian-2-0-1':40};s.attempts={'russian-2-10':{active:null,passed:[0],open:false,finished:false,token:''}};
+    }else if(version==='children'){
+      // "Голубой вагон" occurs twice in the old first board, so neither old result can be assigned safely.
+      s.used=[[0,7,17],[],[]];s.selected=7;s.revealed=true;
+      s.judged={'children-1-7-0':80,'children-1-17-1':40};s.attempts={'children-1-7':{active:null,passed:[0],open:false,finished:false,token:''}};
+    }else{
+      // Last Christmas remains at position 1 in both mixed and English modes.
+      s.used=[[1],[],[]];s.selected=1;s.revealed=true;
+      s.judged={[`${version}-1-1-0`]:80};s.attempts={[`${version}-1-1`]:{active:null,passed:[0],open:false,finished:false,token:''}};
+    }
+    saved['snowy-host-melody-v1']=JSON.stringify(data);
+    const b=setup(saved);try{
+      b.click('[data-open="melody"]');assert.match(b.d.querySelector('.game-resume').textContent,/Торги и суперигра.*начнутся заново/);b.click('#resumeGame');
+      const result=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
+      assert.deepEqual(result.names,['Аня','Борис','Света']);assert.deepEqual(result.scores,[80,40,-20]);
+      assert.equal(result.uniqueCatalogRevision,1);assert.equal(result.auction.phase,'setup');assert.deepEqual(result.auction.points,[0,0]);
+      assert.equal(result.super.status,'ready');assert.equal(result.super.seconds,30);assert.deepEqual(result.super.queue,[0,1,2,3,4,5,6]);
+      if(version==='russian'){
+        assert.deepEqual(result.used[1],[4,3]);assert.equal(result.selected,4);assert.equal(result.judged['russian-2-4-0'],80);assert.equal(result.judged['russian-2-0-1'],undefined);
+      }else if(version==='children'){
+        assert.deepEqual(result.used[0],[0]);assert.equal(result.selected,null);assert.equal(result.revealed,false);assert.deepEqual(result.judged,{});assert.deepEqual(result.attempts,{});
+      }else{
+        assert.deepEqual(result.used[0],[1]);assert.equal(result.selected,1);assert.equal(result.judged[`${version}-1-1-0`],80);
+      }
+      assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
+    }finally{b.w.close()}
+  }
 });

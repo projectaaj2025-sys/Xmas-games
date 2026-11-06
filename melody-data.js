@@ -256,23 +256,23 @@ window.MELODY_RUSSIAN_SOURCES = [
 // Each row's arrays point into the Russian and international catalogues above.
 window.MELODY_LAYOUT = [
   [
-    {name:'Новогодние хиты', ru:[0,32,22,4,5], en:[0,1,2,3,4]},
-    {name:'Снег и зима', ru:[1,33,14,38,10], en:[6,14,27,28,29]},
-    {name:'Любимые мелодии', ru:[3,6,7,2,17], en:[4,5,17,26,34]},
-    {name:'Танцуем вместе', ru:[50,12,18,19,47], en:[0,2,3,12,13]}
+    {name:"Новогодние хиты", ru:[0, 32, 22, 4, 5], en:[0, 1, 2, 3, 4]},
+    {name:"Снег и зима", ru:[1, 33, 14, 38, 10], en:[6, 14, 27, 28, 29]},
+    {name:"Любимые мелодии", ru:[3, 6, 7, 2, 17], en:[5, 17, 26, 34, 36]},
+    {name:"Танцуем вместе", ru:[50, 12, 18, 19, 47], en:[37, 38, 39, 40, 41]},
   ],
   [
-    {name:'Хиты у ёлки', ru:[0,33,5,22,32], en:[3,12,17,22,20]},
-    {name:'Зимние истории', ru:[1,14,41,39,3], en:[6,14,27,28,29]},
-    {name:'Караоке за столом', ru:[21,20,23,52,26], en:[1,9,10,11,13]},
-    {name:'Праздничное настроение', ru:[47,18,49,12,50], en:[0,2,3,19,21]}
+    {name:"Знакомые песни", ru:[8, 9, 16, 20, 21], en:[7, 8, 9, 10, 11]},
+    {name:"Классика и хиты", ru:[23, 24, 26, 29, 39], en:[12, 13, 15, 16, 18]},
+    {name:"Песни из кино", ru:[41, 43, 44, 45, 46], en:[19, 20, 21, 22, 23]},
+    {name:"Праздничное настроение", ru:[48, 49, 51, 52, 53], en:[24, 25, 30, 31, 32]},
   ],
   [
-    {name:'Снежные мелодии', ru:[1,3,10,14,38], en:[6,14,27,28,29]},
-    {name:'Музыкальные истории', ru:[6,7,8,16,39], en:[4,28,29,33,34]},
-    {name:'Знакомые припевы', ru:[53,52,48,49,29], en:[1,9,15,21,32]},
-    {name:'Встречаем праздник', ru:[0,4,33,5,51], en:[0,2,3,12,13]}
-  ]
+    {name:"Знакомые припевы", ru:[11, 13, 15, 54, 94], en:[33, 35, 42, 43, 44]},
+    {name:"Классика кино", ru:[95, 96, 97, 98, 99], en:[45, 46, 47, 48, 49]},
+    {name:"Песни на все времена", ru:[100, 101, 102, 103, 104], en:[50, 51, 52, 53, 54]},
+    {name:"Золотые хиты", ru:[105, 106, 107, 108, 109], en:[55, 56, 57, 58, 59]},
+  ],
 ];
 // Holiday-only selection. Indices explicitly name the language of each song.
 // All entries have local audio and are unique across rounds, auction and supergame.
@@ -325,31 +325,31 @@ window.MELODY_NEW_YEAR_AUDIO = {
   'Rudolph the Red-Nosed Reindeer':'assets/melody/audio/rudolph-gene-autry.mp3'
 };
 
-// Family selection: all entries have bundled audio. Repetitions are marked in the host list.
+// Family selection: unique, bundled songs throughout all stages.
 window.MELODY_CHILDREN_LAYOUT = [
   [
-    {name:'У новогодней ёлки', ru:[22,32,33,3,6]},
-    {name:'Любимые мультфильмы', ru:[41,42,43,44,45]},
-    {name:'Снежные песни', ru:[5,4,14,7,39]},
-    {name:'Песни сказочных героев', ru:[8,46,43,44,45]}
+    {name:"У новогодней ёлки", ru:[22, 32, 33, 3, 6]},
+    {name:"Любимые мультфильмы", ru:[41, 43, 44, 45, 46]},
+    {name:"Снежные песни", ru:[5, 4, 14, 7, 39]},
+    {name:"Детские песни", ru:[55, 56, 57, 58, 59]},
   ],
   [
-    {name:'Праздник зимой', ru:[4,22,32,33,5]},
-    {name:'Друзья из мультфильмов', ru:[43,44,42,41,45]},
-    {name:'Ёлки и Снегурочка', ru:[22,32,33,39,3]},
-    {name:'Песенки из сказок', ru:[46,8,45,44,41]}
+    {name:"Зимние истории", ru:[8, 2, 54, 1, 9]},
+    {name:"Детские мелодии", ru:[60, 61, 62, 63, 64]},
+    {name:"Поём вместе", ru:[65, 66, 67, 68, 69]},
+    {name:"Песни из фильмов", ru:[70, 71, 72, 73, 74]},
   ],
   [
-    {name:'Снег, вьюга и мороз', ru:[3,5,6,7,14]},
-    {name:'В гостях у героев', ru:[44,45,46,43,42]},
-    {name:'Зимние приключения', ru:[33,39,41,42,5]},
-    {name:'Новогодние мелодии', ru:[22,32,4,3,6]}
-  ]
+    {name:"Знакомые мелодии", ru:[10, 12, 16, 17, 19]},
+    {name:"Хиты и сказки", ru:[20, 21, 24, 26, 27]},
+    {name:"Песни для всех", ru:[28, 38, 48, 75, 76]},
+    {name:"Любимые герои", ru:[77, 78, 79, 80, 81]},
+  ],
 ];
-window.MELODY_CHILDREN_SUPER_TRACKS = [3,22,32,33,43,44,41];
+window.MELODY_CHILDREN_SUPER_TRACKS = [87,88,89,90,91,92,93];
 window.MELODY_SUPER_TRACKS = {
-  russian:[3,7,5,0,32,22,33],
-  international:[4,1,26,2,14,0,34]
+  russian:[115,116,117,118,119,120,121],
+  international:[65,66,67,68,69,70,71]
 };
 window.MELODY_RUSSIAN_AUDIO = {
   "Это Новый год":"assets/melody/audio/eto-novy-god.mp3",
@@ -412,3 +412,566 @@ window.MELODY_RUSSIAN_AUDIO_BY_INDEX = {
   34:'assets/melody/audio/novy-god-steklovata.mp3',
   40:'assets/melody/audio/novogodnyaya-pesnya-a4.mp3'
 };
+
+// Additional unique family and international recordings. Historical indices above remain stable.
+window.MELODY_SONGS.russian.push(...[
+  "Антошка",
+  "Два весёлых гуся",
+  "Дважды два — четыре",
+  "Каравай",
+  "Кто пасётся на лугу",
+  "Мишка косолапый",
+  "Оранжевая песня",
+  "Пусть всегда будет солнце",
+  "Танец маленьких утят",
+  "Топ-топ, топает малыш",
+  "Учат в школе",
+  "В траве сидел кузнечик",
+  "Жил-был у бабушки серенький козлик",
+  "Белые кораблики",
+  "До-ре-ми-фа-соль",
+  "Крылатые качели",
+  "На далёкой Амазонке",
+  "Катюша",
+  "Во поле берёзка стояла",
+  "Старый клён",
+  "Ветер перемен",
+  "До чего дошёл прогресс",
+  "Мы маленькие дети",
+  "Прекрасное далёко",
+  "Песня поросёнка Фунтика",
+  "Песенка голубого щенка",
+  "Серенада Трубадура",
+  "Я тебе, конечно, верю",
+  "Про варенье",
+  "Песня разбойников",
+  "Песенка мушкетёров",
+  "А мне летать охота",
+  "Бабки-Ёжки",
+  "Песенка мамонтёнка",
+  "Облака",
+  "Кручу педали",
+  "Непогода",
+  "Какое небо голубое",
+  "Проскакал по городу олень"
+]);
+window.MELODY_RUSSIAN_SOURCES.push(...[
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Ирма Сохадзе",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Олег Анофриев",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Приключения Электроника»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Приключения капитана Врунгеля»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Военная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Народная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Девчата»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Мэри Поппинс, до свидания!»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Приключения Электроника»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Приключения Электроника»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Гостья из будущего»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма про Фунтика",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Голубой щенок»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Бременские музыканты»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Большое космическое путешествие»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Детская или семейная песня · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Бременские музыканты»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Д’Артаньян и три мушкетёра»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Летучий корабль» · минусовка",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Летучий корабль» · минусовка",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Мама для мамонтёнка»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма «Трям! Здравствуйте!»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из мультфильма про кота Леопольда",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Мэри Поппинс, до свидания!»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Приключения Буратино»",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "Из фильма «Лесная сказка»",
+    "source": null,
+    "youtube": null
+  }
+]);
+Object.assign(window.MELODY_RUSSIAN_AUDIO, {
+  "Антошка": "assets/melody/audio/family-01.mp3",
+  "Два весёлых гуся": "assets/melody/audio/family-02.mp3",
+  "Дважды два — четыре": "assets/melody/audio/family-03.mp3",
+  "Каравай": "assets/melody/audio/family-04.mp3",
+  "Кто пасётся на лугу": "assets/melody/audio/family-05.mp3",
+  "Мишка косолапый": "assets/melody/audio/family-06.mp3",
+  "Оранжевая песня": "assets/melody/audio/family-07.mp3",
+  "Пусть всегда будет солнце": "assets/melody/audio/family-08.mp3",
+  "Танец маленьких утят": "assets/melody/audio/family-09.mp3",
+  "Топ-топ, топает малыш": "assets/melody/audio/family-10.mp3",
+  "Учат в школе": "assets/melody/audio/family-11.mp3",
+  "В траве сидел кузнечик": "assets/melody/audio/family-12.mp3",
+  "Жил-был у бабушки серенький козлик": "assets/melody/audio/family-13.mp3",
+  "Белые кораблики": "assets/melody/audio/family-14.mp3",
+  "До-ре-ми-фа-соль": "assets/melody/audio/family-15.mp3",
+  "Крылатые качели": "assets/melody/audio/family-16.mp3",
+  "На далёкой Амазонке": "assets/melody/audio/family-17.mp3",
+  "Катюша": "assets/melody/audio/family-18.mp3",
+  "Во поле берёзка стояла": "assets/melody/audio/family-19.mp3",
+  "Старый клён": "assets/melody/audio/family-20.mp3",
+  "Ветер перемен": "assets/melody/audio/family-21.mp3",
+  "До чего дошёл прогресс": "assets/melody/audio/family-22.mp3",
+  "Мы маленькие дети": "assets/melody/audio/family-23.mp3",
+  "Прекрасное далёко": "assets/melody/audio/family-24.mp3",
+  "Песня поросёнка Фунтика": "assets/melody/audio/family-25.mp3",
+  "Песенка голубого щенка": "assets/melody/audio/family-26.mp3",
+  "Серенада Трубадура": "assets/melody/audio/family-27.mp3",
+  "Я тебе, конечно, верю": "assets/melody/audio/family-28.mp3",
+  "Про варенье": "assets/melody/audio/family-29.mp3",
+  "Песня разбойников": "assets/melody/audio/family-30.mp3",
+  "Песенка мушкетёров": "assets/melody/audio/family-31.mp3",
+  "А мне летать охота": "assets/melody/audio/family-32.mp3",
+  "Бабки-Ёжки": "assets/melody/audio/family-33.mp3",
+  "Песенка мамонтёнка": "assets/melody/audio/family-34.mp3",
+  "Облака": "assets/melody/audio/family-35.mp3",
+  "Кручу педали": "assets/melody/audio/family-36.mp3",
+  "Непогода": "assets/melody/audio/family-37.mp3",
+  "Какое небо голубое": "assets/melody/audio/family-38.mp3",
+  "Проскакал по городу олень": "assets/melody/audio/family-39.mp3"
+});
+window.MELODY_SONGS.international.push(...[
+  "Crazy in Love",
+  "Oops!... I Did It Again",
+  "Bring Me to Life",
+  "Feel Good Inc.",
+  "Gangnam Style",
+  "Poker Face",
+  "Whenever, Wherever",
+  "Numb",
+  "In the End",
+  "Californication",
+  "Boulevard of Broken Dreams",
+  "Shape of You",
+  "Chandelier",
+  "Closer",
+  "The Sound of Silence",
+  "The House of the Rising Sun",
+  "A Thousand Miles",
+  "Don’t Let Me Down",
+  "Summer",
+  "Cold Water",
+  "The Chain",
+  "Clarity",
+  "Billie Jean",
+  "Beat It"
+]);
+window.MELODY_INTERNATIONAL_ARTISTS.push(...[
+  "Beyoncé и JAY-Z",
+  "Britney Spears",
+  "Evanescence",
+  "Gorillaz",
+  "PSY",
+  "Lady Gaga",
+  "Shakira",
+  "Linkin Park",
+  "Linkin Park",
+  "Red Hot Chili Peppers",
+  "Green Day",
+  "Ed Sheeran",
+  "Sia",
+  "The Chainsmokers",
+  "Известная версия: Simon & Garfunkel · исполнитель записи не установлен",
+  "The Animals",
+  "Vanessa Carlton",
+  "The Chainsmokers",
+  "Calvin Harris",
+  "Major Lazer и Justin Bieber",
+  "Fleetwood Mac",
+  "Zedd",
+  "Известная версия: Michael Jackson · исполнитель записи не установлен",
+  "Известная версия: Michael Jackson · исполнитель записи не установлен"
+]);
+Object.assign(window.MELODY_AUDIO, {
+  "Crazy in Love": "assets/melody/audio/international-hit-01.mp3",
+  "Oops!... I Did It Again": "assets/melody/audio/international-hit-02.mp3",
+  "Bring Me to Life": "assets/melody/audio/international-hit-03.mp3",
+  "Feel Good Inc.": "assets/melody/audio/international-hit-04.mp3",
+  "Gangnam Style": "assets/melody/audio/international-hit-05.mp3",
+  "Poker Face": "assets/melody/audio/international-hit-06.mp3",
+  "Whenever, Wherever": "assets/melody/audio/international-hit-07.mp3",
+  "Numb": "assets/melody/audio/international-hit-08.mp3",
+  "In the End": "assets/melody/audio/international-hit-09.mp3",
+  "Californication": "assets/melody/audio/international-hit-10.mp3",
+  "Boulevard of Broken Dreams": "assets/melody/audio/international-hit-11.mp3",
+  "Shape of You": "assets/melody/audio/international-hit-12.mp3",
+  "Chandelier": "assets/melody/audio/international-hit-13.mp3",
+  "Closer": "assets/melody/audio/international-hit-14.mp3",
+  "The Sound of Silence": "assets/melody/audio/international-hit-15.mp3",
+  "The House of the Rising Sun": "assets/melody/audio/international-hit-16.mp3",
+  "A Thousand Miles": "assets/melody/audio/international-hit-17.mp3",
+  "Don’t Let Me Down": "assets/melody/audio/international-hit-18.mp3",
+  "Summer": "assets/melody/audio/international-hit-19.mp3",
+  "Cold Water": "assets/melody/audio/international-hit-20.mp3",
+  "The Chain": "assets/melody/audio/international-hit-21.mp3",
+  "Clarity": "assets/melody/audio/international-hit-22.mp3",
+  "Billie Jean": "assets/melody/audio/international-hit-23.mp3",
+  "Beat It": "assets/melody/audio/international-hit-24.mp3"
+});
+
+// More recognisable classics for the Russian-only and mixed selections.
+window.MELODY_SONGS.russian.push(...[
+  "Александра",
+  "Ваше благородие, госпожа Удача",
+  "Вологда",
+  "Гляжу в озёра синие",
+  "Комарово",
+  "Лебединая верность",
+  "Лучший город Земли",
+  "Малиновка",
+  "Не думай о секундах свысока",
+  "Нежность",
+  "Огней так много золотых",
+  "Первым делом самолёты",
+  "Под крылом самолёта",
+  "Подмосковные вечера",
+  "Помоги мне",
+  "Синяя вечность",
+  "Там, где клён шумит",
+  "Течёт река Волга",
+  "Чёрный кот",
+  "Шоколадный заяц",
+  "Я спросил у ясеня",
+  "Яблони в цвету",
+  "Журавли",
+  "Чёрный бумер",
+  "Олеся",
+  "Берёзовый сок",
+  "Соловьиная роща",
+  "Аист на крыше"
+]);
+window.MELODY_RUSSIAN_SOURCES.push(...[
+  {
+    "artist": "из к/ф «Москва слезам не верит» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "из к/ф «Белое солнце пустыни» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Песняры · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Леонид Белый · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Игорь Скляр · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Евгений Мартынов · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Муслим Магомаев · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Верасы · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "из к/ф «Семнадцать мгновений весны» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Майя Кристалинская · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "из к/ф «Дело было в Пенькове» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "из к/ф «Небесный тихоход» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Юрий Антонов · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Владимир Трошин · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "из к/ф «Бриллиантовая рука» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Муслим Магомаев · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Синяя птица · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Людмила Зыкина · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Тамара Миансарова · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Пьер Нарцисс · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "из к/ф «Ирония судьбы, или С лёгким паром!» · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Евгений Мартынов · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Марк Бернес · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Серёга · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Сябры · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Песняры · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: Песняры · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  },
+  {
+    "artist": "известная версия: София Ротару · исполнитель записи не установлен",
+    "source": null,
+    "youtube": null
+  }
+]);
+Object.assign(window.MELODY_RUSSIAN_AUDIO, {
+  "Александра": "assets/melody/audio/russian-classic-01.mp3",
+  "Ваше благородие, госпожа Удача": "assets/melody/audio/russian-classic-02.mp3",
+  "Вологда": "assets/melody/audio/russian-classic-03.mp3",
+  "Гляжу в озёра синие": "assets/melody/audio/russian-classic-04.mp3",
+  "Комарово": "assets/melody/audio/russian-classic-05.mp3",
+  "Лебединая верность": "assets/melody/audio/russian-classic-06.mp3",
+  "Лучший город Земли": "assets/melody/audio/russian-classic-07.mp3",
+  "Малиновка": "assets/melody/audio/russian-classic-08.mp3",
+  "Не думай о секундах свысока": "assets/melody/audio/russian-classic-09.mp3",
+  "Нежность": "assets/melody/audio/russian-classic-10.mp3",
+  "Огней так много золотых": "assets/melody/audio/russian-classic-11.mp3",
+  "Первым делом самолёты": "assets/melody/audio/russian-classic-12.mp3",
+  "Под крылом самолёта": "assets/melody/audio/russian-classic-13.mp3",
+  "Подмосковные вечера": "assets/melody/audio/russian-classic-14.mp3",
+  "Помоги мне": "assets/melody/audio/russian-classic-15.mp3",
+  "Синяя вечность": "assets/melody/audio/russian-classic-16.mp3",
+  "Там, где клён шумит": "assets/melody/audio/russian-classic-17.mp3",
+  "Течёт река Волга": "assets/melody/audio/russian-classic-18.mp3",
+  "Чёрный кот": "assets/melody/audio/russian-classic-19.mp3",
+  "Шоколадный заяц": "assets/melody/audio/russian-classic-20.mp3",
+  "Я спросил у ясеня": "assets/melody/audio/russian-classic-21.mp3",
+  "Яблони в цвету": "assets/melody/audio/russian-classic-22.mp3",
+  "Журавли": "assets/melody/audio/russian-classic-23.mp3",
+  "Чёрный бумер": "assets/melody/audio/russian-classic-24.mp3",
+  "Олеся": "assets/melody/audio/russian-classic-25.mp3",
+  "Берёзовый сок": "assets/melody/audio/russian-classic-26.mp3",
+  "Соловьиная роща": "assets/melody/audio/russian-classic-27.mp3",
+  "Аист на крыше": "assets/melody/audio/russian-classic-28.mp3"
+});

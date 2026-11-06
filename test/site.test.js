@@ -288,7 +288,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
-    assert.equal(w.MELODY_SONGS.russian.length,55); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,55);
+    assert.equal(w.MELODY_SONGS.russian.length,122); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,122);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.doesNotMatch(doc.querySelector('.melody-song-list').textContent,/Стекловата|Новогодняя песня — The Limba/);
@@ -328,7 +328,7 @@ test('three 4 by 5 boards use the reference prices, distinct categories and per-
     d.querySelector('[data-melody-score="0"][data-direction="1"]').click();
     assert.equal(d.querySelector('.melody-player-score strong').textContent,'80');
     assert.equal(d.querySelectorAll('.melody-song-list li').length,72);
-    assert.ok([...d.querySelectorAll('.melody-song-list li')].some(li=>/повтор названия/.test(li.textContent)));
+    assert.ok([...d.querySelectorAll('.melody-song-list li')].every(li=>!/повтор названия/.test(li.textContent)));
   } finally {w.close()}
 });
 
@@ -342,7 +342,7 @@ test('supergame skips and revisits, wins after seven, ends on error or timeout, 
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     socket.listeners.open();const d=w.document;d.querySelector('[data-open="melody"]').click();d.querySelector('[data-melody-tour="4"]').click();
     assert.match(d.querySelector('.melody-stage').textContent,/семь мелодий за 30 секунд/i);
-    d.querySelector('#superStart').click();assert.match(plays.at(-1),/kaby-ne-bylo-zimy\.mp3$/);
+    d.querySelector('#superStart').click();assert.match(plays.at(-1),/russian-classic-22\.mp3$/);
     const first=d.querySelector('.melody-answer p').textContent;
     const last=()=>socket.messages.filter(m=>m.type==='state').at(-1).payload;
     assert.equal(last().mode,'super');assert.ok(!JSON.stringify(last()).includes(first));
@@ -436,7 +436,7 @@ test('Russian recordings are playable and updated notes have matching audio', ()
       if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
     assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,43);
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,55);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,122);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'В лесу родилась ёлочка');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/v-lesu-rodilas-elochka\.mp3$/);
@@ -457,8 +457,8 @@ test('famous new songs play locally with matching titles and artists', () => {
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     const positions=[
       [1,15,'Невозможное возможно','nevozmozhnoe-vozmozhno.mp3','Дима Билан'],[1,19,'Крошка моя','kroshka-moya.mp3','Руки Вверх!'],
-      [2,17,'Нас не догонят','nas-ne-dogonyat.mp3','t.A.T.u.'],[2,13,'Моё сердце','moe-serdtse.mp3','Сплин'],
-      [3,10,'Сансара','sansara.mp3','Баста'],[3,12,'Батарейка','batareyka.mp3','Жуки'],[3,19,'Матушка','matushka.mp3','Татьяна Куртукова']
+      [2,16,'Нас не догонят','nas-ne-dogonyat.mp3','t.A.T.u.'],[2,18,'Моё сердце','moe-serdtse.mp3','Сплин'],
+      [2,19,'Сансара','sansara.mp3','Баста'],[2,15,'Батарейка','batareyka.mp3','Жуки'],[2,17,'Матушка','matushka.mp3','Татьяна Куртукова']
     ];
     for(const [tour,note,title,file,artist] of positions){
       d.querySelector(`[data-melody-tour="${tour}"]`).click();d.querySelector(`[data-melody-note="${note}"]`).click();
@@ -492,7 +492,7 @@ test('family selection has local playable songs on all three boards, in auction 
     }
     assert.equal(new Set(categories).size,12);
     assert.equal(d.querySelectorAll('.melody-song-list li').length,72);
-    assert.match(d.querySelector('.melody-song-list').textContent,/повтор названия/);
+    assert.doesNotMatch(d.querySelector('.melody-song-list').textContent,/повтор названия/);
     assert.match(d.querySelector('.melody-song-list').textContent,/Голубой вагон/);
     d.querySelector('[data-melody-tour="5"]').click();d.querySelector('#auctionStart').click();
     d.querySelector('[data-auction-bid="3"]').click();
@@ -524,7 +524,7 @@ test('all Russian board slots and catalog recordings are local, with no repeats 
         assert.ok(bytes.length>100000);assert.ok(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===0xff);
       }
     }
-    assert.match(d.querySelector('.melody-song-list').textContent,/повтор названия/);
+    assert.doesNotMatch(d.querySelector('.melody-song-list').textContent,/повтор названия/);
   } finally {w.close()}
 });
 
@@ -567,4 +567,47 @@ test('holiday-only mode has distinct seasonal songs and local playback in every 
     for(let i=0;i<7;i++){assert.ok(fs.existsSync(played.at(-1)));click('#superCorrect');}
     assert.match(d.querySelector('.melody-stage').textContent,/Победа/);assert.deepEqual(errors,[]);
   } finally {w.close()}
+});
+
+test('every melody mode has 72 distinct songs with usable sources across boards and bonus rounds', () => {
+  for(const mode of ['russian','international','mixed','children','newyear']){
+    const errors=[], vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e));
+    const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only',virtualConsole:vc});
+    const w=dom.window,d=w.document,played=[];w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+    w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+    w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
+    try{
+      for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
+      const click=selector=>{const el=d.querySelector(selector);assert.ok(el,`${mode}: ${selector}`);assert.equal(el.disabled,false,`${mode}: ${selector}`);el.click();};
+      click('[data-open="melody"]');let select=d.querySelector('#melodyVersion');select.value=mode;select.dispatchEvent(new w.Event('change',{bubbles:true}));
+      assert.equal(d.querySelectorAll('.melody-song-list li').length,72);assert.doesNotMatch(d.querySelector('.melody-song-list').textContent,/повтор названия/);
+      const songs=[];
+      const capture=()=>{
+        const title=d.querySelector('.melody-answer p')?.textContent,artist=d.querySelector('.melody-answer small')?.textContent;
+        assert.ok(title,mode);assert.ok(artist && !artist.endsWith('не указан'),`${mode}: ${title}`);songs.push(title);
+      };
+      const source=before=>{
+        if(played.length>before)assert.ok(fs.existsSync(played.at(-1)),`${mode}: ${played.at(-1)}`);
+        else {const frame=d.querySelector('#melodyExternalPlayer iframe');assert.ok(frame,`${mode}: no local audio or YouTube player for ${songs.at(-1)}`);assert.match(frame.src,/youtube-nocookie\.com\/embed\//);}
+      };
+      for(let tour=1;tour<=3;tour++){
+        click(`[data-melody-tour="${tour}"]`);
+        for(let note=0;note<20;note++){
+          const before=played.length;click(`[data-melody-note="${note}"]`);capture();source(before);
+        }
+      }
+      click('[data-melody-tour="5"]');click('#auctionStart');
+      for(let i=0;i<5;i++){
+        click('[data-auction-bid="3"]');capture();const before=played.length;click('#auctionPlay');source(before);
+        click('#auctionWrong');click('#auctionNext');
+      }
+      click('#superStart');
+      for(let i=0;i<7;i++){
+        capture();assert.ok(fs.existsSync(played.at(-1)),`${mode}: supergame local audio`);click('#superCorrect');
+      }
+      const canonical=title=>title.normalize('NFKC').toLocaleLowerCase().replace(/[\p{P}\p{S}\s]+/gu,'');
+      assert.equal(songs.length,72);assert.equal(new Set(songs.map(canonical)).size,72,mode);
+      assert.match(d.querySelector('.melody-stage').textContent,/Победа/);assert.deepEqual(errors,[]);
+    }finally{w.close()}
+  }
 });
