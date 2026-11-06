@@ -12,6 +12,22 @@ test('the homepage stylesheet contains CSS, not a copy of the HTML', () => {
   assert.match(css, /\.modal-backdrop\s*\{/);
 });
 
+test('the guess card question is layered above its character image', () => {
+  const dom = new JSDOM(read('index.html'));
+  try {
+    const { document, getComputedStyle } = dom.window;
+    const style = document.createElement('style');
+    style.textContent = read('styles.css');
+    document.head.appendChild(style);
+    const bubble = document.querySelector('.guess-illustration .speech-bubble');
+    const character = document.querySelector('.guess-illustration .guess-character');
+    assert.equal(bubble.textContent, 'Кто я?');
+    assert.equal(getComputedStyle(bubble).position, 'absolute');
+    assert.ok(Number(getComputedStyle(bubble).zIndex) > (Number(getComputedStyle(character).zIndex) || 0));
+    assert.ok(Number(getComputedStyle(document.querySelector('.guess-card .card-top')).zIndex) > Number(getComputedStyle(bubble).zIndex));
+  } finally { dom.window.close(); }
+});
+
 test('each game opens in its frame and the new game controls render', () => {
   const errors = [];
   const console = new VirtualConsole();
