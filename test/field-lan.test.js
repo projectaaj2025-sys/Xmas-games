@@ -20,3 +20,17 @@ test('LAN transport supports active player and spectator roles for field',async(
     assert.equal(viewer.messages.filter(m=>m.type==='state').at(-1).payload.board[0].letter,'');
   }finally{for(const ws of sockets)ws.close();child.kill();}
 });
+
+test('LAN profile updates report viewer counts and preserve connection identity',async()=>{
+  const port=await freePort(),child=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port)},stdio:['ignore','pipe','pipe']});const sockets=[];
+  try{
+    await Promise.race([once(child.stdout,'data'),delay(3000).then(()=>{throw Error('server did not start')})]);
+    async function connect(role,name,id){const ws=new WebSocket(`ws://127.0.0.1:${port}/sync`),messages=[];sockets.push(ws);ws.addEventListener('message',e=>messages.push(JSON.parse(e.data)));await once(ws,'open');ws.send(JSON.stringify({type:'join',room:'TESTROOM',role,name,playerId:id}));await delay(35);return {ws,messages}}
+    const host=await connect('host'),player=await connect('player','Аня','alice'),viewer=await connect('viewer','Гость','guest');
+    let presence=host.messages.filter(m=>m.type==='presence').at(-1);assert.equal(presence.players.length,1);assert.equal(presence.viewers.length,1);
+    player.ws.send(JSON.stringify({type:'profile-update',name:'Анна',role:'viewer',requestId:3}));await delay(35);
+    const ack=player.messages.filter(m=>m.type==='profile-updated').at(-1);assert.equal(ack.playerId,'alice');assert.equal(ack.name,'Анна');assert.equal(ack.role,'viewer');
+    presence=host.messages.filter(m=>m.type==='presence').at(-1);assert.equal(presence.players.length,0);assert.equal(presence.viewers.length,2);
+    player.ws.send(JSON.stringify({type:'profile-update',name:'   ',role:'player',requestId:4}));await delay(35);assert.equal(player.messages.filter(m=>m.type==='profile-error').at(-1).requestId,4);assert.equal(host.messages.filter(m=>m.type==='presence').at(-1).viewers.length,2);
+  }finally{for(const ws of sockets)ws.close();child.kill()}
+});

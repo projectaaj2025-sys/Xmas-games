@@ -10,17 +10,18 @@
       <p>Введи имя и выбери роль. В «Поле чудес» зрители наблюдают, а игроки управляют своим ходом.</p>
       <label class="phone-name-label" for="playerName">Как тебя называть?</label><input id="playerName" maxlength="24" autocomplete="given-name" placeholder="Например, Аня">
       <div id="manualRoomEntry" class="manual-room-entry" hidden><label class="phone-name-label" for="roomCodeInput">Код комнаты от ведущего</label><input id="roomCodeInput" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Например, A7B2C"><small>Введите код ведущего. Телефону и компьютеру нужен интернет.</small></div>
-      <label class="phone-name-label" for="phoneRole">Роль</label><select id="phoneRole" class="phone-role"><option value="player">Игрок</option><option value="viewer">Зритель (Поле чудес)</option></select>
+      <label class="phone-name-label" for="phoneRole">Выберите роль</label><select id="phoneRole" class="phone-role"><option value="player">Игрок</option><option value="viewer">Зритель (Поле чудес)</option></select>
       <button id="joinButton" class="join-button" type="button">Подключиться к игре <span>→</span></button>
       <div class="phone-room" id="phoneRoom"></div>
     </section>
     <section id="gamePanel" class="phone-card player-card" hidden>
+      <details class="phone-profile" id="profileSettings"><summary id="profileSummary">Моё имя и роль · изменить</summary><form id="profileForm"><label class="phone-name-label" for="profileName">Имя</label><input id="profileName" maxlength="24" autocomplete="given-name" required><label class="phone-name-label" for="profileRole">Роль</label><select id="profileRole" class="phone-role"><option value="player">Игрок</option><option value="viewer">Зритель (Поле чудес)</option></select><p class="profile-note">В «Поле чудес» при переходе в зрители ведущий продолжит ход за вас. Чтобы снова играть с телефона, попросите ведущего назначить вас на место. В телефонном круге зрители не участвуют в очереди.</p><button type="submit" class="join-button" id="saveProfile">Сохранить имя и роль</button><div id="profileFeedback" role="status" aria-live="polite"></div></form></details>
       <div id="playerTurn" class="phone-kicker">ЖДЁМ ВЕДУЩЕГО</div><h1 id="playerHeading">Подключаемся…</h1><p id="playerInstructions">Карточка появится, когда ведущий начнёт телефонный режим.</p>
       <div id="playerCardFace" class="phone-card-face card-style-0"><span class="phone-card-season">НОВЫЙ ГОД · ТАРАНТИНКИ</span><div id="playerImage" class="phone-image phone-card-image"></div><div id="playerWord" class="phone-word phone-card-word"></div></div><div id="playerHint" class="phone-hint"></div>
       <div id="playerActions" class="phone-actions" hidden><button id="solvedButton" class="join-button">Угадал! 🎉</button><button id="passButton" class="pass-button">Передать ход →</button></div>
       <div class="phone-reminder">❄ В круге смотрим на телефоны друг друга — свой экран на своём ходу не подглядываем.</div>
       <div id="fieldPhone" hidden></div>
-      <button id="leaveButton" class="leave-button">Сменить имя / отключиться</button>
+      <button id="leaveButton" class="leave-button">Отключиться</button>
     </section>
   </main>
   <footer class="phone-footer">Зимние игры вместе · Код комнаты <b id="roomCode"></b></footer>

@@ -117,3 +117,44 @@ test('field phones and spectators get safe state; only the active player can act
     assert.match(projector.document.querySelector('#screenStage').textContent,/АБРИКОС/);assert.match(a.document.querySelector('#playerInstructions').textContent,/угадал/);
   }finally{for(const dom of doms)dom.window.close()}
 });
+
+test('phone profile updates keep identity, update field roster and stop spectator control',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  const submit=(w,selector)=>w.document.querySelector(selector).dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();
+    host.FIELD_QUESTIONS=[{question:'Вопрос',answer:'БАРАБАН'}];const d=host.document;d.querySelector('[data-open="field"]').click();await wait();const url=d.querySelector('#playerInviteUrl').textContent;
+    const a=page('player.html',url,['static-sync.js','player.js']),v=page('player.html',url,['static-sync.js','player.js']);
+    for(const [w,name,role] of [[a,'Аня','player'],[v,'Гость','viewer']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#phoneRole').value=role;w.document.querySelector('#joinButton').click()}
+    await wait();await wait();assert.match(d.querySelector('[data-connected-members]').textContent,/Подключено: 2 · Игроки: 1 · Зрители: 1/);assert.match(d.querySelector('[data-connected-members]').textContent,/Гость/);
+    const member=[...host.__hostSync.members].find(m=>m.name==='Аня'),id=member.playerId;
+    const seat=d.querySelector('[data-field-seat="0"]');seat.value=id;seat.dispatchEvent(new host.Event('change',{bubbles:true}));d.querySelector('#fieldStart').click();await wait();
+    assert.ok(a.document.querySelector('[data-field-action="spin"]'));
+    d.querySelector('#fieldAnswer').value='Черновик';
+    a.document.querySelector('#profileName').value='Анна';submit(a,'#profileForm');await wait();await wait();
+    assert.equal(member.playerId,id);assert.match(a.document.querySelector('#profileSummary').textContent,/Анна · Игрок/);assert.match(d.querySelector('.field-score').textContent,/Анна/);assert.equal(d.querySelector('#fieldAnswer').value,'Черновик');assert.match(d.querySelector('[data-connected-members]').textContent,/Анна/);
+    a.document.querySelector('#profileRole').value='viewer';submit(a,'#profileForm');await wait();await wait();
+    assert.match(d.querySelector('[data-connected-members]').textContent,/Игроки: 0 · Зрители: 2/);assert.ok(a.document.querySelector('[data-reaction="👏"]'));assert.equal(a.document.querySelector('[data-field-action="spin"]'),null);
+    member.conn.other.send({type:'player-action',action:{kind:'spin'}});await wait();assert.equal(d.querySelector('#fieldSpin').disabled,false);
+    a.document.querySelector('#profileRole').value='player';submit(a,'#profileForm');await wait();await wait();
+    assert.match(d.querySelector('[data-connected-members]').textContent,/Игроки: 1 · Зрители: 1/);assert.equal(a.document.querySelector('[data-field-action="spin"]'),null);
+    const assign=d.querySelector('[data-field-player-seat="0"]');assign.value=id;assign.dispatchEvent(new host.Event('change',{bubbles:true}));await wait();assert.ok(a.document.querySelector('[data-field-action="spin"]'));
+    const renamed=d.querySelector('[data-field-player-name="0"]');renamed.value='Игрок А';renamed.dispatchEvent(new host.Event('change',{bubbles:true}));await wait();assert.match(d.querySelector('.field-score').textContent,/Игрок А/);assert.equal(d.querySelector('#fieldAnswer').value,'Черновик');
+  }finally{for(const dom of doms)dom.window.close()}
+});
+
+test('changing phone name and role in the circle preserves identity and points without exposing a private card',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();const d=host.document;d.querySelector('[data-open="guess"]').click();d.querySelector('[data-guess-mode="circle"]').click();await wait();
+    const player=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);player.document.querySelector('#playerName').value='Аня';player.document.querySelector('#joinButton').click();await wait();await wait();
+    const member=[...host.__hostSync.members].find(m=>m.name==='Аня'),id=member.playerId;
+    player.document.querySelector('#solvedButton').click();await wait();assert.match(d.querySelector('.circle-player-list').textContent,/1 ★/);
+    const submit=()=>player.document.querySelector('#profileForm').dispatchEvent(new player.Event('submit',{bubbles:true,cancelable:true}));
+    player.document.querySelector('#profileName').value='Анна';submit();await wait();await wait();assert.match(d.querySelector('.circle-player-list').textContent,/Анна[\s\S]*1 ★/);assert.equal(member.playerId,id);assert.equal(player.document.querySelector('#playerWord').textContent,'ТВОЯ КАРТОЧКА');
+    player.document.querySelector('#profileRole').value='viewer';submit();await wait();await wait();assert.match(d.querySelector('[data-connected-members]').textContent,/Игроки: 0 · Зрители: 1/);assert.equal(player.document.querySelector('#playerWord').textContent,'');assert.equal(player.document.querySelector('#playerActions').hidden,true);
+    player.document.querySelector('#profileRole').value='player';submit();await wait();await wait();assert.match(d.querySelector('.circle-player-list').textContent,/Анна[\s\S]*1 ★/);assert.equal(player.document.querySelector('#playerWord').textContent,'ТВОЯ КАРТОЧКА');
+  }finally{for(const dom of doms)dom.window.close()}
+});

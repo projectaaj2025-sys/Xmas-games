@@ -50,7 +50,7 @@
     sendMember(member,message){if(member.conn.open)try{member.conn.send(message);}catch{}}
     presence(){
       const members=[...this.members].filter(m=>m.role);
-      const data={type:'presence',count:members.filter(m=>m.role==='screen').length,players:members.filter(m=>m.role==='player').map(m=>({id:m.playerId,name:m.name}))};
+      const data={type:'presence',count:members.filter(m=>m.role==='screen').length,players:members.filter(m=>m.role==='player').map(m=>({id:m.playerId,name:m.name})),viewers:members.filter(m=>m.role==='viewer').map(m=>({id:m.playerId,name:m.name}))};
       this.emit('message',{data:JSON.stringify(data)});members.forEach(m=>this.sendMember(m,data));
     }
     receive(member,data) {
@@ -69,9 +69,16 @@
           }
           member.name=String(data.name||'Игрок').trim().slice(0,24)||'Игрок';
           // A reconnected player replaces their stale channel instead of appearing twice.
-          for(const other of [...this.members])if(other!==member&&other.role===member.role&&other.playerId===member.playerId){this.members.delete(other);other.conn.close();}
+          for(const other of [...this.members])if(other!==member&&(other.role==='player'||other.role==='viewer')&&other.playerId===member.playerId){this.members.delete(other);other.conn.close();}
         }
         this.sendMember(member,{type:'joined',role:member.role,playerId:member.playerId});
+        this.presence();
+        if(this.state)this.sendMember(member,{type:'state',payload:privateState(this.state,member)});
+      } else if((member.role==='player'||member.role==='viewer') && data.type==='profile-update') {
+        const name=typeof data.name==='string'?data.name.trim().slice(0,24):'';
+        if(!name || !['player','viewer'].includes(data.role)){this.sendMember(member,{type:'profile-error',requestId:data.requestId});return;}
+        member.name=name;member.role=data.role;
+        this.sendMember(member,{type:'profile-updated',requestId:data.requestId,playerId:member.playerId,name,role:member.role});
         this.presence();
         if(this.state)this.sendMember(member,{type:'state',payload:privateState(this.state,member)});
       } else if((member.role==='player'||member.role==='viewer') && data.type==='player-action') {
