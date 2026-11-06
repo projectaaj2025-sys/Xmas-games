@@ -43,7 +43,11 @@ window.MELODY_SONGS = {
     "Диалог у новогодней ёлки",
     "Новогодняя песня",
     "Отпусти и забудь",
-    "Падал прошлогодний снег (Финал)"
+    "Падал прошлогодний снег (Финал)",
+    "Голубой вагон",
+    "Кто ходит в гости по утрам",
+    "Песня царевны Забавы",
+    "Песенка Красной Шапочки"
 ],
   "international": [
     "All I Want for Christmas Is You",
@@ -326,7 +330,11 @@ window.MELODY_RUSSIAN_SOURCES = [
   {"artist":"Из фильма «Москва слезам не верит»", "source":null, "youtube":null},
   {"artist":"The Limba, JONY, Егор Крид, А4", "source":null, "youtube":null},
   {"artist":"Из мультфильма «Холодное сердце»", "source":null, "youtube":null},
-  {"artist":"Григорий Гладков", "source":null, "youtube":null}
+  {"artist":"Григорий Гладков", "source":null, "youtube":null},
+  {"artist":"Из мультфильма «Шапокляк»", "source":null, "youtube":null},
+  {"artist":"Из мультфильма «Винни-Пух идёт в гости»", "source":null, "youtube":null},
+  {"artist":"Из мультфильма «Летучий корабль»", "source":null, "youtube":null},
+  {"artist":"Из фильма «Про Красную Шапочку»", "source":null, "youtube":null}
 ];
 
 // Three boards, each with four themed rows and five fixed positions.
@@ -351,11 +359,37 @@ window.MELODY_LAYOUT = [
     {name:'Праздник у ёлки', ru:[0,11,12,39,34], en:[0,2,3,12,13]}
   ]
 ];
+// Family selection: all entries have bundled audio. Repetitions are marked in the host list.
+window.MELODY_CHILDREN_LAYOUT = [
+  [
+    {name:'У новогодней ёлки', ru:[22,32,33,3,6]},
+    {name:'Любимые мультфильмы', ru:[41,42,43,44,45]},
+    {name:'Снежные песни', ru:[5,4,14,7,39]},
+    {name:'Песни сказочных героев', ru:[8,46,43,44,45]}
+  ],
+  [
+    {name:'Праздник зимой', ru:[4,22,32,33,5]},
+    {name:'Друзья из мультфильмов', ru:[43,44,42,41,45]},
+    {name:'Ёлки и Снегурочка', ru:[22,32,33,39,3]},
+    {name:'Песенки из сказок', ru:[46,8,45,44,41]}
+  ],
+  [
+    {name:'Снег, вьюга и мороз', ru:[3,5,6,7,14]},
+    {name:'В гостях у героев', ru:[44,45,46,43,42]},
+    {name:'Зимние приключения', ru:[33,39,41,42,5]},
+    {name:'Новогодние мелодии', ru:[22,32,4,3,6]}
+  ]
+];
+window.MELODY_CHILDREN_SUPER_TRACKS = [3,22,32,33,43,44,41];
 window.MELODY_SUPER_TRACKS = {
   russian:[3,7,5,0,32,34,9],
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  'Голубой вагон':'assets/melody/audio/goluboy-vagon.mp3',
+  'Кто ходит в гости по утрам':'assets/melody/audio/kto-hodit-v-gosti.mp3',
+  'Песня царевны Забавы':'assets/melody/audio/pesnya-tsarevny-zabavy.mp3',
+  'Песенка Красной Шапочки':'assets/melody/audio/pesenka-krasnoy-shapochki.mp3',
   'Отпусти и забудь':'assets/melody/audio/otpusti-i-zabud.mp3',
   'Падал прошлогодний снег (Финал)':'assets/melody/audio/padal-proshlogodniy-sneg.mp3',
   'Зима в сердце':'assets/melody/audio/zima-v-serdtse.mp3',

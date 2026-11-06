@@ -486,8 +486,9 @@ const melodyValues = [
 const melodyRows = Array.from({length:4},(_,row)=>Array.from({length:5},(_,column)=>row*5+column));
 function melodySong(state, index, superGame = false) {
   const position=superGame ? index : (state.tour-1)*20+index;
-  const language=state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
-  const songIndex=superGame ? window.MELODY_SUPER_TRACKS[language][index] : window.MELODY_LAYOUT[state.tour-1][Math.floor(index/5)][language === 'russian' ? 'ru' : 'en'][index%5];
+  const children=state.version === 'children';
+  const language=children ? 'russian' : state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
+  const songIndex=superGame ? (children ? window.MELODY_CHILDREN_SUPER_TRACKS[index] : window.MELODY_SUPER_TRACKS[language][index]) : melodyLayout(state)[state.tour-1][Math.floor(index/5)][language === 'russian' ? 'ru' : 'en'][index%5];
   const source=language === 'russian' ? window.MELODY_RUSSIAN_SOURCES[songIndex] : null;
   return {title:window.MELODY_SONGS[language][songIndex],language,source,songIndex};
 }
@@ -496,7 +497,8 @@ function bundledMelodyUrl(song) {
   return song.language==='russian' ? (window.MELODY_RUSSIAN_AUDIO_BY_INDEX?.[song.songIndex] || window.MELODY_RUSSIAN_AUDIO?.[song.title]) : window.MELODY_AUDIO?.[song.title];
 }
 function melodyValue(state,index=state.selected) { return melodyValues[state.tour-1][index]; }
-function melodyCategories(state) {return window.MELODY_LAYOUT[state.tour-1].map(row=>row.name);}
+function melodyLayout(state) {return state.version==='children' ? window.MELODY_CHILDREN_LAYOUT : window.MELODY_LAYOUT;}
+function melodyCategories(state) {return melodyLayout(state)[state.tour-1].map(row=>row.name);}
 function melodyKey(state, index = state.selected) { return `${state.version}-${state.tour}-${index}`; }
 function stopMelodyAudio(clear = false) {
   if (melodyAudio) { melodyAudio.pause(); if (clear) melodyAudio = null; }
@@ -537,7 +539,7 @@ function renderMelody() {
   body.innerHTML = `<div class="melody-show melody-screen-view">
     <details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
     <div class="melody-setup">
-      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option></select></label>
+      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option></select></label>
       <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button><button type="button" id="melodyReset">Новая игра</button>
     </div>
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
@@ -587,6 +589,13 @@ function renderMelody() {
 }
 // Bonus duel: a host-operated adaptation of the show's seven-to-three-note bidding.
 const auctionTracks={
+  children:[
+    {index:3,clue:'Песня о том, что было бы, если бы не было зимы.'},
+    {index:22,clue:'Это деревце родилось в лесу.'},
+    {index:32,clue:'Маленькое деревце зимой переезжает из леса в дом.'},
+    {index:43,clue:'Песня про поезд, который бежит и качается.'},
+    {index:44,clue:'Медвежонок советует ходить в гости по утрам.'}
+  ],
   russian:[
     {index:3,clue:'Что случилось бы, если бы не было зимы?'},
     {index:7,clue:'Вьюга в январе звучит в известной кинокомедии.'},
@@ -603,8 +612,8 @@ const auctionTracks={
   ]
 };
 function auctionSong(s,i) {
-  const language=s.version==='mixed'?(i%2?'international':'russian'):s.version;
-  const track=auctionTracks[language][i],songIndex=track.index;
+  const language=s.version==='children'?'russian':s.version==='mixed'?(i%2?'international':'russian'):s.version;
+  const track=auctionTracks[s.version==='children'?'children':language][i],songIndex=track.index;
   return {title:window.MELODY_SONGS[language][songIndex],language,songIndex,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
 }
 function resetAuction(s){
@@ -650,7 +659,7 @@ function renderMelodyAuction(){
 function melodySongList(s) {
   const seen=new Set();
   const entry=song=>{const repeat=seen.has(song.title);seen.add(song.title);return `<li>${escapeHtml(song.title)}${repeat?' <small>(повтор названия)</small>':''}</li>`;};
-  const rounds=[1,2,3].map(tour=>`<h4>Тур ${tour}</h4>${window.MELODY_LAYOUT[tour-1].map((row,ri)=>`<b>${escapeHtml(row.name)}</b><ol>${Array.from({length:5},(_,i)=>entry(melodySong({...s,tour},ri*5+i))).join('')}</ol>`).join('')}`).join('');
+  const rounds=[1,2,3].map(tour=>`<h4>Тур ${tour}</h4>${melodyLayout(s)[tour-1].map((row,ri)=>`<b>${escapeHtml(row.name)}</b><ol>${Array.from({length:5},(_,i)=>entry(melodySong({...s,tour},ri*5+i))).join('')}</ol>`).join('')}`).join('');
   return `<details class="melody-song-list"><summary>Список песен для ведущего · содержит ответы</summary>${rounds}<h4>Торги</h4><ol>${Array.from({length:5},(_,i)=>entry(auctionSong(s,i))).join('')}</ol><h4>Суперигра</h4><ol>${Array.from({length:7},(_,i)=>entry(melodySong(s,i,true))).join('')}</ol><p>Отмечены повторные названия; одинаковые названия могут относиться к разным записям.</p></details>`;
 }
 let melodySuperTimer=null;
