@@ -413,7 +413,7 @@
         if(s.queue.some(i=>!Number.isInteger(i)||i<0||i>=window.FIELD_QUESTIONS.length) || !Number.isInteger(s.count) || s.count<1 || s.count>3 || !Number.isInteger(s.active) || !Number.isFinite(s.angle) || !Number.isFinite(s.seconds) || typeof s.message!=='string' || s.players.some(p=>!p || typeof p.name!=='string' || !Number.isFinite(p.score)) || s.winners.some(p=>!p || typeof p.name!=='string') || s.guessed.some(x=>typeof x!=='string'))return null;
       } else {
         const index=(n,max)=>Number.isInteger(n)&&n>=0&&n<max;
-        if(!['russian','international','mixed','children'].includes(s.version) || !Number.isInteger(s.tour) || !index(s.tour-1,5) || !Array.isArray(s.names) || s.names.length!==3 || s.names.some(n=>typeof n!=='string') || !Array.isArray(s.scores) || s.scores.length!==3 || s.scores.some(n=>!Number.isFinite(n)) || !Array.isArray(s.used) || s.used.length!==3 || s.used.some(a=>!Array.isArray(a)||a.some(n=>!index(n,20))) || (s.selected!==null&&!index(s.selected,20)) || !s.judged || typeof s.judged!=='object')return null;
+        if(!['russian','international','mixed','children','newyear'].includes(s.version) || !Number.isInteger(s.tour) || !index(s.tour-1,5) || !Array.isArray(s.names) || s.names.length!==3 || s.names.some(n=>typeof n!=='string') || !Array.isArray(s.scores) || s.scores.length!==3 || s.scores.some(n=>!Number.isFinite(n)) || !Array.isArray(s.used) || s.used.length!==3 || s.used.some(a=>!Array.isArray(a)||a.some(n=>!index(n,20))) || (s.selected!==null&&!index(s.selected,20)) || !s.judged || typeof s.judged!=='object')return null;
         const a=s.auction,supergame=s.super;
         if(!a || !['setup','bidding','guess','result','finished'].includes(a.phase) || !Array.isArray(a.players) || a.players.length!==2 || a.players.some(n=>!index(n,3)) || !Array.isArray(a.points) || a.points.length!==2 || a.points.some(n=>!Number.isFinite(n)) || !index(a.track,5) || !index(a.turn,2) || (a.bidder!==null&&!index(a.bidder,2)) || (a.lastWinner!==null&&!index(a.lastWinner,2)))return null;
         if(!supergame || !['ready','paused','won','lost'].includes(supergame.status) || !Number.isFinite(supergame.seconds) || supergame.seconds<0 || !index(supergame.player,3) || !Array.isArray(supergame.queue) || supergame.queue.some(n=>!index(n,7)) || (supergame.status==='paused'&&!supergame.queue.length))return null;
@@ -705,18 +705,19 @@ const melodyValues = [
 const melodyRows = Array.from({length:4},(_,row)=>Array.from({length:5},(_,column)=>row*5+column));
 function melodySong(state, index, superGame = false) {
   const position=superGame ? index : (state.tour-1)*20+index;
-  const children=state.version === 'children';
-  const language=children ? 'russian' : state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
-  const songIndex=superGame ? (children ? window.MELODY_CHILDREN_SUPER_TRACKS[index] : window.MELODY_SUPER_TRACKS[language][index]) : melodyLayout(state)[state.tour-1][Math.floor(index/5)][language === 'russian' ? 'ru' : 'en'][index%5];
+  const children=state.version === 'children', newYear=state.version === 'newyear';
+  const holidayTrack=newYear ? (superGame ? window.MELODY_NEW_YEAR_SUPER_TRACKS[index] : melodyLayout(state)[state.tour-1][Math.floor(index/5)].songs[index%5]) : null;
+  const language=newYear ? holidayTrack.language : children ? 'russian' : state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
+  const songIndex=newYear ? holidayTrack.index : superGame ? (children ? window.MELODY_CHILDREN_SUPER_TRACKS[index] : window.MELODY_SUPER_TRACKS[language][index]) : melodyLayout(state)[state.tour-1][Math.floor(index/5)][language === 'russian' ? 'ru' : 'en'][index%5];
   const source=language === 'russian' ? window.MELODY_RUSSIAN_SOURCES[songIndex] : null;
-  return {title:window.MELODY_SONGS[language][songIndex],artist:language==='russian' ? source?.artist : window.MELODY_INTERNATIONAL_ARTISTS?.[songIndex],language,source,songIndex};
+  return {title:window.MELODY_SONGS[language][songIndex],artist:language==='russian' ? source?.artist : window.MELODY_INTERNATIONAL_ARTISTS?.[songIndex],language,source,songIndex,newYear};
 }
 function bundledMelodyUrl(song) {
   if(!song) return null;
-  return song.language==='russian' ? (window.MELODY_RUSSIAN_AUDIO_BY_INDEX?.[song.songIndex] || window.MELODY_RUSSIAN_AUDIO?.[song.title]) : window.MELODY_AUDIO?.[song.title];
+  return song.language==='russian' ? (window.MELODY_RUSSIAN_AUDIO_BY_INDEX?.[song.songIndex] || window.MELODY_RUSSIAN_AUDIO?.[song.title]) : ((song.newYear && window.MELODY_NEW_YEAR_AUDIO?.[song.title]) || window.MELODY_AUDIO?.[song.title]);
 }
 function melodyValue(state,index=state.selected) { return melodyValues[state.tour-1][index]; }
-function melodyLayout(state) {return state.version==='children' ? window.MELODY_CHILDREN_LAYOUT : window.MELODY_LAYOUT;}
+function melodyLayout(state) {return state.version==='children' ? window.MELODY_CHILDREN_LAYOUT : state.version==='newyear' ? window.MELODY_NEW_YEAR_LAYOUT : window.MELODY_LAYOUT;}
 function melodyCategories(state) {return melodyLayout(state)[state.tour-1].map(row=>row.name);}
 function melodyKey(state, index = state.selected) { return `${state.version}-${state.tour}-${index}`; }
 function stopMelodyAudio(clear = false) {
@@ -816,9 +817,9 @@ function renderMelody() {
   body.innerHTML = `<div class="melody-show melody-screen-view melody-main">
     <details class="melody-config"><summary>⚙ Настройки, телефоны и список песен</summary><details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
     <p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><div class="melody-setup">
-      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option></select></label>
+      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option><option value="newyear" ${s.version==='newyear'?'selected':''}>Только новогодние и рождественские</option></select></label>
       <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button>
-    </div>
+    </div>${s.version==='newyear'?'<p>Русские новогодние и зарубежные рождественские песни. Все записи встроены; между турами есть повторы.</p>':''}
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
     <details class="melody-invite"><summary>📱 Подключить телефоны · <span id="melodyMemberCount">${connectedPlayers.length} игроков · ${connectedViewers.length} зрителей</span></summary><p>Необязательно: без телефонов ведущий выбирает отвечающего сам. Игроки сканируют QR, выбирают роль «Игрок», а ведущий назначает телефоны на места.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код для игроков" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><div class="connected-members" data-connected-members>${connectedMembersMarkup()}</div><div class="melody-seat-list">${s.names.map((name,i)=>`<label>${escapeHtml(name)}<select data-melody-seat="${i}"><option value="">Без телефона</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.phoneIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>`).join('')}</div><small>После обновления страницы телефоны нужно подключить и назначить заново.</small></details>
     ${melodySongList(s)}<button type="button" class="soft-button" id="melodyCloseSettings">Готово · вернуться к игре</button></details>
@@ -877,6 +878,13 @@ function renderMelody() {
 }
 // Bonus duel: a host-operated adaptation of the show's seven-to-three-note bidding.
 const auctionTracks={
+  newyear:[
+    {language:'russian',index:0,clue:'Танцевальный хит о приближении Нового года.'},
+    {language:'russian',index:4,clue:'Песня о последних минутах перед Новым годом.'},
+    {language:'russian',index:22,clue:'Это деревце родилось в лесу.'},
+    {language:'international',index:36,clue:'Шведская группа поздравляет с Новым годом.'},
+    {language:'international',index:1,clue:'История прошлогоднего Рождества.'}
+  ],
   children:[
     {index:3,clue:'Песня о том, что было бы, если бы не было зимы.'},
     {index:22,clue:'Это деревце родилось в лесу.'},
@@ -900,9 +908,10 @@ const auctionTracks={
   ]
 };
 function auctionSong(s,i) {
-  const language=s.version==='children'?'russian':s.version==='mixed'?(i%2?'international':'russian'):s.version;
-  const track=auctionTracks[s.version==='children'?'children':language][i],songIndex=track.index;
-  return {title:window.MELODY_SONGS[language][songIndex],artist:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]?.artist:window.MELODY_INTERNATIONAL_ARTISTS?.[songIndex],language,songIndex,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue};
+  const newYear=s.version==='newyear';
+  const language=newYear ? auctionTracks.newyear[i].language : s.version==='children'?'russian':s.version==='mixed'?(i%2?'international':'russian'):s.version;
+  const track=auctionTracks[newYear?'newyear':s.version==='children'?'children':language][i],songIndex=track.index;
+  return {title:window.MELODY_SONGS[language][songIndex],artist:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]?.artist:window.MELODY_INTERNATIONAL_ARTISTS?.[songIndex],language,songIndex,source:language==='russian'?window.MELODY_RUSSIAN_SOURCES[songIndex]:null,clue:track.clue,newYear};
 }
 function resetAuction(s){
   const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);

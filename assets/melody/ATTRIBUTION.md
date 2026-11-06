@@ -96,3 +96,22 @@
 - `sansara.mp3` — № 28, «Сансара», Баста.
 
 Часть оригиналов — рингтоны без метаданных исполнителя; независимая проверка звукозаписей и разрешение правообладателей на публичное распространение не подтверждены.
+
+## Отдельная новогодняя и рождественская подборка
+
+Новые локальные фрагменты нужны для праздничной подборки; другие режимы сохраняют прежние источники. Каждый — 25 секунд, MP3 128 кбит/с. `happy-new-year-abba.mp3` взят с начала записи № 20 в [музыкальном лото yook/lotto](https://github.com/yook/lotto/tree/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs); [каталог источника](https://github.com/yook/lotto/blob/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs.js) указывает ABBA и Happy New Year.
+
+Остальные файлы получены из записей [LayanJethwa/christmas-music-player](https://github.com/LayanJethwa/christmas-music-player/tree/4d9e182373a0255aff9fe5d56bbeaf642fc88a90/christmas-music). Название и исполнитель указаны в именах исходных файлов и метаданных:
+
+- `all-i-want-for-christmas.mp3` — Mariah Carey, All I Want for Christmas Is You (фрагмент с 35-й секунды);
+- `rockin-around-christmas-tree.mp3` — Brenda Lee, Rockin' Around the Christmas Tree;
+- `white-christmas-bing.mp3` — Bing Crosby, White Christmas (с 5-й секунды);
+- `jingle-bell-rock.mp3` — Bobby Helms, Jingle Bell Rock;
+- `santa-claus-is-coming-to-town.mp3` — Jackson 5, Santa Claus Is Coming to Town;
+- `christmas-song-nat-king-cole.mp3` — Nat King Cole, The Christmas Song (с 5-й секунды);
+- `most-wonderful-time.mp3` — Andy Williams, It's the Most Wonderful Time of the Year;
+- `rudolph-gene-autry.mp3` — Gene Autry, Rudolph the Red-Nosed Reindeer;
+- `happy-xmas-john-lennon.mp3` — John Lennon, Happy Xmas (War Is Over);
+- `wonderful-christmastime.mp3` — Paul McCartney & The Wings, Wonderful Christmastime.
+
+Если время начала не указано, фрагмент взят с начала исходного файла. Наличие записей в источниках не подтверждает разрешение правообладателей на повторное публичное распространение; оно не проверено.
