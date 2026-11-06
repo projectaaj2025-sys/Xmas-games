@@ -421,6 +421,43 @@
       return s;
     } catch {return null;}
   }
+  // Layout before the popular-song update. Save keys refer to note positions, not songs.
+  const legacyMelodyRussian = [
+    [0,40,34,4,5, 1,9,14,38,10, 3,6,7,2,17, 11,12,18,19,31],
+    [0,40,34,22,32, 36,37,41,42,9, 21,20,23,15,26, 11,18,30,12,35],
+    [1,9,10,14,38, 6,7,8,16,39, 24,25,27,28,29, 0,40,33,34,13]
+  ];
+  const melodyCatalogRevision=2;
+  function needsMelodyMigration(s) {
+    return s.catalogRevision!==melodyCatalogRevision && (s.version==='russian'||s.version==='mixed');
+  }
+  function migrateMelodySave(s) {
+    if(!needsMelodyMigration(s)) return {...s,catalogRevision:melodyCatalogRevision};
+    const newBoards=window.MELODY_LAYOUT.map(round=>round.flatMap(row=>row.ru));
+    const destination=(tour,note)=>{
+      if(!Number.isInteger(note)||note<0||note>=20||tour<1||tour>3)return null;
+      // English positions in mixed mode have not changed. Russian songs must remain Russian.
+      if(s.version==='mixed' && note%2===1)return note;
+      const song=legacyMelodyRussian[tour-1][note], board=newBoards[tour-1];
+      if(board[note]===song)return note;
+      const found=board.findIndex((id,i)=>id===song && (s.version!=='mixed'||i%2===0));
+      return found<0?null:found;
+    };
+    const used=s.used.map((notes,i)=>[...new Set(notes.map(n=>destination(i+1,n)).filter(n=>n!==null))]);
+    const remapKeys=(source,judged)=>{
+      const result={};
+      for(const [key,value] of Object.entries(source||{})) {
+        const match=key.match(/^(russian|mixed)-(\d+)-(\d+)(-\d+)?$/);
+        if(!match||match[1]!==s.version){result[key]=value;continue;}
+        const note=destination(Number(match[2]),Number(match[3]));
+        if(note!==null)result[`${match[1]}-${match[2]}-${note}${judged?(match[4]||''):''}`]=value;
+      }
+      return result;
+    };
+    const selected=s.selected!==null && s.tour<=3 ? destination(s.tour,s.selected) : s.selected;
+    return {...s,catalogRevision:melodyCatalogRevision,used,selected,
+      revealed:selected===null?false:s.revealed,attempts:remapKeys(s.attempts,false),judged:remapKeys(s.judged,true)};
+  }
   function saveField() {
     if(!fieldState)return false;
     const s={...fieldState};
@@ -430,7 +467,7 @@
   }
   function saveMelody() {
     if(!melodyState)return false;
-    const s={...melodyState,files:{},cues:{},super:{...melodyState.super}};
+    const s={...melodyState,catalogRevision:melodyCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
     if(s.super.status==='running') {s.super.seconds=superRemaining(melodyState);s.super.status=s.super.seconds?'paused':'lost';s.super.deadline=0;}
     return writeGameSave('melody',s);
   }
@@ -441,8 +478,8 @@
     const saved=readGameSave(game);
     if(!saved){start(null);return;}
     const body=$('#gameBody'),reset=$('#resetCurrentGame');if(reset)reset.hidden=true;
-    const begin=s=>{if(reset)reset.hidden=false;start(s);};
-    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
+    const begin=s=>{if(reset)reset.hidden=false;start(game==='melody' && s ? migrateMelodySave(s) : s);};
+    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && needsMelodyMigration(saved)?'<p>Подборка обновилась: имена и очки сохранятся, сыгранные ноты и незавершённые ответы перенесутся по песням, оставшимся в том же туре. Удалённые песни и их отметки исчезнут; новые ноты будут доступны. Суперигра тоже обновлена, её время и прогресс сохранятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
     $('#resumeGame').addEventListener('click',()=>begin(saved));
     $('#newSavedGame').addEventListener('click',()=>{if(confirm('Начать заново и удалить сохранённый прогресс этой игры?'))begin(null);});
     publish({game:'idle',revealed:false,instruction:'Ведущий выбирает сохранённую игру.'});
@@ -966,7 +1003,7 @@ function renderMelodySuper() {
   publishMelody();
 }
 
-function newMelodyState(version = 'russian') { return {version, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
+function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
 
   // A separate, self-contained adaptation; the original PowerPoint is not converted.
   const holidayQuiz = [

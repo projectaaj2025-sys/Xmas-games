@@ -82,3 +82,17 @@
 - Остальные 18 клипов — из [музыкального лото yook/lotto](https://github.com/yook/lotto/tree/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs); названия и исполнители приведены по [каталогу](https://github.com/yook/lotto/blob/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs.js): `vse-chto-tebya-kasaetsya.mp3` № 6, `videli-noch.mp3` № 7, `solntse-monako.mp3` № 8, `v-samoe-serdtse.mp3` № 9, `devchonka.mp3` № 11, `hali-gali.mp3` № 14, `kolambiya-pikcherz.mp3` № 17, `pozvoni.mp3` № 21, `znaesh-li-ty.mp3` № 22, `vse-budet-horosho.mp3` № 23, `do-skoroy-vstrechi.mp3` № 27, `18-mne-uzhe.mp3` № 32, `yagoda-malinka.mp3` № 48, `samyy-luchshiy-den.mp3` № 51, `ulybaysya.mp3` № 56, `federiko-fellini.mp3` № 57, `topoliny-puh.mp3` № 62 и `rayony-kvartaly.mp3` № 75. Некоторые исходные файлы обозначены как рингтоны; аудио — фрагменты, не полные песни.
 
 Разрешение правообладателей на публичное распространение этих фонограмм не подтверждено. Старые замечания выше о недоступных позициях относятся к предыдущей версии; эти позиции теперь заменены другими композициями.
+
+## Более узнаваемые песни
+
+Семь 25-секундных фрагментов перекодированы с начала коротких записей из [музыкального лото yook/lotto](https://github.com/yook/lotto/tree/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs). Названия и исполнители приведены по [каталогу источника](https://github.com/yook/lotto/blob/f7181d202afbcd6652914bb15d9eaf497ed5480c/songs.js):
+
+- `kroshka-moya.mp3` — № 39, «Крошка моя», Руки Вверх!;
+- `batareyka.mp3` — № 46, «Батарейка», Жуки;
+- `nas-ne-dogonyat.mp3` — № 19, «Нас не догонят», t.A.T.u.; имя исполнителя и название также в метаданных файла;
+- `nevozmozhnoe-vozmozhno.mp3` — № 64, «Невозможное возможно», Дима Билан;
+- `matushka.mp3` — № 63, «Матушка», Татьяна Куртукова; название и исполнитель также в метаданных файла;
+- `moe-serdtse.mp3` — № 26, «Моё сердце», Сплин;
+- `sansara.mp3` — № 28, «Сансара», Баста.
+
+Часть оригиналов — рингтоны без метаданных исполнителя; независимая проверка звукозаписей и разрешение правообладателей на публичное распространение не подтверждены.
