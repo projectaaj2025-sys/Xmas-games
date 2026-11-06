@@ -23,14 +23,14 @@ test('each game opens in its frame and the new game controls render', () => {
   window.WebSocket = class { constructor() { this.readyState = 0; } addEventListener() {} };
   window.WebSocket.OPEN = 1;
   try {
-    for (const file of ['quiz-data.js', 'crossword-data.js', 'melody-data.js', 'app.js']) window.eval(read(file));
+    for (const file of ['quiz-data.js', 'crossword-data.js', 'melody-data.js', 'field-data.js', 'app.js']) window.eval(read(file));
     const document = window.document;
     for (const game of ['memo', 'guess', 'croc', 'quiz', 'crossword', 'music', 'field', 'melody']) {
       document.querySelector(`[data-open="${game}"]`).click();
       assert.ok(document.querySelector('#gameModal').classList.contains('open'), `${game} should open`);
       assert.ok(document.querySelector('#gameBody').children.length, `${game} should render content`);
       if (game === 'field') {
-        document.querySelector('input[name="fieldMode"][value="player"]').click();
+        document.querySelector('#fieldStart').click();
         assert.ok(document.querySelector('.field-letter-btn'));
       }
       if (game === 'melody') assert.ok(document.querySelector('.melody-screen-view'));
@@ -63,7 +63,7 @@ test('melody board keeps three fields, a supergame, three scores and language se
   let playing = 0, paused = 0;
   window.Audio = class { play() { playing++; return Promise.resolve(); } pause() { paused++; } };
   try {
-    for (const file of ['quiz-data.js', 'crossword-data.js', 'melody-data.js', 'app.js']) window.eval(read(file));
+    for (const file of ['quiz-data.js', 'crossword-data.js', 'melody-data.js', 'field-data.js', 'app.js']) window.eval(read(file));
     socket.listeners.open();
     const doc = window.document;
     const click = selector => { const element = doc.querySelector(selector); assert.ok(element, selector); element.click(); };
@@ -140,11 +140,11 @@ test('bundled melodies are available and playback uses them without exposing ans
   const played=[];
   w.Audio = class { constructor(url){this.url=url} pause(){} play(){played.push(this.url); return Promise.resolve()} };
   try {
-    for (const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for (const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
     for (const [name, path] of Object.entries(w.MELODY_AUDIO)) {
       assert.ok(w.MELODY_SONGS.international.includes(name));
       const data=fs.readFileSync(path);
-      assert.equal(data.subarray(0,4).toString(), 'RIFF', path);
+      assert.ok(data.subarray(0,4).toString()==='RIFF' || data.subarray(0,3).toString()==='ID3' || data[0]===0xff, path);
       assert.ok(data.length > 100000, path);
     }
     const doc=w.document;
@@ -170,7 +170,7 @@ test('holiday card shows the original rules and separately links to the game and
   const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false});
   w.WebSocket=class { constructor(){this.readyState=0} addEventListener(){} }; w.WebSocket.OPEN=1;
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
     w.document.querySelector('[data-open="drive"]').click();
     assert.ok(w.document.querySelector('#gameModal').classList.contains('open'));
     assert.equal(w.document.querySelectorAll('.holiday-round-list li').length,4);
@@ -187,7 +187,7 @@ test('all English titles have a local clip or an embedded recording and YouTube 
   w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
     for(const name of w.MELODY_SONGS.international) assert.ok(w.MELODY_AUDIO[name] || w.MELODY_YOUTUBE[name],name);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     const select=doc.querySelector('#melodyVersion'); select.value='international'; select.dispatchEvent(new w.Event('change',{bubbles:true}));
@@ -208,7 +208,7 @@ test('custom intro and round-transition files can be played and released', () =>
   w.URL.createObjectURL=()=>`blob:cue${++n}`; w.URL.revokeObjectURL=url=>revoked.push(url);
   w.Audio=class {constructor(url){this.url=url} play(){played.push(this.url); return Promise.resolve()} pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     for(const id of ['melodyIntroFile','melodyTransitionFile']) {
       const input=doc.getElementById(id);
@@ -227,7 +227,7 @@ test('holiday adaptation can be completed across four rounds with a reliable sco
   const w=dom.window; w.matchMedia=()=>({matches:true}); w.fetch=async()=>({ok:false});
   w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
     const doc=w.document; doc.querySelector('[data-open="drive"]').click();
     doc.querySelector('#holidayStart').click();
     assert.equal(doc.querySelector('#holidayNext').disabled,true);
@@ -263,8 +263,8 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   w.WebSocket=class {constructor(){this.readyState=0} addEventListener(){}}; w.WebSocket.OPEN=1;
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js']) w.eval(read(f));
-    assert.equal(w.MELODY_SONGS.russian.length,41); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,41);
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
+    assert.equal(w.MELODY_SONGS.russian.length,43); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,43);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,2);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.match(doc.querySelector('.melody-song-list').textContent,/Новый год \(повтор названия\)/);
@@ -286,7 +286,7 @@ test('three 4 by 5 boards use the reference prices, distinct categories and per-
   w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
   w.Audio=class{play(){return Promise.resolve()}pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     const categories=[];
     for(let tour=1;tour<=3;tour++) {
@@ -315,7 +315,7 @@ test('supergame skips and revisits, wins after seven, ends on error or timeout, 
   const plays=[];w.Audio=class{constructor(url){this.url=url}play(){plays.push(this.url);return Promise.resolve()}pause(){}};
   let now=100000;w.Date.now=()=>now;
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     socket.listeners.open();const d=w.document;d.querySelector('[data-open="melody"]').click();d.querySelector('[data-melody-tour="4"]').click();
     assert.match(d.querySelector('.melody-stage').textContent,/семь мелодий за 30 секунд/i);
     d.querySelector('#superStart').click();assert.match(plays.at(-1),/kaby-ne-bylo-zimy\.mp3$/);
@@ -357,7 +357,7 @@ test('bonus auction enforces bids, awards mistakes to the opponent and sends the
   let socket;w.WebSocket=class{constructor(){socket=this;this.readyState=1;this.listeners={};this.messages=[]}addEventListener(n,f){this.listeners[n]=f}send(m){this.messages.push(JSON.parse(m))}};w.WebSocket.OPEN=1;
   w.Audio=class{play(){return Promise.resolve()}pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     socket.listeners.open();const d=w.document, click=s=>{const el=d.querySelector(s);assert.ok(el,s);el.click()};
     const payload=()=>socket.messages.filter(m=>m.type==='state').at(-1).payload;
     click('[data-open="melody"]');click('[data-melody-tour="5"]');
@@ -406,12 +406,12 @@ test('new Russian recordings are playable, with duplicate titles mapped to the r
   w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
   const played=[];w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     for(const [i,title] of w.MELODY_SONGS.russian.entries()) {
       const path=w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title];
       if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,19);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,21);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     d.querySelector('[data-melody-note="3"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,true);
@@ -425,9 +425,9 @@ test('new winter songs play from local files without replacing earlier catalogue
   w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
   const played=[];w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
   try {
-    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','app.js'])w.eval(read(f));
+    for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     const all=w.MELODY_LAYOUT.flatMap(t=>t.flatMap(row=>row.ru));
-    for(let i=0;i<41;i++)assert.ok(all.includes(i),`catalogue index ${i} is still on a board`);
+    for(let i=0;i<43;i++)assert.ok(all.includes(i),`catalogue index ${i} is still on a board`);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новогодняя песня');assert.equal(d.querySelector('#melodyPlay').disabled,true);
     const positions=[

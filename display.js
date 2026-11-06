@@ -3,7 +3,7 @@
   const connection = document.querySelector('#screenConnection');
   const stage = document.querySelector('#screenStage');
   document.querySelector('#screenRoom').textContent = room ? `Код экрана: ${room.toUpperCase()}` : 'В ссылке не указан код игры';
-  let socket;
+  let socket, fieldAngle=0;
   function connect() {
     if (!room) return;
     const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -29,6 +29,18 @@
     const roomNote = `<div class="screen-code">КОД ЭКРАНА: ${safeText(room.toUpperCase())}</div>`;
     if (data.game === 'idle') {
       stage.innerHTML = `<div class="screen-stars">✦　❄　✧　❄　✦</div><div class="waiting-art">🎄</div><div class="screen-kicker">ЭКРАН УЧАСТНИКОВ</div><h1>Ждём начала игры</h1><p>${safeText(data.instruction || 'Выберите игру на главном экране.')}</p>${roomNote}`;
+      return;
+    }
+    if (data.game === 'field') {
+      const sectors=[500,350,'Б',600,400,'П',750,0,550,'×2',450,800,'Ш',300,650,'+',900,'Б',250,700,1000,400,500,850], colors=['#c72c43','#225dac','#128069','#e99928','#4a4298','#bd4865','#147fa0','#643a83'], step=360/sectors.length;
+      const stops=sectors.map((_,i)=>`${colors[i%colors.length]} ${i*step}deg ${(i+1)*step}deg`).join(',');
+      const board=(data.board||[]).map(tile=>tile.space?'<span class="field-word-space"></span>':`<span class="field-tile ${tile.letter?'open':''}">${safeText(tile.letter||'')}</span>`).join('');
+      const previousAngle=fieldAngle;fieldAngle=Number(data.angle)||0;
+      stage.innerHTML=`<div class="field-projection"><div class="field-stage-head"><span>ПОЛЕ ЧУДЕС · ${safeText(data.round)}</span><span>❄ НОВОГОДНИЙ ВЫПУСК</span></div><div class="field-game-grid"><section class="field-stage"><h1>${safeText(data.question||'Ведущий готовит игру')}</h1><div class="field-projection-board">${board}</div><p class="field-status">${safeText(data.message)}</p>${data.phase==='superSolve'?`<div class="field-clock">${safeText(data.seconds)} <small>секунд</small></div>`:''}<div class="field-scores">${(data.players||[]).map((p,i)=>`<div class="field-score ${i===data.activeIndex&&!p.out?'active':''} ${p.out?'out':''}"><span>${safeText(p.name)}</span><b>${safeText(p.score)}</b></div>`).join('')}</div>${data.reaction?`<div class="field-reaction">${safeText(data.reaction)}</div>`:''}</section><aside class="field-wheel-panel"><div class="field-wheel-wrap"><div class="field-pointer"></div><div class="field-wheel-art" style="background:conic-gradient(${stops});transform:rotate(${data.phase==='spinning'?previousAngle:fieldAngle}deg)">${sectors.map((sector,i)=>`<span style="--a:${i*step+step/2}deg"><b>${sector}</b></span>`).join('')}<div class="field-wheel-hub">❄<small>ПОЛЕ<br>ЧУДЕС</small></div></div></div><div class="field-sector-label">${data.sector?`СЕКТОР · ${safeText(data.sector)}`:'КРУТИТЕ БАРАБАН'}</div></aside></div></div>${roomNote}`;
+      if(data.phase==='spinning') {
+        const wheel=stage.querySelector('.field-wheel-art');
+        if(wheel){void wheel.offsetWidth;wheel.style.transform=`rotate(${fieldAngle}deg)`;}
+      }
       return;
     }
     if (data.game === 'melody') {

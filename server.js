@@ -63,8 +63,8 @@ function handleMessage(peer, message) {
   try { data = JSON.parse(message); } catch { return; }
   if (data.type === 'join' && typeof data.room === 'string') {
     peer.room = data.room.slice(0, 24);
-    peer.role = data.role === 'screen' ? 'screen' : data.role === 'player' ? 'player' : 'host';
-    if (peer.role === 'player') {
+    peer.role = data.role === 'screen' ? 'screen' : data.role === 'player' ? 'player' : data.role === 'viewer' ? 'viewer' : 'host';
+    if (peer.role === 'player' || peer.role === 'viewer') {
       peer.playerId = String(data.playerId || crypto.randomUUID()).slice(0, 64);
       peer.playerName = String(data.name || 'Игрок').trim().slice(0, 24) || 'Игрок';
     }
@@ -80,15 +80,13 @@ function handleMessage(peer, message) {
       try { const parsed = JSON.parse(safe); rooms.set(peer.room, parsed); sendRoomState(peer.room, parsed, peer); } catch {}
     }
   }
-  if (data.type === 'player-action' && peer.room && peer.role === 'player') {
+  if (data.type === 'player-action' && peer.room && (peer.role === 'player' || peer.role === 'viewer')) {
     const state = rooms.get(peer.room);
-    if (state?.game === 'guess' && state.guessMode === 'circle' && state.activePlayerId === peer.playerId && ['solved','pass'].includes(data.action)) {
+    if (peer.role === 'player' && state?.game === 'guess' && state.guessMode === 'circle' && state.activePlayerId === peer.playerId && ['solved','pass'].includes(data.action)) {
       for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName });
     }
-    // Поле чудес
-    if (state?.game === 'field' && peer.role === 'player') {
-      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, mode: state.mode });
-      broadcast(peer.room, { type: 'field-update', action: data.action, playerId: peer.playerId, name: peer.playerName, mode: state.mode }, peer);
+    if (state?.game === 'field' && (peer.role === 'viewer' || (peer.role === 'player' && state.activeId === peer.playerId))) {
+      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, role: peer.role });
     }
     // Угадай мелодию
     if (state?.game === 'melody' && peer.role === 'player') {

@@ -41,7 +41,9 @@ window.MELODY_SONGS = {
     "Снег",
     "Синий иней",
     "Диалог у новогодней ёлки",
-    "Новогодняя песня"
+    "Новогодняя песня",
+    "Отпусти и забудь",
+    "Падал прошлогодний снег (Финал)"
 ],
   "international": [
     "All I Want for Christmas Is You",
@@ -83,8 +85,10 @@ window.MELODY_SONGS = {
   ]
 };
 
-// Short instrumental previews made from openly licensed MIDI arrangements.
+// Local audio: short recordings and instrumental previews (see ATTRIBUTION.md).
 window.MELODY_AUDIO = {
+  'Last Christmas':'assets/melody/audio/last-christmas-wham.mp3',
+  'Let It Snow! Let It Snow! Let It Snow!':'assets/melody/audio/let-it-snow-martin.mp3',
   'Jingle Bells': 'assets/melody/audio/jingle-bells.wav',
   'Silent Night': 'assets/melody/audio/silent-night.wav',
   'Deck the Halls': 'assets/melody/audio/deck-the-halls.wav',
@@ -320,7 +324,9 @@ window.MELODY_RUSSIAN_SOURCES = [
   {"artist":"Филипп Киркоров (минус)", "source":null, "youtube":null},
   {"artist":"Премьер-Министр", "source":null, "youtube":null},
   {"artist":"Из фильма «Москва слезам не верит»", "source":null, "youtube":null},
-  {"artist":"The Limba, JONY, Егор Крид, А4", "source":null, "youtube":null}
+  {"artist":"The Limba, JONY, Егор Крид, А4", "source":null, "youtube":null},
+  {"artist":"Из мультфильма «Холодное сердце»", "source":null, "youtube":null},
+  {"artist":"Григорий Гладков", "source":null, "youtube":null}
 ];
 
 // Three boards, each with four themed rows and five fixed positions.
@@ -340,7 +346,7 @@ window.MELODY_LAYOUT = [
   ],
   [
     {name:'Зимние картины', ru:[36,9,16,25,38], en:[6,14,27,28,29]},
-    {name:'Добрые истории', ru:[3,5,6,7,8], en:[4,28,29,33,34]},
+    {name:'Добрые истории', ru:[42,41,6,7,8], en:[4,28,29,33,34]},
     {name:'Загадаем желание', ru:[2,15,23,26,30], en:[1,9,15,21,32]},
     {name:'Праздник у ёлки', ru:[0,11,12,39,34], en:[0,2,3,12,13]}
   ]
@@ -350,6 +356,8 @@ window.MELODY_SUPER_TRACKS = {
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  'Отпусти и забудь':'assets/melody/audio/otpusti-i-zabud.mp3',
+  'Падал прошлогодний снег (Финал)':'assets/melody/audio/padal-proshlogodniy-sneg.mp3',
   'Зима в сердце':'assets/melody/audio/zima-v-serdtse.mp3',
   'Снег':'assets/melody/audio/sneg-kirkorov.mp3',
   'Синий иней':'assets/melody/audio/siniy-iney.mp3',

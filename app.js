@@ -271,10 +271,12 @@
       let data; try { data = JSON.parse(event.data); } catch { return; }
       if (data.type === 'presence') {
         screenCount = data.count || 0; connectedPlayers = Array.isArray(data.players) ? data.players : []; updateScreenStatus();
-        if (guessState?.playMode === 'circle') syncCirclePlayers(connectedPlayers);
+        if (content.classList.contains('guess-screen') && guessState?.playMode === 'circle') syncCirclePlayers(connectedPlayers);
+        if (fieldState?.phase==='setup' && $('#gameBody') && content.classList.contains('field-screen')) { fieldState.setupIds=fieldState.setupIds.map(id=>id && !connectedPlayers.some(p=>p.id===id)?'':id); renderField(); }
       }
       if (data.type === 'joined') { screenCount = data.screenCount || 0; updateScreenStatus(); }
-      if (data.type === 'player-action' && guessState?.playMode === 'circle' && data.playerId === guessState.activePlayerId) circleAnswer(data.action === 'solved');
+      if (data.type === 'player-action' && fieldState && content.classList.contains('field-screen')) fieldRemote(data);
+      if (data.type === 'player-action' && content.classList.contains('guess-screen') && guessState?.playMode === 'circle' && data.playerId === guessState.activePlayerId) circleAnswer(data.action === 'solved');
     });
     syncSocket.addEventListener('close', () => { syncAvailable=false;updateScreenStatus(false);setTimeout(connectSync,1500); });
     syncSocket.addEventListener('error', () => syncSocket.close());
@@ -319,172 +321,158 @@
     bindScreenTools();
     return $('#gameBody');
   }
-  function closeGame() { disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
-// --- Поле чудес (Field of Wonders) ---
-let fieldState = null;
+  function closeGame() { if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;} fieldState=null; disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+// --- «Поле чудес»: ведущий хранит ответ только у себя ---
+let fieldState = null, fieldSuperTimer = null;
+const fieldSectors = [500, 350, 'Б', 600, 400, 'П', 750, 0, 550, '×2', 450, 800, 'Ш', 300, 650, '+', 900, 'Б', 250, 700, 1000, 400, 500, 850];
+const fieldAlphabet = [...'АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'];
+const fieldNorm = value => String(value || '').toUpperCase().replace(/Ё/g,'Е').replace(/Й/g,'И').replace(/[^А-Я]/g,'');
+const fieldLabel = s => s.superRound ? 'СУПЕРИГРА' : s.round === 4 ? 'ФИНАЛ' : `ТРОЙКА ${s.round} / 3`;
+function newFieldState() {
+  return {round:1,phase:'setup',queue:shuffle((window.FIELD_QUESTIONS||[]).map((_,i)=>i)),question:null,players:[],winners:[],active:0,guessed:[],sector:null,angle:0,streak:0,soloHits:0,message:'Подготовьте первую тройку и начните тур.',setupNames:['Игрок 1','Игрок 2','Игрок 3'],setupIds:['','',''],count:3,chestPrize:0,reaction:'',superRound:false,champion:null,seconds:60,deadline:0};
+}
+function fieldCurrent(s) { return s.players[s.active]; }
+function fieldBoard(s) {
+  if(!s.question) return [];
+  return [...s.question.answer].map((ch,index)=>({index,space:ch===' ',letter:ch===' '?'':(s.phase==='over'||s.guessed.includes(fieldNorm(ch))?ch:'')}));
+}
+function fieldPublic(s) {
+  return {game:'field',round:fieldLabel(s),phase:s.phase,question:s.question?.question||'',board:fieldBoard(s),players:s.players.map(p=>({id:p.id,name:p.name,score:p.score,out:p.out})),activeId:fieldCurrent(s)?.id||'',activeIndex:s.active,sector:s.sector==null?'':String(s.sector),angle:s.angle,message:s.message,guessed:s.guessed, reaction:s.reaction,seconds:s.superRound?s.seconds:null};
+}
+function fieldWheelMarkup(s) {
+  const colors=['#c72c43','#225dac','#128069','#e99928','#4a4298','#bd4865','#147fa0','#643a83'];
+  const step=360/fieldSectors.length;
+  const stops=fieldSectors.map((_,i)=>`${colors[i%colors.length]} ${i*step}deg ${(i+1)*step}deg`).join(',');
+  return `<div class="field-wheel-wrap"><div class="field-pointer" aria-hidden="true"></div><div class="field-wheel-art" id="fieldWheelArt" style="background:conic-gradient(${stops});transform:rotate(${s.angle}deg)">${fieldSectors.map((sector,i)=>`<span style="--a:${i*step+step/2}deg"><b>${sector}</b></span>`).join('')}<div class="field-wheel-hub">❄<small>ПОЛЕ<br>ЧУДЕС</small></div></div></div>`;
+}
+function fieldSetup(s) {
+  const final=s.round===4;
+  if(final && !s.winners.length) return `<div class="field-setup"><h3>Финал не состоялся</h3><p>Ни одна из троек не определила победителя.</p><button id="fieldRestart">Новая игра</button></div>`;
+  const rows=final?s.winners.map(p=>`<div class="field-finalist">✦ ${escapeHtml(p.name)}</div>`).join(''):Array.from({length:s.count},(_,i)=>`<div class="field-seat"><label>Участник ${i+1}<input data-field-name="${i}" maxlength="24" value="${escapeHtml(s.setupNames[i])}" ${s.setupIds[i]?'disabled':''}></label><label>Телефон<select data-field-seat="${i}"><option value="">Игра с экрана</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.setupIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label></div>`).join('');
+  return `<div class="field-setup"><span class="field-eyebrow">${fieldLabel(s)} · НАСТРОЙКА</span><h3>${final?'Финалисты':'Пригласите участников'}</h3><p>${final?'Победители троек разыгрывают финал.':'Назначьте от одного до трёх человек: за общим экраном или с подключённого телефона.'}</p>${final?'':`<label class="field-count">Число участников <select id="fieldCount">${[1,2,3].map(n=>`<option ${n===s.count?'selected':''}>${n}</option>`).join('')}</select></label>`}${rows}<button id="fieldStart">Начать ${final?'финал':'тур'} →</button></div>`;
+}
+function fieldControls(s) {
+  const inPlay=!['setup','over','spinning'].includes(s.phase);
+  const letters=fieldAlphabet.map(ch=>`<button class="field-letter-btn" data-field-letter="${ch}" ${!['letter','superLetters'].includes(s.phase)||s.guessed.includes(ch)?'disabled':''}>${ch}</button>`).join('');
+  const board=fieldBoard(s).map(tile=>tile.space?'<span class="field-word-space"></span>':`<button class="field-tile ${tile.letter?'open':''}" data-field-tile="${tile.index}" ${s.phase!=='plus'||tile.letter?'disabled':''} aria-label="Буква ${tile.index+1}${tile.letter?' открыта':''}">${escapeHtml(tile.letter)}</button>`).join('');
+  return `<div class="field-game-grid"><section class="field-stage"><div class="field-stage-head"><span>${fieldLabel(s)}</span><span>❄ НОВОГОДНИЙ ВЫПУСК</span></div><h3>${escapeHtml(s.question.question)}</h3><div class="field-word-board">${board}</div><div class="field-status" role="status">${escapeHtml(s.message)}</div><div class="field-scores">${s.players.map((p,i)=>`<div class="field-score ${i===s.active&&s.phase!=='over'?'active':''} ${p.out?'out':''}"><span>${escapeHtml(p.name)}</span><b>${p.score} <small>очков</small></b>${p.out?'<em>выбыл</em>':''}</div>`).join('')}</div>${s.superRound&&s.phase==='superSolve'?`<div class="field-clock">${s.seconds} <small>секунд</small></div>`:''}${s.phase==='over'?`${s.round===4&&!s.superRound&&s.champion?'<button id="fieldSuper">Суперигра ★</button> ':''}<button id="fieldNext">${s.round<3?'Следующая тройка →':s.round===3?'К финалу →':'Новая игра ↻'}</button>`:''}</section><aside class="field-wheel-panel">${fieldWheelMarkup(s)}<div class="field-sector-label">${s.sector==null?'КРУТИТЕ БАРАБАН':`СЕКТОР · ${escapeHtml(s.sector)}`}</div><button id="fieldSpin" ${s.phase!=='spin'?'disabled':''}>Крутить барабан ↻</button></aside></div>
+  <section class="field-console"><h3>Ход: ${escapeHtml(fieldCurrent(s)?.name||'—')}</h3><p>${s.phase==='superLetters'?`Назовите пять разных букв: ${s.guessed.length} / 5. Затем будет минута на ответ.`:s.phase==='superSolve'?'Назовите слово за 60 секунд.':s.phase==='letter'?'Назовите букву. Верные буквы откроются все.':s.phase==='plus'?'Выберите закрытую клетку на табло.':s.phase==='prize'?'Взять приз и выбыть или продолжить с сектором 2000.':s.phase==='chest'?'Три верные буквы подряд: выберите одну шкатулку.':s.phase==='solveOnly'?'Остался один участник: три результативных хода использованы, назовите слово.':'Крутите барабан или назовите слово целиком.'}</p><div class="field-alphabet">${letters}</div>${s.phase==='prize'?'<div class="field-actions"><button data-field-prize="take">🎁 Взять приз и выбыть</button><button data-field-prize="continue">Продолжить · 2000 за букву</button></div>':''}${s.phase==='chest'?'<div class="field-actions"><button data-field-chest="0">🎁 Шкатулка 1</button><button data-field-chest="1">🎁 Шкатулка 2</button></div>':''}<form id="fieldSolve" class="field-solve"><input id="fieldAnswer" autocomplete="off" maxlength="80" placeholder="Назвать слово целиком" ${!['spin','letter','solveOnly','superSolve'].includes(s.phase)?'disabled':''}><button ${!['spin','letter','solveOnly','superSolve'].includes(s.phase)?'disabled':''}>Назвать слово</button></form><small>${s.superRound?'Суперигра: пять букв и один ответ за минуту.':'Ошибка в слове — участник выбывает. Угаданная буква сохраняет ход; повтор и ошибка передают его.'} Ё = Е, Й = И.</small></section>`;
+}
 function renderField() {
-  const content = $('#gameBody');
-  const state = fieldState;
-  
-  const html = `
-    <div class="field-container">
-      <div class="field-topbar">
-        <div class="field-mode-selector">
-          <label><input type="radio" name="fieldMode" value="screen" ${state.mode==='screen'?'checked':''}> Только экран</label>
-          <label><input type="radio" name="fieldMode" value="player" ${state.mode==='player'?'checked':''}> Участник (буквы, колесо, шкатулки)</label>
-          <label><input type="radio" name="fieldMode" value="viewer" ${state.mode==='viewer'?'checked':''}> Зритель (реакции)</label>
-        </div>
-      </div>
-      
-      <div class="field-main">
-        ${state.mode === 'screen' ? renderFieldScreen(state) : ''}
-        ${state.mode === 'player' ? renderFieldPlayer(state) : ''}
-        ${state.mode === 'viewer' ? renderFieldViewer(state) : ''}
-      </div>
-      
-      <div class="field-controls">
-        <button class="field-button" id="fieldStart">Начать игру</button>
-        <button class="field-button" id="fieldReset">Сбросить</button>
-      </div>
-    </div>
-  `;
-  content.innerHTML = html;
-  
-  document.querySelectorAll('input[name="fieldMode"]').forEach(input => {
-    input.addEventListener('change', e => {
-      state.mode = e.target.value;
-      renderField();
-    });
-  });
-  
-  $('#fieldStart').addEventListener('click', () => {
-    state.round = 1;
-    state.wheelSector = 0;
-    state.lettersRevealed = [];
-    state.chests = [false, false];
-    state.chestPrize = Math.floor(Math.random()*2);
-    state.activePlayerId = 0;
-    state.viewerReactions = [];
-    state.finished = false;
-    renderField();
-    publish({game:'field', mode:state.mode, round:state.round, revealed:false, instruction:'Поле чудес начато.'});
-  });
-  
-  $('#fieldReset').addEventListener('click', () => {
-    state.finished = true;
-    renderField();
-    publish({game:'idle', revealed:false, instruction:'Поле чудес завершено.'});
-  });
-  
-  if (state.mode === 'player') {
-    $('#fieldWheel').addEventListener('click', () => {
-      state.wheelSector = Math.floor(Math.random() * 24);
-      renderField();
-      publish({game:'field', mode:state.mode, wheelSector:state.wheelSector, revealed:true, instruction:'Колесо крутится!'});
-    });
-    
-    document.querySelectorAll('.field-letter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const letter = btn.dataset.letter;
-        if (!state.lettersRevealed.includes(letter)) {
-          state.lettersRevealed.push(letter);
-          renderField();
-          publish({game:'field', mode:state.mode, letter:letter, revealed:true, instruction:'Буква открыта!'});
-        }
-      });
-    });
-    
-    document.querySelectorAll('.field-chest-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const index = Number(btn.dataset.index);
-        state.chests[index] = true;
-        const win = index === state.chestPrize;
-        renderField();
-        publish({game:'field', mode:state.mode, chest:index, win:win, revealed:true, instruction: win ? 'Приз в шкатулке!' : 'Пусто...'});
-      });
-    });
-  }
-  
-  if (state.mode === 'viewer') {
-    document.querySelectorAll('.field-reaction-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const reaction = btn.dataset.reaction;
-        state.viewerReactions.push({reaction, time: Date.now()});
-        renderField();
-        publish({game:'field', mode:state.mode, reaction:reaction, revealed:true, instruction:'Реакция отправлена!'});
-      });
-    });
-  }
+  const s=fieldState, body=$('#gameBody'); if(!s||!body)return;
+  const inviteOpen=Boolean(body.querySelector('.field-invite')?.open);
+  body.innerHTML=`<div class="field-show"><header class="field-intro"><div><span>✦ ЗИМНИЙ ВЫПУСК ✦</span><h2>Поле чудес</h2><p>Три тройки · финал · ${window.FIELD_QUESTIONS.length} заданий без повторов за игру</p></div><div class="field-badge">❄</div></header><details class="field-invite"><summary>📱 Подключить игроков и зрителей · ${connectedPlayers.length} игроков</summary><p>Сканируйте QR на телефоне и выберите роль. Игрока назначьте на место в тройке. Можно играть только с этого экрана.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><small>${onlineSync?'Нужен интернет и открытая страница ведущего; качество соединения зависит от сети.':'Устройства должны быть в одной сети с ведущим.'}</small></details>${s.phase==='setup'?fieldSetup(s):fieldControls(s)}<details class="field-rules"><summary>Правила и особенности адаптации</summary><p>Три отборочные тройки и финал. Верная буква открывает все совпадения и приносит очки за каждую. 0 — переход хода, Б — потеря очков и хода, + — открытие выбранной буквы, ×2 — умножение счёта при верной букве, П — приз или продолжение, Ш — помощь зрителя и 1500 за букву. Три верные буквы подряд — две шкатулки. Если остался один игрок, после трёх результативных ходов он называет слово. Призы виртуальные. Суперигра — упрощённая версия с одним словом, пятью буквами и минутой на ответ. <a href="https://homeofgames.ru/game/kapital-shou-pole-chudes" target="_blank" rel="noopener noreferrer">Правила передачи ↗</a></p></details>${s.reaction?`<div class="field-reaction">${escapeHtml(s.reaction)}</div>`:''}</div>`;
+  if(inviteOpen)body.querySelector('.field-invite').open=true;
+  setupPlayerInvite();
+  $('#copyPlayerLink')?.addEventListener('click',async()=>{const url=appPageUrl(`player.html?room=${roomCode}`);try{await navigator.clipboard.writeText(url);notify('Ссылка скопирована.');}catch{prompt('Ссылка для телефонов:',url);}});
+  $('#fieldCount')?.addEventListener('change',e=>{s.count=Number(e.target.value);renderField();});
+  body.querySelectorAll('[data-field-name]').forEach(input=>input.addEventListener('input',()=>{s.setupNames[+input.dataset.fieldName]=input.value;}));
+  body.querySelectorAll('[data-field-seat]').forEach(select=>select.addEventListener('change',()=>{const i=+select.dataset.fieldSeat,id=select.value;if(id && s.setupIds.some((other,j)=>j!==i&&j<s.count&&other===id)){notify('Этот телефон уже назначен на другое место.');renderField();return;}s.setupIds[i]=id;if(id)s.setupNames[i]=connectedPlayers.find(p=>p.id===id)?.name||s.setupNames[i];renderField();}));
+  $('#fieldStart')?.addEventListener('click',fieldStart);
+  $('#fieldRestart')?.addEventListener('click',()=>{fieldState=newFieldState();renderField();});
+  $('#fieldSpin')?.addEventListener('click',fieldSpin);
+  body.querySelectorAll('[data-field-letter]').forEach(b=>b.addEventListener('click',()=>fieldLetter(b.dataset.fieldLetter)));
+  body.querySelectorAll('[data-field-tile]').forEach(b=>b.addEventListener('click',()=>fieldPlus(+b.dataset.fieldTile)));
+  body.querySelectorAll('[data-field-prize]').forEach(b=>b.addEventListener('click',()=>fieldPrize(b.dataset.fieldPrize)));
+  body.querySelectorAll('[data-field-chest]').forEach(b=>b.addEventListener('click',()=>fieldChest(+b.dataset.fieldChest)));
+  $('#fieldSolve')?.addEventListener('submit',e=>{e.preventDefault();fieldSolve($('#fieldAnswer').value);});
+  $('#fieldNext')?.addEventListener('click',fieldNext);
+  $('#fieldSuper')?.addEventListener('click',fieldSuperStart);
+  publish(fieldPublic(s));
 }
-
-function renderFieldScreen(state) {
-  return `
-    <div class="field-screen-view">
-      <h2>Поле чудес: Новый год</h2>
-      <p>Выберите режим выше для начала игры.</p>
-      <div class="field-wheel-display">
-        <div class="field-wheel" style="transform: rotate(${state.wheelSector * 15}deg);">🎡</div>
-      </div>
-      <div class="field-alphabet">
-        ${['А','Б','В','Г','Д','Е','Ё','Ж','З','И','Й','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Щ','Ъ','Ы','Ь','Э','Ю','Я'].map(l => 
-          `<span class="field-letter ${state.lettersRevealed.includes(l)?'revealed':''}">${l}</span>`
-        ).join('')}
-      </div>
-      <div class="field-chests">
-        ${state.chests.map((opened, i) => 
-          `<div class="field-chest ${opened?'opened':''}">🎁 ${opened ? (i===state.chestPrize?'🏆':'❌') : '❓'}</div>`
-        ).join('')}
-      </div>
-    </div>
-  `;
+function fieldStart() {
+  const s=fieldState;if(s.phase!=='setup')return;
+  let players=s.round===4?s.winners.map(p=>({...p,score:0,out:false})):Array.from({length:s.count},(_,i)=>({name:s.setupNames[i].trim().slice(0,24)||`Игрок ${i+1}`,id:s.setupIds[i]||'',score:0,out:false}));
+  if(!players.length)return;
+  players.forEach(p=>{if(p.id&&!connectedPlayers.some(q=>q.id===p.id))p.id='';});
+  if(!s.queue.length)s.queue=shuffle(window.FIELD_QUESTIONS.map((_,i)=>i));
+  s.question=window.FIELD_QUESTIONS[s.queue.shift()];s.players=players;s.active=0;s.guessed=[];s.sector=null;s.streak=0;s.soloHits=0;s.phase='spin';s.message=`${players[0].name}, крутите барабан или назовите слово.`;renderField();
 }
-
-function renderFieldPlayer(state) {
-  return `
-    <div class="field-player-view">
-      <h2>Участник: Поле чудес</h2>
-      <div class="field-wheel-control">
-        <button class="field-wheel-btn" id="fieldWheel">🌀 Крутить колесо</button>
-        <div class="field-wheel-display">
-          <div class="field-wheel" style="transform: rotate(${state.wheelSector * 15}deg);">🎡</div>
-        </div>
-      </div>
-      <div class="field-alphabet-control">
-        <h3>Алфавит</h3>
-        <div class="field-alphabet">
-          ${['А','Б','В','Г','Д','Е','Ё','Ж','З','И','Й','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Щ','Ъ','Ы','Ь','Э','Ю','Я'].map(l => 
-            `<button class="field-letter-btn ${state.lettersRevealed.includes(l)?'revealed':''}" data-letter="${l}">${l}</button>`
-          ).join('')}
-        </div>
-      </div>
-      <div class="field-chests-control">
-        <h3>Выберите шкатулку</h3>
-        <div class="field-chests">
-          ${state.chests.map((opened, i) => 
-            `<button class="field-chest-btn ${opened?'opened':''}" data-index="${i}">🎁 ${opened ? (i===state.chestPrize?'🏆':'❌') : '❓'}</button>`
-          ).join('')}
-        </div>
-      </div>
-    </div>
-  `;
+function fieldSpin() {
+  const s=fieldState;if(!s||s.phase!=='spin')return;
+  const index=Math.floor(Math.random()*fieldSectors.length), step=360/fieldSectors.length;
+  const target=(360-(index*step+step/2))%360, current=((s.angle%360)+360)%360;
+  s.angle+=360*5+((target-current+360)%360);s.sector=null;s.phase='spinning';s.message='Барабан вращается…';
+  const wheel=$('#fieldWheelArt');if(wheel)wheel.style.transform=`rotate(${s.angle}deg)`;
+  $('#fieldSpin').disabled=true;const status=$('.field-status');if(status)status.textContent=s.message;publish(fieldPublic(s));
+  setTimeout(()=>{if(fieldState!==s||s.phase!=='spinning')return;s.sector=fieldSectors[index];
+    if(s.sector==='Б'){fieldCurrent(s).score=0;fieldPass('Банкрот: очки сгорели.');}
+    else if(s.sector===0)fieldPass('Ноль: переход хода.');
+    else if(s.sector==='+'){s.phase='plus';s.message='Плюс: выберите закрытую клетку.';renderField();}
+    else if(s.sector==='П'){s.phase='prize';s.message='Приз: взять или продолжить?';renderField();}
+    else {s.phase='letter';s.message=s.sector==='Ш'?'Шанс: можно попросить подсказку зрителя, затем назвать букву за 1500.':`Сектор ${s.sector}: назовите букву.`;renderField();}
+  },2400);
 }
-
-function renderFieldViewer(state) {
-  return `
-    <div class="field-viewer-view">
-      <h2>Зритель: Поле чудес</h2>
-      <p>Смотрите игру и ставьте реакции!</p>
-      <div class="field-reactions">
-        <button class="field-reaction-btn" data-reaction="clap">👏 Аплодисменты</button>
-        <button class="field-reaction-btn" data-reaction="wow">😲 Удивление</button>
-        <button class="field-reaction-btn" data-reaction="laugh">😂 Смех</button>
-        <button class="field-reaction-btn" data-reaction="sad">😢 Грусть</button>
-      </div>
-      <div class="field-reaction-history">
-        ${state.viewerReactions.slice(-5).map(r => `<span>${r.reaction}</span>`).join('')}
-      </div>
-    </div>
-  `;
+function fieldPass(message) {
+  const s=fieldState;s.streak=0;
+  const alive=s.players.filter(p=>!p.out);if(!alive.length){fieldEnd(null,'Все участники выбыли.');return;}
+  for(let n=1;n<=s.players.length;n++){const i=(s.active+n)%s.players.length;if(!s.players[i].out){s.active=i;break;}}
+  s.phase=s.soloHits>=3&&alive.length===1?'solveOnly':'spin';s.message=`${message} ${fieldCurrent(s).name}, ${s.phase==='solveOnly'?'назовите слово':'ваш ход'}.`;renderField();
+}
+function fieldEnd(winner,message) {
+  const s=fieldState;s.phase='over';s.message=`${message} Ответ: ${s.question.answer}.`;
+  if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;}
+  if(winner&&s.round<4)s.winners.push({name:winner.name,id:winner.id});
+  if(winner&&s.round===4&&!s.superRound)s.champion={name:winner.name,id:winner.id,score:winner.score};
+  renderField();
+}
+function fieldProductive(s){if(s.players.filter(p=>!p.out).length===1)s.soloHits++;}
+function fieldAfterSuccess(s) {
+  if([...s.question.answer].every(ch=>ch===' '||s.guessed.includes(fieldNorm(ch)))){fieldEnd(fieldCurrent(s),`${fieldCurrent(s).name} открыл(а) последнюю букву и победил(а)!`);return;}
+  if(s.streak>=3){s.phase='chest';s.chestPrize=Math.floor(Math.random()*2);s.streak=0;s.message='Три верные буквы подряд! Выберите шкатулку.';}
+  else {s.phase=s.players.filter(p=>!p.out).length===1&&s.soloHits>=3?'solveOnly':'spin';if(s.phase==='solveOnly')s.message='Три результативных хода: назовите слово целиком.';}
+  renderField();
+}
+function fieldLetter(letter) {
+  const s=fieldState;if(!s||!['letter','superLetters'].includes(s.phase))return;letter=fieldNorm(letter);
+  if(letter.length!==1||!fieldAlphabet.includes(letter))return;
+  if(s.phase==='superLetters'){if(s.guessed.includes(letter))return;s.guessed.push(letter);s.message=`Выбрано букв: ${s.guessed.length} из 5.`;if(s.guessed.length===5){s.phase='superSolve';s.seconds=60;s.deadline=Date.now()+60000;s.message='Назовите слово за 60 секунд.';fieldSuperTimer=setInterval(fieldSuperTick,250);}renderField();return;}
+  if(s.guessed.includes(letter)){fieldPass('Буква уже называлась.');return;}
+  s.guessed.push(letter);const count=[...s.question.answer].filter(ch=>fieldNorm(ch)===letter).length;
+  if(!count){fieldPass(`Буквы ${letter} нет.`);return;}
+  const p=fieldCurrent(s);if(s.sector==='×2')p.score*=count+1;else p.score+=(s.sector==='Ш'?1500:Number(s.sector)||0)*count;
+  fieldProductive(s);s.streak++;s.message=`Буква ${letter}: ${count} · счёт ${p.score}. Ход сохраняется.`;fieldAfterSuccess(s);
+}
+function fieldPlus(index) {
+  const s=fieldState;if(!s||s.phase!=='plus'||!Number.isInteger(index))return;
+  const ch=[...s.question.answer][index],letter=fieldNorm(ch);if(!letter||s.guessed.includes(letter))return;
+  s.guessed.push(letter);fieldProductive(s);s.message=`Открыта буква ${ch}. Очки не начисляются.`;fieldAfterSuccess(s);
+}
+function fieldPrize(choice) {
+  const s=fieldState;if(!s||s.phase!=='prize')return;
+  if(choice==='continue'){s.sector=2000;s.phase='letter';s.message='Продолжаем: 2000 очков за букву.';renderField();}
+  else if(choice==='take'){fieldCurrent(s).out=true;s.soloHits=0;fieldPass('Приз взят: участник выбывает.');}
+}
+function fieldChest(index) {
+  const s=fieldState;if(!s||s.phase!=='chest'||![0,1].includes(index))return;
+  s.phase=s.players.filter(p=>!p.out).length===1&&s.soloHits>=3?'solveOnly':'spin';s.message=index===s.chestPrize?'В шкатулке виртуальный приз!':'Шкатулка пуста.';renderField();
+}
+function fieldSolve(value) {
+  const s=fieldState;if(!s||!['spin','letter','solveOnly','superSolve'].includes(s.phase)||!fieldNorm(value))return;
+  if(s.phase==='superSolve'){if(Date.now()>=s.deadline){fieldEnd(null,'Время вышло. Суперигра проиграна.');return;}fieldEnd(null,fieldNorm(value)===fieldNorm(s.question.answer)?'Суперигра выиграна! Виртуальный суперприз ваш.':'Неверно. Суперигра проиграна.');return;}
+  if(fieldNorm(value)===fieldNorm(s.question.answer))fieldEnd(fieldCurrent(s),`${fieldCurrent(s).name} угадал(а) слово!`);
+  else {const name=fieldCurrent(s).name;fieldCurrent(s).out=true;s.soloHits=0;fieldPass(`${name}: неверное слово, участник выбывает.`);}
+}
+function fieldSuperStart() {
+  const s=fieldState;if(!s||s.phase!=='over'||s.superRound||!s.champion)return;
+  if(!s.queue.length)s.queue=shuffle(window.FIELD_QUESTIONS.map((_,i)=>i));
+  s.question=window.FIELD_QUESTIONS[s.queue.shift()];s.players=[{...s.champion,out:false}];s.active=0;s.guessed=[];s.sector=null;s.superRound=true;s.phase='superLetters';s.seconds=60;s.message='Назовите пять разных букв.';renderField();
+}
+function fieldSuperTick() {
+  const s=fieldState;if(!s||s.phase!=='superSolve'){clearInterval(fieldSuperTimer);fieldSuperTimer=null;return;}
+  const seconds=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));
+  if(!seconds){s.seconds=0;fieldEnd(null,'Время вышло. Суперигра проиграна.');return;}
+  if(seconds!==s.seconds){s.seconds=seconds;const clock=$('.field-clock');if(clock)clock.innerHTML=`${seconds} <small>секунд</small>`;publish(fieldPublic(s));}
+}
+function fieldNext() {
+  const s=fieldState;if(!s||s.phase!=='over')return;if(s.round===4){fieldState=newFieldState();renderField();return;}
+  s.round++;s.phase='setup';s.question=null;s.players=[];s.active=0;s.guessed=[];s.sector=null;s.setupNames=['Игрок 1','Игрок 2','Игрок 3'];s.setupIds=['','',''];s.count=3;s.message='Подготовьте следующий тур.';renderField();
+}
+function fieldRemote(data) {
+  const s=fieldState;if(!s)return;const action=data.action;
+  if(data.role==='viewer'&&action?.kind==='reaction'&&['👏','🎉','❤️','😮'].includes(action.value)){s.reaction=`${data.name||'Зритель'} ${action.value}`;let box=$('.field-reaction');if(!box){box=document.createElement('div');box.className='field-reaction';$('.field-show')?.appendChild(box);}if(box)box.textContent=s.reaction;if(s.phase!=='spinning')publish(fieldPublic(s));return;}
+  if(!action||typeof action!=='object'||!fieldCurrent(s)?.id||data.playerId!==fieldCurrent(s).id)return;
+  if(action.kind==='spin')fieldSpin();else if(action.kind==='letter')fieldLetter(action.value);else if(action.kind==='solve')fieldSolve(action.value);else if(action.kind==='plus')fieldPlus(action.value);else if(action.kind==='prize')fieldPrize(action.value);else if(action.kind==='chest')fieldChest(action.value);
 }
 
 // --- Угадай мелодию: три игровых поля и суперигра ---
@@ -785,11 +773,13 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
   }
 
   function openGame(kind) {
+    if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;}
+    fieldState=null;
     if (memoryState?.timer) clearInterval(memoryState.timer);
     if (crocState?.timer) clearInterval(crocState.timer);
     if(kind==='music'){openMusicLibrary();return;}
     if (kind==='drive') { openHolidayInstructions(); return; }
-    if (kind==='field') { commonFrame('Поле чудес: Новый год','КОЛЕСО И БУКВЫ','Выберите режим и начинайте игру.','field-screen'); fieldState={...createContest(),mode:'screen',wheelSector:0,lettersRevealed:[],chests:[false,false],chestPrize:Math.floor(Math.random()*2),round:1,activePlayerId:0,viewerReactions:[],finished:false}; renderField(); }
+    if (kind==='field') { commonFrame('Поле чудес: Новый год','КРУТИТЕ БАРАБАН','Игра с экрана или с телефонами: три тройки и финал.','field-screen'); fieldState=newFieldState(); renderField(); }
     if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, три тура и суперигра.','melody-screen'); content.insertAdjacentHTML('beforeend', '<div id="melodyExternalPlayer" class="melody-external-player" hidden></div>'); melodyState=newMelodyState(kind==='melody-intl'?'international':'russian'); renderMelody(); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],circleHistory:[],activePlayerId:0,round:1}; renderGuess(); }
