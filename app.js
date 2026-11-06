@@ -470,6 +470,70 @@
       ],
     ],
   };
+  // The immediately preceding boards, for position-to-song save migration.
+  const beforeModernLayouts={
+    standard:[
+      [
+        {ru:[0,32,22,4,5], en:[0,1,2,3,4]},
+        {ru:[1,33,14,38,10], en:[6,14,27,28,29]},
+        {ru:[3,6,7,2,17], en:[5,17,26,34,36]},
+        {ru:[50,12,18,19,47], en:[37,38,39,40,41]},
+      ],
+      [
+        {ru:[8,9,16,20,21], en:[7,8,9,10,11]},
+        {ru:[23,24,26,29,39], en:[12,13,15,16,18]},
+        {ru:[41,43,44,45,46], en:[19,20,21,22,23]},
+        {ru:[48,49,51,52,53], en:[24,25,30,31,32]},
+      ],
+      [
+        {ru:[11,13,15,54,94], en:[33,35,42,43,44]},
+        {ru:[95,96,97,98,99], en:[45,46,47,48,49]},
+        {ru:[100,101,102,103,104], en:[50,51,52,53,54]},
+        {ru:[105,106,107,108,109], en:[55,56,57,58,59]},
+      ],
+    ],
+    children:[
+      [
+        {ru:[22,32,33,3,6]},
+        {ru:[41,43,44,45,46]},
+        {ru:[5,4,14,7,39]},
+        {ru:[55,56,57,58,59]},
+      ],
+      [
+        {ru:[8,2,54,1,9]},
+        {ru:[60,61,62,63,64]},
+        {ru:[65,66,67,68,69]},
+        {ru:[70,71,72,73,74]},
+      ],
+      [
+        {ru:[10,12,16,17,19]},
+        {ru:[20,21,24,26,27]},
+        {ru:[28,38,48,75,76]},
+        {ru:[77,78,79,80,81]},
+      ],
+    ],
+    holiday:[
+      [
+        {songs:[{language:'russian',index:0},{language:'russian',index:4},{language:'russian',index:5},{language:'russian',index:6},{language:'international',index:36}]},
+        {songs:[{language:'russian',index:1},{language:'russian',index:3},{language:'russian',index:22},{language:'russian',index:32},{language:'russian',index:33}]},
+        {songs:[{language:'russian',index:39},{language:'russian',index:14},{language:'russian',index:38},{language:'international',index:1},{language:'international',index:0}]},
+        {songs:[{language:'international',index:3},{language:'international',index:37},{language:'international',index:4},{language:'international',index:26},{language:'international',index:6}]},
+      ],
+      [
+        {songs:[{language:'russian',index:7},{language:'russian',index:8},{language:'russian',index:2},{language:'russian',index:17},{language:'russian',index:16}]},
+        {songs:[{language:'russian',index:10},{language:'russian',index:9},{language:'international',index:14},{language:'international',index:17},{language:'international',index:8}]},
+        {songs:[{language:'russian',index:12},{language:'russian',index:19},{language:'russian',index:23},{language:'russian',index:21},{language:'russian',index:18}]},
+        {songs:[{language:'international',index:38},{language:'international',index:7},{language:'international',index:12},{language:'international',index:28},{language:'international',index:11}]},
+      ],
+      [
+        {songs:[{language:'russian',index:20},{language:'russian',index:24},{language:'russian',index:26},{language:'russian',index:29},{language:'russian',index:41}]},
+        {songs:[{language:'russian',index:47},{language:'russian',index:48},{language:'russian',index:49},{language:'russian',index:50},{language:'russian',index:51}]},
+        {songs:[{language:'russian',index:52},{language:'russian',index:53},{language:'international',index:5},{language:'international',index:10},{language:'international',index:15}]},
+        {songs:[{language:'international',index:20},{language:'international',index:22},{language:'international',index:39},{language:'international',index:40},{language:'international',index:41}]},
+      ],
+    ],
+  };
+  const modernCatalogRevision=1;
   const uniqueCatalogRevision=1;
   const melodyCatalogRevision=2;
   const holidayCatalogRevision=2;
@@ -481,7 +545,7 @@
   ];
   function needsHolidayMigration(s){return s.version==='newyear' && s.holidayCatalogRevision!==holidayCatalogRevision;}
   function migrateHolidaySave(s){
-    const boards=window.MELODY_NEW_YEAR_LAYOUT.map(round=>round.flatMap(row=>row.songs.map(song=>(song.language==='russian'?'r':'e')+song.index)));
+    const boards=beforeModernLayouts.holiday.map(round=>round.flatMap(row=>row.songs.map(song=>(song.language==='russian'?'r':'e')+song.index)));
     const destination=(tour,note)=>{
       if(!Number.isInteger(note)||note<0||note>=20||tour<1||tour>3)return null;
       const target=boards[tour-1].indexOf(legacyHolidayBoards[tour-1][note]);
@@ -543,7 +607,7 @@
   function migrateUniqueMelodySave(s) {
     const mode=s.version;
     const oldLayout=mode==='children'?legacyStandardLayouts.children:legacyStandardLayouts.standard;
-    const newLayout=mode==='children'?window.MELODY_CHILDREN_LAYOUT:window.MELODY_LAYOUT;
+    const newLayout=mode==='children'?beforeModernLayouts.children:beforeModernLayouts.standard;
     const boards=layout=>layout.map(round=>round.flatMap((row,ri)=>Array.from({length:5},(_,i)=>{
       // Mixed mode alternates languages by position (20 notes in each round).
       const position=ri*5+i;
@@ -577,10 +641,49 @@
     return {...s,uniqueCatalogRevision,used,selected,revealed:selected===null?false:s.revealed,
       attempts:remap(s.attempts),judged:remap(s.judged),auction,super:supergame};
   }
+  function needsModernMelodyMigration(s) {
+    return s.modernCatalogRevision!==modernCatalogRevision;
+  }
+  function migrateModernMelodySave(s) {
+    const mode=s.version,holiday=mode==='newyear';
+    const old=holiday?beforeModernLayouts.holiday:mode==='children'?beforeModernLayouts.children:beforeModernLayouts.standard;
+    const updated=holiday?window.MELODY_NEW_YEAR_LAYOUT:mode==='children'?window.MELODY_CHILDREN_LAYOUT:window.MELODY_LAYOUT;
+    const boards=layout=>layout.map(round=>round.flatMap((row,ri)=>Array.from({length:5},(_,i)=>{
+      if(holiday){const song=row.songs[i];return (song.language==='russian'?'ru':'en')+song.index;}
+      const language=mode==='children'||mode==='russian'||(mode==='mixed'&&(ri*5+i)%2===0)?'ru':'en';
+      return language+row[language][i];
+    })));
+    const from=boards(old),to=boards(updated);
+    const destination=(tour,note)=>{
+      if(!Number.isInteger(note)||note<0||note>=20||tour<1||tour>3)return null;
+      const song=from[tour-1][note],target=to[tour-1].indexOf(song);
+      return from[tour-1].indexOf(song)!==from[tour-1].lastIndexOf(song)||target<0?null:target;
+    };
+    const used=s.used.map((notes,i)=>[...new Set(notes.map(n=>destination(i+1,n)).filter(n=>n!==null))]);
+    const remap=source=>{
+      const result={};
+      for(const [key,value] of Object.entries(source||{})){
+        const match=key.match(/^(russian|international|mixed|children|newyear)-(\d+)-(\d+)(-\d+)?$/);
+        if(!match||match[1]!==mode){result[key]=value;continue;}
+        const note=destination(Number(match[2]),Number(match[3]));
+        if(note!==null)result[`${mode}-${match[2]}-${note}${match[4]||''}`]=value;
+      }
+      return result;
+    };
+    const selected=s.selected!==null&&s.tour<=3?destination(s.tour,s.selected):null;
+    const auction={...s.auction,phase:'setup',points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null};
+    const supergame={...s.super,status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],deadline:0};
+    return {...s,modernCatalogRevision,used,selected,revealed:selected===null?false:s.revealed,
+      attempts:remap(s.attempts),judged:remap(s.judged),auction,super:supergame};
+  }
   function migrateMelodySave(s) {
-    if(s.version==='newyear')return needsHolidayMigration(s)?migrateHolidaySave(s):s;
-    const legacy=migrateLegacyMelodySave(s);
-    return needsUniqueMelodyMigration(legacy)?migrateUniqueMelodySave(legacy):legacy;
+    let current;
+    if(s.version==='newyear')current=needsHolidayMigration(s)?migrateHolidaySave(s):s;
+    else {
+      const legacy=migrateLegacyMelodySave(s);
+      current=needsUniqueMelodyMigration(legacy)?migrateUniqueMelodySave(legacy):legacy;
+    }
+    return needsModernMelodyMigration(current)?migrateModernMelodySave(current):current;
   }
   function saveField() {
     if(!fieldState)return false;
@@ -591,7 +694,7 @@
   }
   function saveMelody() {
     if(!melodyState)return false;
-    const s={...melodyState,catalogRevision:melodyCatalogRevision,holidayCatalogRevision,uniqueCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
+    const s={...melodyState,catalogRevision:melodyCatalogRevision,holidayCatalogRevision,uniqueCatalogRevision,modernCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
     if(s.super.status==='running') {s.super.seconds=superRemaining(melodyState);s.super.status=s.super.seconds?'paused':'lost';s.super.deadline=0;}
     return writeGameSave('melody',s);
   }
@@ -603,7 +706,7 @@
     if(!saved){start(null);return;}
     const body=$('#gameBody'),reset=$('#resetCurrentGame');if(reset)reset.hidden=true;
     const begin=s=>{if(reset)reset.hidden=false;start(game==='melody' && s ? migrateMelodySave(s) : s);};
-    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && needsUniqueMelodyMigration(saved)?'<p>Подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по однозначным песням в том же туре; убранные и повторявшиеся песни и их отметки могут исчезнуть. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}${game==='melody' && needsHolidayMigration(saved)?'<p>Праздничная подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по песням в том же туре; убранные из тура песни и их отметки исчезнут. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
+    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && (needsUniqueMelodyMigration(saved)||needsModernMelodyMigration(saved))?'<p>Подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по однозначным песням в том же туре; убранные и повторявшиеся песни и их отметки могут исчезнуть. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}${game==='melody' && needsHolidayMigration(saved) && !needsModernMelodyMigration(saved)?'<p>Праздничная подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по песням в том же туре; убранные из тура песни и их отметки исчезнут. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
     $('#resumeGame').addEventListener('click',()=>begin(saved));
     $('#newSavedGame').addEventListener('click',()=>{if(confirm('Начать заново и удалить сохранённый прогресс этой игры?'))begin(null);});
     publish({game:'idle',revealed:false,instruction:'Ведущий выбирает сохранённую игру.'});
@@ -1011,11 +1114,11 @@ const auctionTracks={
     {index:86,clue:'Герой мечтает подняться в небо.'}
   ],
   russian:[
-    {index:110,clue:'Песня о шумящем дереве.'},
-    {index:111,clue:'Песня о великой реке.'},
-    {index:112,clue:'Песня о коте, которому не везёт.'},
-    {index:113,clue:'Танцевальная песня о сладком зайце.'},
-    {index:114,clue:'Песня из новогоднего фильма: герой задаёт вопросы деревьям.'}
+    {index:138,clue:'Песня Валерия Меладзе, в названии — женское имя.'},
+    {index:139,clue:'Хит Анны Асти с королевским названием.'},
+    {index:140,clue:'Танцевальный хит Artik & Asti и Артёма Качера.'},
+    {index:141,clue:'Клава Кока поёт о прощании в переписке.'},
+    {index:142,clue:'Хит GAYAZOV$ BROTHER$: автомобиль яркого цвета.'}
   ],
   international:[
     {index:60,clue:'Хит австралийской певицы Sia.'},
@@ -1130,7 +1233,7 @@ function renderMelodySuper() {
   publishMelody();
 }
 
-function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, holidayCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
+function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, holidayCatalogRevision, modernCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
 
   // A separate, self-contained adaptation; the original PowerPoint is not converted.
   const holidayQuiz = [

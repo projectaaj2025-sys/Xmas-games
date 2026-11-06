@@ -33,7 +33,7 @@ test('buzz and stop pause playback and show the host answer; old ended events ca
  const a=setup();try{
   a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');const old=a.audios.at(-1);
   a.click('[data-melody-note="1"]');const next=a.audios.at(-1);assert.ok(old.pauses);old.onended();assert.equal(a.d.querySelector('.melody-answer').open,false);
-  a.click('#melodyStop');assert.ok(next.pauses);assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/детская песня/);
+  a.click('#melodyStop');assert.ok(next.pauses);assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/Стас Костюшкин/);
   a.click('#melodyPlay');assert.equal(next.plays,2);a.click('[data-melody-answerer="0"]');assert.ok(next.pauses>=2);assert.equal(a.d.querySelector('.melody-answer').open,true);assert.ok(a.d.querySelector('#melodyWrong'));assert.deepEqual(a.errors,[]);
  }finally{a.w.close()}
 });
