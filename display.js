@@ -51,7 +51,7 @@
         return;
       }
       if (data.mode === 'super') {
-        const status=data.status==='won'?'Все мелодии угаданы!':data.status==='lost'?'Суперигра завершена':'Семь мелодий за 30 секунд';
+        const status=data.status==='paused'?'Суперигра на паузе':data.status==='won'?'Все мелодии угаданы!':data.status==='lost'?'Суперигра завершена':'Семь мелодий за 30 секунд';
         stage.innerHTML=`<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>СУПЕРИГРА ★</b></div><h1>${safeText(data.seconds)} сек.</h1><p>${safeText(data.player)} · угадано ${safeText(data.correct)} / 7</p><p>${status}</p>${roomNote}`;
         return;
       }

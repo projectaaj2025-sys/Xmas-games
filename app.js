@@ -313,15 +313,73 @@
     document.querySelectorAll('.pawn-choice').forEach(input => input.addEventListener('change', () => { state.pawns[Number(input.dataset.pawn)] = input.value; if (state===crocState) renderCroc(); else if (state===memoryState) publishMemo(); else if (state===quizState) publishQuiz(); else if (state===guessState) publishGuess(state.screenVisible); }));
     document.querySelectorAll('.croc-pawn-cycle').forEach(button=>button.addEventListener('click',()=>{const index=Number(button.dataset.pawnCycle),current=crocPawnChoices.findIndex(p=>p.id===state.pawns[index]);state.pawns[index]=crocPawnChoices[(current+1+crocPawnChoices.length)%crocPawnChoices.length].id;renderCroc();}));
   }
+  // Separate versioned saves for the two host-operated games. No audio blobs are stored.
+  const savedGamesInMemory={};
+  const saveKey=game=>`snowy-host-${game}-v1`;
+  function writeGameSave(game,state) {
+    const value=JSON.stringify({version:1,state});savedGamesInMemory[game]=value;
+    try {localStorage.setItem(saveKey(game),value);return true;} catch {return false;}
+  }
+  function readGameSave(game) {
+    try {
+      const saved=JSON.parse(savedGamesInMemory[game] || localStorage.getItem(saveKey(game)) || 'null');
+      const s=saved?.state;
+      if(saved?.version!==1 || !s || typeof s!=='object')return null;
+      if(game==='field') {
+        if(!['setup','spin','spinning','letter','plus','prize','chest','solveOnly','superLetters','superSolve','over'].includes(s.phase) || !Number.isInteger(s.round) || s.round<1 || s.round>4 || !Array.isArray(s.queue) || !Array.isArray(s.players) || !Array.isArray(s.winners) || !Array.isArray(s.guessed) || !Array.isArray(s.setupNames) || !Array.isArray(s.setupIds) || (s.phase!=='setup' && (!s.question || typeof s.question.answer!=='string' || typeof s.question.question!=='string' || !s.players[s.active])))return null;
+        if(s.queue.some(i=>!Number.isInteger(i)||i<0||i>=window.FIELD_QUESTIONS.length) || !Number.isInteger(s.count) || s.count<1 || s.count>3 || !Number.isInteger(s.active) || !Number.isFinite(s.angle) || !Number.isFinite(s.seconds) || typeof s.message!=='string' || s.players.some(p=>!p || typeof p.name!=='string' || !Number.isFinite(p.score)) || s.winners.some(p=>!p || typeof p.name!=='string') || s.guessed.some(x=>typeof x!=='string'))return null;
+      } else {
+        const index=(n,max)=>Number.isInteger(n)&&n>=0&&n<max;
+        if(!['russian','international','mixed','children'].includes(s.version) || !Number.isInteger(s.tour) || !index(s.tour-1,5) || !Array.isArray(s.names) || s.names.length!==3 || s.names.some(n=>typeof n!=='string') || !Array.isArray(s.scores) || s.scores.length!==3 || s.scores.some(n=>!Number.isFinite(n)) || !Array.isArray(s.used) || s.used.length!==3 || s.used.some(a=>!Array.isArray(a)||a.some(n=>!index(n,20))) || (s.selected!==null&&!index(s.selected,20)) || !s.judged || typeof s.judged!=='object')return null;
+        const a=s.auction,supergame=s.super;
+        if(!a || !['setup','bidding','guess','result','finished'].includes(a.phase) || !Array.isArray(a.players) || a.players.length!==2 || a.players.some(n=>!index(n,3)) || !Array.isArray(a.points) || a.points.length!==2 || a.points.some(n=>!Number.isFinite(n)) || !index(a.track,5) || !index(a.turn,2) || (a.bidder!==null&&!index(a.bidder,2)) || (a.lastWinner!==null&&!index(a.lastWinner,2)))return null;
+        if(!supergame || !['ready','paused','won','lost'].includes(supergame.status) || !Number.isFinite(supergame.seconds) || supergame.seconds<0 || !index(supergame.player,3) || !Array.isArray(supergame.queue) || supergame.queue.some(n=>!index(n,7)) || (supergame.status==='paused'&&!supergame.queue.length))return null;
+      }
+      return s;
+    } catch {return null;}
+  }
+  function saveField() {
+    if(!fieldState)return false;
+    const s={...fieldState};
+    if(s.phase==='spinning'){s.phase='spin';s.sector=null;s.message='Вращение прервано. Крутите барабан ещё раз.';}
+    if(s.phase==='superSolve')s.seconds=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));
+    return writeGameSave('field',s);
+  }
+  function saveMelody() {
+    if(!melodyState)return false;
+    const s={...melodyState,files:{},cues:{},super:{...melodyState.super}};
+    if(s.super.status==='running') {s.super.seconds=superRemaining(melodyState);s.super.status=s.super.seconds?'paused':'lost';s.super.deadline=0;}
+    return writeGameSave('melody',s);
+  }
+  function saveOpenGames(){if(fieldState)saveField();if(melodyState)saveMelody();}
+  window.addEventListener('pagehide',saveOpenGames);
+  function saveStatus(ok) {return ok?'Прогресс сохраняется в этом браузере':'Сохранение недоступно: прогресс только до закрытия вкладки';}
+  function chooseSavedGame(game,start) {
+    const saved=readGameSave(game);
+    if(!saved){start(null);return;}
+    const body=$('#gameBody'),reset=$('#resetCurrentGame');if(reset)reset.hidden=true;
+    const begin=s=>{if(reset)reset.hidden=false;start(s);};
+    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и экран нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
+    $('#resumeGame').addEventListener('click',()=>begin(saved));
+    $('#newSavedGame').addEventListener('click',()=>{if(confirm('Начать заново и удалить сохранённый прогресс этой игры?'))begin(null);});
+    publish({game:'idle',revealed:false,instruction:'Ведущий выбирает сохранённую игру.'});
+  }
+  function resetCurrentGame() {
+    if(!fieldState&&!melodyState)return;
+    if(!confirm('Сбросить игру? Очки, ходы и сохранённый прогресс будут удалены.'))return;
+    if(fieldState){if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;}fieldState=newFieldState();renderField();}
+    else if(melodyState){const version=melodyState.version;disposeMelodyFiles();melodyState=newMelodyState(version);renderMelody();}
+  }
   function commonFrame(title, kicker, description, gameClass) {
     modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
     content.className=`modal-content ${gameClass || ''}`;
-    content.innerHTML=`<div class="game-topbar"><button class="back-game" id="backHome">← Все игры</button><div class="full-brand">❄ СНЕЖНЫЙ ПЕРЕПОЛОХ</div><button class="fullscreen-control" id="goFullscreen">На весь экран ⛶</button></div><div class="modal-heading"><div class="section-kicker">${kicker}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div>${screenToolbar()}<div id="gameBody"></div>`;
+    content.innerHTML=`<div class="game-topbar"><button class="back-game" id="backHome">← Все игры</button><div class="full-brand">❄ СНЕЖНЫЙ ПЕРЕПОЛОХ</div><button class="fullscreen-control" id="goFullscreen">На весь экран ⛶</button>${['field-screen','melody-screen'].includes(gameClass)?'<button class="game-reset" id="resetCurrentGame" type="button">Сбросить игру ↻</button>':''}</div><div class="modal-heading"><div class="section-kicker">${kicker}</div><h2 id="modalTitle">${title}</h2><p>${description}</p></div>${screenToolbar()}<div id="gameBody"></div>`;
     $('#backHome').addEventListener('click', closeGame);
+    $('#resetCurrentGame')?.addEventListener('click',resetCurrentGame);
     bindScreenTools();
     return $('#gameBody');
   }
-  function closeGame() { if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;} fieldState=null; disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  function closeGame() { saveOpenGames(); if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;} fieldState=null; disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
 // --- «Поле чудес»: ведущий хранит ответ только у себя ---
 let fieldState = null, fieldSuperTimer = null;
 const fieldSectors = [500, 350, 'Б', 600, 400, 'П', 750, 0, 550, '×2', 450, 800, 'Ш', 300, 650, '+', 900, 'Б', 250, 700, 1000, 400, 500, 850];
@@ -358,18 +416,27 @@ function fieldControls(s) {
   return `<div class="field-game-grid"><section class="field-stage"><div class="field-stage-head"><span>${fieldLabel(s)}</span><span>❄ НОВОГОДНИЙ ВЫПУСК</span></div><h3>${escapeHtml(s.question.question)}</h3><div class="field-word-board">${board}</div><div class="field-status" role="status">${escapeHtml(s.message)}</div><div class="field-scores">${s.players.map((p,i)=>`<div class="field-score ${i===s.active&&s.phase!=='over'?'active':''} ${p.out?'out':''}"><span>${escapeHtml(p.name)}</span><b>${p.score} <small>очков</small></b>${p.out?'<em>выбыл</em>':''}</div>`).join('')}</div>${s.superRound&&s.phase==='superSolve'?`<div class="field-clock">${s.seconds} <small>секунд</small></div>`:''}${s.phase==='over'?`${s.round===4&&!s.superRound&&s.champion?'<button id="fieldSuper">Суперигра ★</button> ':''}<button id="fieldNext">${s.round<3?'Следующая тройка →':s.round===3?'К финалу →':'Новая игра ↻'}</button>`:''}</section><aside class="field-wheel-panel">${fieldWheelMarkup(s)}<div class="field-sector-label">${s.sector==null?'КРУТИТЕ БАРАБАН':`СЕКТОР · ${escapeHtml(s.sector)}`}</div><button id="fieldSpin" ${s.phase!=='spin'?'disabled':''}>Крутить барабан ↻</button></aside></div>
   <section class="field-console"><h3>Ход: ${escapeHtml(fieldCurrent(s)?.name||'—')}</h3><p>${s.phase==='superLetters'?`Назовите пять разных букв: ${s.guessed.length} / 5. Затем будет минута на ответ.`:s.phase==='superSolve'?'Назовите слово за 60 секунд.':s.phase==='letter'?'Назовите букву. Верные буквы откроются все.':s.phase==='plus'?'Выберите закрытую клетку на табло.':s.phase==='prize'?'Взять приз и выбыть или продолжить с сектором 2000.':s.phase==='chest'?'Три верные буквы подряд: выберите одну шкатулку.':s.phase==='solveOnly'?'Остался один участник: три результативных хода использованы, назовите слово.':'Крутите барабан или назовите слово целиком.'}</p><div class="field-alphabet">${letters}</div>${s.phase==='prize'?'<div class="field-actions"><button data-field-prize="take">🎁 Взять приз и выбыть</button><button data-field-prize="continue">Продолжить · 2000 за букву</button></div>':''}${s.phase==='chest'?'<div class="field-actions"><button data-field-chest="0">🎁 Шкатулка 1</button><button data-field-chest="1">🎁 Шкатулка 2</button></div>':''}<form id="fieldSolve" class="field-solve"><input id="fieldAnswer" autocomplete="off" maxlength="80" placeholder="Назвать слово целиком" ${!['spin','letter','solveOnly','superSolve'].includes(s.phase)?'disabled':''}><button ${!['spin','letter','solveOnly','superSolve'].includes(s.phase)?'disabled':''}>Назвать слово</button></form><small>${s.superRound?'Суперигра: пять букв и один ответ за минуту.':'Ошибка в слове — участник выбывает. Угаданная буква сохраняет ход; повтор и ошибка передают его.'} Ё = Е, Й = И.</small></section>`;
 }
+function fieldReconnect(s) {
+  if(!s.players.length)return '';
+  return `<details class="field-reconnect"><summary>📱 Назначить или переподключить телефоны</summary><p>Подключите игроков по QR и выберите телефон для каждого участника. Имена и очки не изменятся; без телефона можно играть с экрана.</p><div class="field-reconnect-seats">${s.players.map((p,i)=>`<label>${escapeHtml(p.name)}<select data-field-player-seat="${i}"><option value="">Игра с экрана</option>${connectedPlayers.map(q=>`<option value="${escapeHtml(q.id)}" ${q.id===p.id?'selected':''}>${escapeHtml(q.name)}</option>`).join('')}</select></label>`).join('')}</div><button type="button" id="fieldRefreshPlayers">Обновить список телефонов</button></details>`;
+}
 function renderField() {
   const s=fieldState, body=$('#gameBody'); if(!s||!body)return;
-  const inviteOpen=Boolean(body.querySelector('.field-invite')?.open);
-  body.innerHTML=`<div class="field-show"><header class="field-intro"><div><span>✦ ЗИМНИЙ ВЫПУСК ✦</span><h2>Поле чудес</h2><p>Три тройки · финал · ${window.FIELD_QUESTIONS.length} заданий без повторов за игру</p></div><div class="field-badge">❄</div></header><details class="field-invite"><summary>📱 Подключить игроков и зрителей · ${connectedPlayers.length} игроков</summary><p>Сканируйте QR на телефоне и выберите роль. Игрока назначьте на место в тройке. Можно играть только с этого экрана.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><small>${onlineSync?'Нужен интернет и открытая страница ведущего; качество соединения зависит от сети.':'Устройства должны быть в одной сети с ведущим.'}</small></details>${s.phase==='setup'?fieldSetup(s):fieldControls(s)}<details class="field-rules"><summary>Правила и особенности адаптации</summary><p>Три отборочные тройки и финал. Верная буква открывает все совпадения и приносит очки за каждую. 0 — переход хода, Б — потеря очков и хода, + — открытие выбранной буквы, ×2 — умножение счёта при верной букве, П — приз или продолжение, Ш — помощь зрителя и 1500 за букву. Три верные буквы подряд — две шкатулки. Если остался один игрок, после трёх результативных ходов он называет слово. Призы виртуальные. Суперигра — упрощённая версия с одним словом, пятью буквами и минутой на ответ. <a href="https://homeofgames.ru/game/kapital-shou-pole-chudes" target="_blank" rel="noopener noreferrer">Правила передачи ↗</a></p></details>${s.reaction?`<div class="field-reaction">${escapeHtml(s.reaction)}</div>`:''}</div>`;
+  const saved=saveField();
+  const inviteOpen=Boolean(body.querySelector('.field-invite')?.open), seatsOpen=Boolean(body.querySelector('.field-reconnect')?.open), rulesOpen=Boolean(body.querySelector('.field-rules')?.open);
+  body.innerHTML=`<div class="field-show"><header class="field-intro"><div><span>✦ ЗИМНИЙ ВЫПУСК ✦</span><h2>Поле чудес</h2><p>Три тройки · финал · ${window.FIELD_QUESTIONS.length} заданий без повторов за игру</p></div><div class="field-badge">❄</div></header><p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><details class="field-invite"><summary>📱 Подключить игроков и зрителей · ${connectedPlayers.length} игроков</summary><p>Сканируйте QR на телефоне и выберите роль. Игрока назначьте на место в тройке. Можно играть только с этого экрана.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код входа" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><small>${onlineSync?'Нужен интернет и открытая страница ведущего; качество соединения зависит от сети.':'Устройства должны быть в одной сети с ведущим.'}</small></details>${s.phase==='setup'?fieldSetup(s):fieldControls(s)+fieldReconnect(s)}<details class="field-rules"><summary>Правила и особенности адаптации</summary><p>Три отборочные тройки и финал. Верная буква открывает все совпадения и приносит очки за каждую. 0 — переход хода, Б — потеря очков и хода, + — открытие выбранной буквы, ×2 — умножение счёта при верной букве, П — приз или продолжение, Ш — помощь зрителя и 1500 за букву. Три верные буквы подряд — две шкатулки. Если остался один игрок, после трёх результативных ходов он называет слово. Призы виртуальные. Суперигра — упрощённая версия с одним словом, пятью буквами и минутой на ответ. <a href="https://homeofgames.ru/game/kapital-shou-pole-chudes" target="_blank" rel="noopener noreferrer">Правила передачи ↗</a></p></details>${s.reaction?`<div class="field-reaction">${escapeHtml(s.reaction)}</div>`:''}</div>`;
   if(inviteOpen)body.querySelector('.field-invite').open=true;
+  if(seatsOpen&&body.querySelector('.field-reconnect'))body.querySelector('.field-reconnect').open=true;
+  if(rulesOpen)body.querySelector('.field-rules').open=true;
   setupPlayerInvite();
   $('#copyPlayerLink')?.addEventListener('click',async()=>{const url=appPageUrl(`player.html?room=${roomCode}`);try{await navigator.clipboard.writeText(url);notify('Ссылка скопирована.');}catch{prompt('Ссылка для телефонов:',url);}});
   $('#fieldCount')?.addEventListener('change',e=>{s.count=Number(e.target.value);renderField();});
-  body.querySelectorAll('[data-field-name]').forEach(input=>input.addEventListener('input',()=>{s.setupNames[+input.dataset.fieldName]=input.value;}));
+  body.querySelectorAll('[data-field-name]').forEach(input=>input.addEventListener('input',()=>{s.setupNames[+input.dataset.fieldName]=input.value;saveField();}));
+  $('#fieldRefreshPlayers')?.addEventListener('click',renderField);
+  body.querySelectorAll('[data-field-player-seat]').forEach(select=>select.addEventListener('change',()=>{const i=Number(select.dataset.fieldPlayerSeat),id=select.value;if(id && s.players.some((p,j)=>j!==i&&p.id===id)){notify('Этот телефон уже назначен другому игроку.');renderField();return;}s.players[i].id=id;renderField();}));
   body.querySelectorAll('[data-field-seat]').forEach(select=>select.addEventListener('change',()=>{const i=+select.dataset.fieldSeat,id=select.value;if(id && s.setupIds.some((other,j)=>j!==i&&j<s.count&&other===id)){notify('Этот телефон уже назначен на другое место.');renderField();return;}s.setupIds[i]=id;if(id)s.setupNames[i]=connectedPlayers.find(p=>p.id===id)?.name||s.setupNames[i];renderField();}));
   $('#fieldStart')?.addEventListener('click',fieldStart);
-  $('#fieldRestart')?.addEventListener('click',()=>{fieldState=newFieldState();renderField();});
+  $('#fieldRestart')?.addEventListener('click',resetCurrentGame);
   $('#fieldSpin')?.addEventListener('click',fieldSpin);
   body.querySelectorAll('[data-field-letter]').forEach(b=>b.addEventListener('click',()=>fieldLetter(b.dataset.fieldLetter)));
   body.querySelectorAll('[data-field-tile]').forEach(b=>b.addEventListener('click',()=>fieldPlus(+b.dataset.fieldTile)));
@@ -394,7 +461,7 @@ function fieldSpin() {
   const target=(360-(index*step+step/2))%360, current=((s.angle%360)+360)%360;
   s.angle+=360*5+((target-current+360)%360);s.sector=null;s.phase='spinning';s.message='Барабан вращается…';
   const wheel=$('#fieldWheelArt');if(wheel)wheel.style.transform=`rotate(${s.angle}deg)`;
-  $('#fieldSpin').disabled=true;const status=$('.field-status');if(status)status.textContent=s.message;publish(fieldPublic(s));
+  $('#fieldSpin').disabled=true;const status=$('.field-status');if(status)status.textContent=s.message;saveField();publish(fieldPublic(s));
   setTimeout(()=>{if(fieldState!==s||s.phase!=='spinning')return;s.sector=fieldSectors[index];
     if(s.sector==='Б'){fieldCurrent(s).score=0;fieldPass('Банкрот: очки сгорели.');}
     else if(s.sector===0)fieldPass('Ноль: переход хода.');
@@ -462,10 +529,10 @@ function fieldSuperTick() {
   const s=fieldState;if(!s||s.phase!=='superSolve'){clearInterval(fieldSuperTimer);fieldSuperTimer=null;return;}
   const seconds=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));
   if(!seconds){s.seconds=0;fieldEnd(null,'Время вышло. Суперигра проиграна.');return;}
-  if(seconds!==s.seconds){s.seconds=seconds;const clock=$('.field-clock');if(clock)clock.innerHTML=`${seconds} <small>секунд</small>`;publish(fieldPublic(s));}
+  if(seconds!==s.seconds){s.seconds=seconds;saveField();const clock=$('.field-clock');if(clock)clock.innerHTML=`${seconds} <small>секунд</small>`;publish(fieldPublic(s));}
 }
 function fieldNext() {
-  const s=fieldState;if(!s||s.phase!=='over')return;if(s.round===4){fieldState=newFieldState();renderField();return;}
+  const s=fieldState;if(!s||s.phase!=='over')return;if(s.round===4){resetCurrentGame();return;}
   s.round++;s.phase='setup';s.question=null;s.players=[];s.active=0;s.guessed=[];s.sector=null;s.setupNames=['Игрок 1','Игрок 2','Игрок 3'];s.setupIds=['','',''];s.count=3;s.message='Подготовьте следующий тур.';renderField();
 }
 function fieldRemote(data) {
@@ -529,6 +596,9 @@ function renderMelody() {
   const body = $('#gameBody');
   if(s.tour===4) { renderMelodySuper(); return; }
   if(s.tour===5) { renderMelodyAuction(); return; }
+  const saved=saveMelody();
+  const openDetails=['.melody-intro-image','.melody-cue-settings','.melody-song-list'].filter(sel=>body.querySelector(sel)?.open);
+  const answerOpen=body.querySelector('.melody-answer')?.open && body.querySelector('.melody-answer')?.dataset.answerKey===melodyKey(s);
   const categories=melodyCategories(s);
   const song = s.selected == null ? null : melodySong(s, s.selected);
   const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
@@ -538,27 +608,29 @@ function renderMelody() {
   const file = uploadedFile || (bundledUrl ? {url:bundledUrl, name:'Встроенная запись'} : null);
   body.innerHTML = `<div class="melody-show melody-screen-view">
     <details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
-    <div class="melody-setup">
+    <p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><div class="melody-setup">
       <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option></select></label>
-      <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button><button type="button" id="melodyReset">Новая игра</button>
+      <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button>
     </div>
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
     <div class="melody-stage">
       <div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Угадай мелодию</h2></div><strong>ТУР ${s.tour} <small>/ 3</small></strong></div>
       <div class="melody-rounds" aria-label="Выбор тура">${[1,2,3].map(n=>`<button type="button" data-melody-tour="${n}" class="${s.tour===n?'active':''}" aria-pressed="${s.tour===n}">Тур ${n}</button>`).join('')}<button type="button" data-melody-tour="5">Торги ♫</button><button type="button" data-melody-tour="4">Суперигра ★</button></div>
-      <p class="melody-board-hint">Выберите ноту и включите мелодию. Стоимость указана на ноте.</p>
+      <p class="melody-board-hint">Выберите ноту и включите мелодию. В этом туре сыграно ${s.used[s.tour-1].length} из 20.</p>
       <div class="melody-board" aria-label="Игровое поле">${melodyRows.map((row,ri)=>`<div class="melody-board-row"><div class="melody-category">${escapeHtml(categories[ri])}</div><div class="melody-notes">${row.map(i=>`<button type="button" class="melody-note-tile ${s.used[s.tour-1].includes(i)?'used':''} ${s.selected===i?'selected':''}" data-melody-note="${i}" ${s.used[s.tour-1].includes(i)?'disabled':''} aria-label="${escapeHtml(categories[ri])}, ${melodyValue(s,i)} баллов${s.used[s.tour-1].includes(i)?', сыграно':''}" aria-pressed="${s.selected===i}"><span>${melodyValue(s,i)}</span></button>`).join('')}</div></div>`).join('')}</div>
       <div class="melody-scoreboard">${s.names.map((name,i)=>`<div class="melody-player-score"><span class="melody-player-number">${i+1}</span><div><label><span class="sr-only">Имя игрока ${i+1}</span><input data-melody-name="${i}" maxlength="24" value="${escapeHtml(name)}"></label><strong>${s.scores[i]}</strong></div></div>`).join('')}</div>
     </div>
     ${melodySongList(s)}
     <section class="melody-host-panel" aria-live="polite"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${song ? `Мелодия на ${melodyValue(s)} баллов` : 'Выберите ноту на поле'}</h3></div><span>${s.used[s.tour-1].length} / 20 сыграно</span></div>
-      ${song ? `<details class="melody-answer"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)}</p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + (song.source?.artist || '') + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
+      ${song ? `<details class="melody-answer" data-answer-key="${melodyKey(s)}"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)}</p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + (song.source?.artist || '') + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
       <div class="melody-audio-controls">${song.source?.source ? `<a class="melody-file" href="${escapeHtml(song.source.source)}" target="_blank" rel="noopener noreferrer">Слушать в источнике ↗</a>` : ''}${youtubeId ? `<button type="button" id="melodyYoutube">▶ Слушать на YouTube</button>` : ''}<label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${(file || youtubeId)?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : youtubeId ? 'Запись доступна онлайн через YouTube.' : song.source?.source ? 'Запись доступна на странице источника.' : 'Запись можно найти отдельно или добавить свой файл.'}</span></div>
-      <div class="melody-judge"><span>Начислить или снять ${melodyValue(s)} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button></div>`).join('')}</div>
+      <div class="melody-judge"><span>Начислить или снять ${melodyValue(s)} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button>${s.judged[melodyKey(s)+'-'+i]&&!selectedUsed?`<button type="button" data-melody-undo="${i}" aria-label="Отменить начисление или штраф: ${escapeHtml(name)}">↶</button>`:''}</div>`).join('')}</div>
       <div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ':'Показать ответ на экране'}</button><button type="button" id="melodyDone" ${selectedUsed?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Название песни будет видно только ведущему после открытия подсказки.</p>'}
       <p class="melody-help">Некоторые русские и английские мелодии доступны без интернета; остальные — по ссылкам на источники или через YouTube. Плеер YouTube может показывать название и рекламу — лучше использовать отдельный экран. Заставку и переход можно заменить своими файлами.</p>
     </section>
   </div>`;
+  openDetails.forEach(sel=>{const el=body.querySelector(sel);if(el)el.open=true;});
+  if(answerOpen&&body.querySelector('.melody-answer'))body.querySelector('.melody-answer').open=true;
   $('#melodyVersion').addEventListener('change', e => {
     const version = e.target.value;
     if (!confirm('Сменить подборку и начать новую игру? Очки и сыгранные ноты будут сброшены.')) { e.target.value=s.version; return; }
@@ -569,9 +641,9 @@ function renderMelody() {
     $('#'+id).addEventListener('change', event => { const chosen=event.target.files[0]; if(!chosen) return; stopMelodyAudio(true); if(s.cues[cue]) URL.revokeObjectURL(s.cues[cue].url); s.cues[cue]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
   }
   $('#melodyMusicStop').addEventListener('click', () => stopMelodyAudio());
-  $('#melodyReset').addEventListener('click', () => { if (!confirm('Начать новую игру и сбросить очки?')) return; disposeMelodyFiles(); melodyState = newMelodyState(s.version); renderMelody(); });
   body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { const nextTour=Number(button.dataset.melodyTour); if(nextTour!==s.tour) playMelodyAudio(s.cues.transition?.url || 'assets/melody/audio/show-endround.mp3'); else stopMelodyAudio(); if(nextTour===5 && s.auction.phase==='setup') {const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);s.auction.players=ranked.slice(0,2);} if(nextTour===4 && s.tour!==4 && s.super.status==='ready' && s.auction.phase!=='finished') s.super.player=s.scores.indexOf(Math.max(...s.scores)); s.tour=nextTour; s.selected=null; s.revealed=false; renderMelody(); }));
   body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(); s.selected=Number(button.dataset.melodyNote); s.revealed=false; renderMelody(); }));
+  body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('input', () => {s.names[Number(input.dataset.melodyName)]=input.value.slice(0,24);saveMelody();}));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('change', () => { s.names[Number(input.dataset.melodyName)]=input.value.trim().slice(0,24) || `Игрок ${Number(input.dataset.melodyName)+1}`; renderMelody(); }));
   $('#melodyFile')?.addEventListener('change', e => { const chosen=e.target.files[0]; if (!chosen) return; const key=melodyKey(s); stopMelodyAudio(true); if(s.files[key]) URL.revokeObjectURL(s.files[key].url); s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
   $('#melodyYoutube')?.addEventListener('click', () => {
@@ -582,9 +654,10 @@ function renderMelody() {
   });
   $('#melodyPlay')?.addEventListener('click', () => { if (!file) return; playMelodyAudio(file.url); });
   $('#melodyStop')?.addEventListener('click', () => stopMelodyAudio());
-  body.querySelectorAll('[data-melody-score]').forEach(button => button.addEventListener('click', () => { const player=Number(button.dataset.melodyScore),key=melodyKey(s)+'-'+player; if(selectedUsed||s.judged[key]) return; s.judged[key]=true; s.scores[player] += Number(button.dataset.direction)*melodyValue(s); renderMelody(); }));
+  body.querySelectorAll('[data-melody-score]').forEach(button => button.addEventListener('click', () => { const player=Number(button.dataset.melodyScore),key=melodyKey(s)+'-'+player; if(selectedUsed||s.judged[key]) return; const delta=Number(button.dataset.direction)*melodyValue(s);s.judged[key]=delta;s.scores[player] += delta; renderMelody(); }));
+  body.querySelectorAll('[data-melody-undo]').forEach(button=>button.addEventListener('click',()=>{const player=Number(button.dataset.melodyUndo),key=melodyKey(s)+'-'+player;if(selectedUsed||!s.judged[key])return;s.scores[player]-=s.judged[key];delete s.judged[key];renderMelody();}));
   $('#melodyReveal')?.addEventListener('click', () => { s.revealed=!s.revealed; renderMelody(); });
-  $('#melodyDone')?.addEventListener('click', () => { if(s.selected==null || selectedUsed) return; stopMelodyAudio(); s.used[s.tour-1].push(s.selected); s.selected=null; s.revealed=false; renderMelody(); if(s.used[s.tour-1].length===20) notify(s.tour<3?'Тур завершён! Выберите следующий тур.':'Тур завершён! Переходите к суперигре.'); });
+  $('#melodyDone')?.addEventListener('click', () => { if(s.selected==null || selectedUsed) return; stopMelodyAudio(); s.used[s.tour-1].push(s.selected); s.selected=null; s.revealed=false; renderMelody(); if(s.used[s.tour-1].length===20) notify(s.tour<3?'Тур завершён! Выберите следующий тур.':'Тур завершён! Переходите к торгам.'); });
   publishMelody();
 }
 // Bonus duel: a host-operated adaptation of the show's seven-to-three-note bidding.
@@ -626,11 +699,12 @@ function publishAuction(){
 }
 function renderMelodyAuction(){
   const s=melodyState,a=s.auction,body=$('#gameBody'),song=auctionSong(s,a.track);
+  const saved=saveMelody();
   const setup=a.phase==='setup', bidding=a.phase==='bidding',guessing=a.phase==='guess',finished=a.phase==='finished';
   const url=s.files['auction-'+a.track]?.url||bundledMelodyUrl(song);
   const youtube=song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title];
   const phaseText=setup?'Выберите двух участников с лучшими результатами.':bidding?`Ход: ${escapeHtml(s.names[a.players[a.turn]])}`:guessing?`Отвечает: ${escapeHtml(s.names[a.players[a.bidder]])} · ${a.bid} нот`:finished?`Победитель: ${escapeHtml(s.names[a.players[a.lastWinner]])}`:`Очко получает ${escapeHtml(s.names[a.players[a.lastWinner]])}.`;
-  body.innerHTML=`<div class="melody-show melody-screen-view"><div class="melody-stage"><div class="melody-show-heading"><div><span>БОНУСНЫЙ РАУНД</span><h2>Торги ♫</h2></div><strong>ДО 3 ОЧКОВ</strong></div>
+  body.innerHTML=`<div class="melody-show melody-screen-view"><p class="game-save-status" role="status">${saveStatus(saved)}</p><div class="melody-stage"><div class="melody-show-heading"><div><span>БОНУСНЫЙ РАУНД</span><h2>Торги ♫</h2></div><strong>ДО 3 ОЧКОВ</strong></div>
     <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-auction-tour="${n}">Тур ${n}</button>`).join('')}<button class="active" type="button" aria-current="page">Торги ♫</button><button type="button" data-auction-tour="4">Суперигра ★</button></div>
     <p class="melody-board-hint">${phaseText}</p><div class="auction-score">${a.players.map((p,i)=>`<div><b>${escapeHtml(s.names[p])}</b><strong>${a.points[i]}</strong></div>`).join('')}</div>
     ${setup?'':`<p class="auction-clue">Подсказка: ${escapeHtml(song.clue)}</p><p class="auction-bid">${a.bid===null?'Первая ставка: от 7 до 3 нот':`Текущая ставка: ${a.bid} нот`}</p>`}</div>
@@ -670,8 +744,9 @@ function finishSuper(status) {
   s.super.seconds=superRemaining(s);s.super.status=status;stopSuperTimer();stopMelodyAudio(true);renderMelodySuper();
 }
 function checkSuperTime(s) {
-  if(s.super.status!=='running') return false;
-  s.super.seconds=superRemaining(s);
+  if(melodyState!==s || s.super.status!=='running') return false;
+  const previous=s.super.seconds;s.super.seconds=superRemaining(s);
+  if(s.super.seconds!==previous)saveMelody();
   if(s.super.seconds<=0) {finishSuper('lost');return false;}
   const clock=document.querySelector('#superSeconds');if(clock)clock.textContent=s.super.seconds;
   publishMelody();return true;
@@ -690,19 +765,20 @@ function playSuperTrack() {
 }
 function renderMelodySuper() {
   const s=melodyState, body=$('#gameBody'), supergame=s.super;
+  const saved=saveMelody();
   const index=supergame.queue[0], song=index===undefined?null:melodySong(s,index,true), running=supergame.status==='running';
   const youtube=song && (song.language==='russian'?song.source?.youtube:window.MELODY_YOUTUBE?.[song.title]);
   const url=song && (s.files['super-'+index]?.url || bundledMelodyUrl(song));
-  const message=supergame.status==='won'?'Победа! Все семь мелодий угаданы.':supergame.status==='lost'?'Суперигра окончена: ошибка или время истекло.':'Угадайте семь мелодий за 30 секунд. Можно пропустить мелодию и вернуться к ней. Ошибка завершает игру.';
-  body.innerHTML=`<div class="melody-show melody-screen-view"><div class="melody-stage"><div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Суперигра ★</h2></div><strong id="superSeconds">${supergame.seconds}</strong></div>
+  const message=supergame.status==='paused'?'Суперигра приостановлена. Нажмите «Продолжить», когда будете готовы.':supergame.status==='won'?'Победа! Все семь мелодий угаданы.':supergame.status==='lost'?'Суперигра окончена: ошибка или время истекло.':'Угадайте семь мелодий за 30 секунд. Можно пропустить мелодию и вернуться к ней. Ошибка завершает игру.';
+  body.innerHTML=`<div class="melody-show melody-screen-view"><p class="game-save-status" role="status">${saveStatus(saved)}</p><div class="melody-stage"><div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Суперигра ★</h2></div><strong id="superSeconds">${supergame.seconds}</strong></div>
     <div class="melody-rounds">${[1,2,3].map(n=>`<button type="button" data-super-tour="${n}" ${running?'disabled':''}>Тур ${n}</button>`).join('')}<button type="button" data-super-tour="5" ${running?'disabled':''}>Торги ♫</button><button class="active" type="button" aria-current="page">Суперигра ★</button></div>
     <p class="melody-board-hint">${message}</p><div class="melody-super-status"><b>${7-supergame.queue.length} / 7 угадано</b><label>Финалист <select id="superPlayer" ${running?'disabled':''}>${s.names.map((name,i)=>`<option value="${i}" ${i===supergame.player?'selected':''}>${escapeHtml(name)}</option>`).join('')}</select></label></div></div>
     <section class="melody-host-panel"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${running?`Мелодия ${7-supergame.queue.length+1} из 7`:'Готовы к финалу?'}</h3></div></div>
-    ${song && running?`<details class="melody-answer"><summary>Название для ведущего</summary><p>${escapeHtml(song.title)}</p></details><div class="melody-audio-controls"><button type="button" id="superPlay" ${(url||youtube)?'':'disabled'}>▶ Повторить мелодию</button><button type="button" id="superStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="superFile" accept="audio/*"></label><span>${url?'Встроенный фрагмент':youtube?'Запись YouTube':'Нет встроенной записи'}</span></div><div class="melody-actions"><button type="button" id="superCorrect">✓ Угадано</button><button type="button" id="superSkip">↻ Пропустить</button><button type="button" id="superWrong">✕ Ошибка</button></div>`:`<button type="button" id="superStart">▶ ${supergame.status==='ready'?'Начать суперигру':'Сыграть ещё раз'}</button>`}
+    ${song && running?`<details class="melody-answer"><summary>Название для ведущего</summary><p>${escapeHtml(song.title)}</p></details><div class="melody-audio-controls"><button type="button" id="superPlay" ${(url||youtube)?'':'disabled'}>▶ Повторить мелодию</button><button type="button" id="superStop">■ Остановить</button><label class="melody-file">Заменить файл<input type="file" id="superFile" accept="audio/*"></label><span>${url?'Встроенный фрагмент':youtube?'Запись YouTube':'Нет встроенной записи'}</span></div><div class="melody-actions"><button type="button" id="superCorrect">✓ Угадано</button><button type="button" id="superSkip">↻ Пропустить</button><button type="button" id="superWrong">✕ Ошибка</button></div>`:`<button type="button" id="superStart">▶ ${supergame.status==='paused'?'Продолжить суперигру':supergame.status==='ready'?'Начать суперигру':'Сыграть ещё раз'}</button>`}
     <p class="melody-help">Ведущий управляет звучанием и результатами. При переходе между мелодиями запись запускается автоматически. Онлайн-плеер может показывать название; для него нужен интернет. Суперигра — адаптация правил передачи для ведущего.</p></section>${melodySongList(s)}</div>`;
-  $('#superPlayer').addEventListener('change',e=>{supergame.player=Number(e.target.value);publishMelody();});
+  $('#superPlayer').addEventListener('change',e=>{supergame.player=Number(e.target.value);saveMelody();publishMelody();});
   body.querySelectorAll('[data-super-tour]').forEach(button=>button.addEventListener('click',()=>{stopSuperTimer();stopMelodyAudio(true);s.tour=Number(button.dataset.superTour);if(s.tour===5 && s.auction.phase==='setup')resetAuction(s);s.selected=null;s.revealed=false;renderMelody();}));
-  $('#superStart')?.addEventListener('click',()=>{stopSuperTimer();supergame.queue=[0,1,2,3,4,5,6];supergame.seconds=30;supergame.deadline=Date.now()+30000;supergame.status='running';renderMelodySuper();playSuperTrack();melodySuperTimer=setInterval(()=>checkSuperTime(s),250);});
+  $('#superStart')?.addEventListener('click',()=>{stopSuperTimer();if(supergame.status!=='paused'){supergame.queue=[0,1,2,3,4,5,6];supergame.seconds=30;}supergame.deadline=Date.now()+supergame.seconds*1000;supergame.status='running';renderMelodySuper();playSuperTrack();melodySuperTimer=setInterval(()=>checkSuperTime(s),250);});
   $('#superPlay')?.addEventListener('click',playSuperTrack);
   $('#superStop')?.addEventListener('click',()=>stopMelodyAudio(true));
   $('#superFile')?.addEventListener('change',e=>{const chosen=e.target.files[0];if(!chosen || !checkSuperTime(s))return;const key='super-'+index;if(s.files[key])URL.revokeObjectURL(s.files[key].url);s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name};renderMelodySuper();playSuperTrack();});
@@ -782,14 +858,16 @@ function newMelodyState(version = 'russian') { return {version, tour:1, names:['
   }
 
   function openGame(kind) {
+    saveOpenGames();
+    if(melodyState){disposeMelodyFiles();melodyState=null;}
     if(fieldSuperTimer){clearInterval(fieldSuperTimer);fieldSuperTimer=null;}
     fieldState=null;
     if (memoryState?.timer) clearInterval(memoryState.timer);
     if (crocState?.timer) clearInterval(crocState.timer);
     if(kind==='music'){openMusicLibrary();return;}
     if (kind==='drive') { openHolidayInstructions(); return; }
-    if (kind==='field') { commonFrame('Поле чудес: Новый год','КРУТИТЕ БАРАБАН','Игра с экрана или с телефонами: три тройки и финал.','field-screen'); fieldState=newFieldState(); renderField(); }
-    if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, три тура и суперигра.','melody-screen'); content.insertAdjacentHTML('beforeend', '<div id="melodyExternalPlayer" class="melody-external-player" hidden></div>'); melodyState=newMelodyState(kind==='melody-intl'?'international':'russian'); renderMelody(); }
+    if (kind==='field') { commonFrame('Поле чудес: Новый год','КРУТИТЕ БАРАБАН','Игра с экрана или с телефонами: три тройки и финал.','field-screen'); chooseSavedGame('field',saved=>{fieldState=saved||newFieldState();if(saved){fieldState.setupIds=fieldState.setupIds.map(id=>connectedPlayers.some(p=>p.id===id)?id:'');fieldState.players.forEach(p=>{if(!connectedPlayers.some(q=>q.id===p.id))p.id='';});if(fieldState.phase==='superSolve'){if(fieldState.seconds<=0){fieldState.phase='over';fieldState.message='Время вышло. Суперигра проиграна. Ответ: '+fieldState.question.answer+'.';}else{fieldState.deadline=Date.now()+fieldState.seconds*1000;fieldSuperTimer=setInterval(fieldSuperTick,250);}}}renderField();}); }
+    if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, три тура и суперигра.','melody-screen'); content.insertAdjacentHTML('beforeend', '<div id="melodyExternalPlayer" class="melody-external-player" hidden></div>'); chooseSavedGame('melody',saved=>{melodyState=saved?{...saved,files:{},cues:{}}:newMelodyState(kind==='melody-intl'?'international':'russian');renderMelody();}); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],circleHistory:[],activePlayerId:0,round:1}; renderGuess(); }
     if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,cardFaceUp:false,cardFlipAnimating:false,taskSelected:false,deckMode:'simple',finished:false}; renderCroc(); }
