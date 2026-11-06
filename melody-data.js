@@ -54,7 +54,8 @@ window.MELODY_SONGS = {
     "Невозможное возможно",
     "Матушка",
     "Моё сердце",
-    "Сансара"
+    "Сансара",
+    "Это Новый год"
 ],
   "international": [
     "All I Want for Christmas Is You",
@@ -95,7 +96,16 @@ window.MELODY_SONGS = {
     "Ding Dong Merrily on High",
     "Happy New Year",
     "Jingle Bell Rock",
-    "Santa Claus Is Coming to Town"
+    "Santa Claus Is Coming to Town",
+    "Santa Baby",
+    "Sleigh Ride",
+    "Shake Up Christmas",
+    "The Little Drummer Boy",
+    "The First Noel",
+    "Merry Christmas Everybody",
+    "Auld Lang Syne",
+    "Here Comes Santa Claus",
+    "I Saw Mommy Kissing Santa Claus"
   ]
 };
 
@@ -113,11 +123,22 @@ window.MELODY_INTERNATIONAL_ARTISTS = [
   'Gene Autry', 'Gene Autry', 'Традиционная рождественская песня',
   'Традиционная рождественская песня', 'Frank Sinatra', 'Традиционная рождественская песня',
   'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня',
-  'ABBA', 'Bobby Helms', 'Jackson 5'
+  'ABBA', 'Bobby Helms', 'Jackson 5',
+  'Eartha Kitt', 'Ella Fitzgerald', 'Train', 'The Harry Simeone Chorale',
+  'Johnny Mathis', 'Slade', 'Guy Lombardo', 'Elvis Presley', 'Jackson 5'
 ];
 
 // Local audio: short recordings and instrumental previews (see ATTRIBUTION.md).
 window.MELODY_AUDIO = {
+  'Santa Baby':'assets/melody/audio/santa-baby.mp3',
+  'Sleigh Ride':'assets/melody/audio/sleigh-ride.mp3',
+  'Shake Up Christmas':'assets/melody/audio/shake-up-christmas.mp3',
+  'The Little Drummer Boy':'assets/melody/audio/little-drummer-boy.mp3',
+  'The First Noel':'assets/melody/audio/first-noel.mp3',
+  'Merry Christmas Everybody':'assets/melody/audio/merry-christmas-everybody.mp3',
+  'Auld Lang Syne':'assets/melody/audio/auld-lang-syne.mp3',
+  'Here Comes Santa Claus':'assets/melody/audio/here-comes-santa-claus.mp3',
+  'I Saw Mommy Kissing Santa Claus':'assets/melody/audio/i-saw-mommy-kissing-santa.mp3',
   'Happy New Year':'assets/melody/audio/happy-new-year-abba.mp3',
   'Jingle Bell Rock':'assets/melody/audio/jingle-bell-rock.mp3',
   'Santa Claus Is Coming to Town':'assets/melody/audio/santa-claus-is-coming-to-town.mp3',
@@ -227,7 +248,8 @@ window.MELODY_RUSSIAN_SOURCES = [
   {"artist": "Дима Билан", "source": null, "youtube": null},
   {"artist": "Татьяна Куртукова", "source": null, "youtube": null},
   {"artist": "Сплин", "source": null, "youtube": null},
-  {"artist": "Баста", "source": null, "youtube": null}
+  {"artist": "Баста", "source": null, "youtube": null},
+  {"artist": "Волшебники двора", "source": null, "youtube": null}
 ];
 
 // Three boards, each with four themed rows and five fixed positions.
@@ -253,34 +275,46 @@ window.MELODY_LAYOUT = [
   ]
 ];
 // Holiday-only selection. Indices explicitly name the language of each song.
-// All entries have local audio; titles recur between rounds but not within a round.
+// All entries have local audio and are unique across rounds, auction and supergame.
 {
   const ru = index => ({language:'russian',index});
   const en = index => ({language:'international',index});
   window.MELODY_NEW_YEAR_LAYOUT = [
     [
-      {name:'Новогодние хиты и кино', songs:[ru(0),ru(4),ru(5),ru(6),ru(39)]},
-      {name:'У праздничной ёлки', songs:[ru(22),ru(32),ru(33),en(4),en(26)]},
-      {name:'Праздничные хиты', songs:[en(36),en(1),en(0),en(3),en(37)]},
-      {name:'Рождественская классика', songs:[en(6),en(14),en(17),en(8),en(38)]}
+      {name:'Новогодние хиты', songs:[ru(0),ru(4),ru(5),ru(6),en(36)]},
+      {name:'Ёлка и зима', songs:[ru(1),ru(3),ru(22),ru(32),ru(33)]},
+      {name:'Праздничная классика', songs:[ru(39),ru(14),ru(38),en(1),en(0)]},
+      {name:'Рождественские хиты', songs:[en(3),en(37),en(4),en(26),en(6)]}
     ],
     [
-      {name:'Ёлка и Новый год', songs:[ru(22),ru(32),ru(33),ru(0),ru(4)]},
-      {name:'Зимние сказки', songs:[ru(39),ru(5),ru(6),en(4),en(26)]},
-      {name:'Известные припевы', songs:[en(36),en(1),en(0),en(3),en(37)]},
-      {name:'Рождественские мелодии', songs:[en(7),en(12),en(28),en(11),en(5)]}
+      {name:'Любимые песни из кино', songs:[ru(7),ru(8),ru(2),ru(17),ru(16)]},
+      {name:'Снег и мороз', songs:[ru(10),ru(9),en(14),en(17),en(8)]},
+      {name:'Поём вместе', songs:[ru(12),ru(19),ru(23),ru(21),ru(18)]},
+      {name:'Рождественское настроение', songs:[en(38),en(7),en(12),en(28),en(11)]}
     ],
     [
-      {name:'Любимое новогоднее кино', songs:[ru(39),ru(5),ru(6),ru(0),ru(4)]},
-      {name:'Песни у ёлки', songs:[ru(22),ru(32),ru(33),en(4),en(26)]},
-      {name:'Хиты праздника', songs:[en(36),en(1),en(0),en(7),en(12)]},
-      {name:'Рождественское настроение', songs:[en(38),en(37),en(11),en(28),en(5)]}
+      {name:'Праздничное караоке', songs:[ru(20),ru(24),ru(26),ru(29),ru(41)]},
+      {name:'Танцуем вместе', songs:[ru(47),ru(48),ru(49),ru(50),ru(51)]},
+      {name:'Знакомые припевы', songs:[ru(52),ru(53),en(5),en(10),en(15)]},
+      {name:'Зарубежные хиты', songs:[en(20),en(22),en(39),en(40),en(41)]}
     ]
   ];
-  window.MELODY_NEW_YEAR_SUPER_TRACKS = [ru(0),ru(4),ru(22),ru(33),en(36),en(1),en(0)];
+  window.MELODY_NEW_YEAR_AUCTION_TRACKS = [
+    {...ru(54),clue:'Детская песня о том, что наступил Новый год.'},
+    {...ru(43),clue:'Песня о вагоне, который бежит и качается.'},
+    {...ru(44),clue:'Медвежонок советует ходить в гости по утрам.'},
+    {...en(45),clue:'Традиционная песня, которую в англоязычных странах поют на Новый год.'},
+    {...en(44),clue:'Британская группа поздравляет всех с Рождеством.'}
+  ];
+  window.MELODY_NEW_YEAR_SUPER_TRACKS = [ru(13),ru(36),en(42),en(43),en(46),en(47),en(32)];
 }
 // Separate local versions for the holiday selection; other modes keep their existing sources.
 window.MELODY_NEW_YEAR_AUDIO = {
+  'Driving Home for Christmas':'assets/melody/audio/driving-home.mp3',
+  'A Holly Jolly Christmas':'assets/melody/audio/holly-jolly.mp3',
+  'Christmas Lights':'assets/melody/audio/christmas-lights.mp3',
+  'Mistletoe':'assets/melody/audio/mistletoe.mp3',
+  'Have Yourself a Merry Little Christmas':'assets/melody/audio/have-yourself.mp3',
   'All I Want for Christmas Is You':'assets/melody/audio/all-i-want-for-christmas.mp3',
   "Rockin' Around the Christmas Tree":'assets/melody/audio/rockin-around-christmas-tree.mp3',
   'White Christmas':'assets/melody/audio/white-christmas-bing.mp3',
@@ -318,6 +352,7 @@ window.MELODY_SUPER_TRACKS = {
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  "Это Новый год":"assets/melody/audio/eto-novy-god.mp3",
   "Крошка моя":"assets/melody/audio/kroshka-moya.mp3",
   "Батарейка":"assets/melody/audio/batareyka.mp3",
   "Нас не догонят":"assets/melody/audio/nas-ne-dogonyat.mp3",

@@ -62,7 +62,7 @@ test('the host screen keeps setup collapsed and the board and host console in th
 test('holiday hit starts locally and reveals title and artist after the clip ends',()=>{
  const a=setup();try{
   a.click('[data-open="melody"]');const version=a.d.querySelector('#melodyVersion');version.value='newyear';version.dispatchEvent(new a.w.Event('change',{bubbles:true}));
-  a.click('[data-melody-note="10"]');const audio=a.audios.at(-1);
+  a.click('[data-melody-note="4"]');const audio=a.audios.at(-1);
   assert.match(audio.url,/happy-new-year-abba\.mp3$/);assert.equal(audio.plays,1);assert.equal(a.state().answer,'');
   audio.onended();assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/Happy New Year/);assert.match(a.d.querySelector('.melody-answer').textContent,/ABBA/);assert.equal(a.state().answer,'');
   a.click('[data-melody-answerer="0"]');a.click('#melodyCorrect');assert.equal(a.state().answer,'Happy New Year');assert.equal(a.state().answerArtist,'ABBA');assert.deepEqual(a.errors,[]);

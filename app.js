@@ -428,10 +428,45 @@
     [1,9,10,14,38, 6,7,8,16,39, 24,25,27,28,29, 0,40,33,34,13]
   ];
   const melodyCatalogRevision=2;
+  const holidayCatalogRevision=2;
+  // Previous holiday boards; each saved note key is a position, so remap by song identity.
+  const legacyHolidayBoards = [
+    ['r0','r4','r5','r6','r39','r22','r32','r33','e4','e26','e36','e1','e0','e3','e37','e6','e14','e17','e8','e38'],
+    ['r22','r32','r33','r0','r4','r39','r5','r6','e4','e26','e36','e1','e0','e3','e37','e7','e12','e28','e11','e5'],
+    ['r39','r5','r6','r0','r4','r22','r32','r33','e4','e26','e36','e1','e0','e7','e12','e38','e37','e11','e28','e5']
+  ];
+  function needsHolidayMigration(s){return s.version==='newyear' && s.holidayCatalogRevision!==holidayCatalogRevision;}
+  function migrateHolidaySave(s){
+    const boards=window.MELODY_NEW_YEAR_LAYOUT.map(round=>round.flatMap(row=>row.songs.map(song=>(song.language==='russian'?'r':'e')+song.index)));
+    const destination=(tour,note)=>{
+      if(!Number.isInteger(note)||note<0||note>=20||tour<1||tour>3)return null;
+      const target=boards[tour-1].indexOf(legacyHolidayBoards[tour-1][note]);
+      return target<0?null:target;
+    };
+    const used=s.used.map((notes,i)=>[...new Set(notes.map(n=>destination(i+1,n)).filter(n=>n!==null))]);
+    const remap=(source)=>{
+      const result={};
+      for(const [key,value] of Object.entries(source||{})){
+        const match=key.match(/^newyear-(\d+)-(\d+)(-\d+)?$/);
+        if(!match){result[key]=value;continue;}
+        const note=destination(Number(match[1]),Number(match[2]));
+        if(note!==null)result[`newyear-${match[1]}-${note}${match[3]||''}`]=value;
+      }
+      return result;
+    };
+    const selected=s.selected!==null && s.tour<=3?destination(s.tour,s.selected):s.selected;
+    // Bonus songs were replaced as well. Do not attribute an old result to a different song.
+    const auction={...s.auction,phase:'setup',points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null};
+    const supergame={...s.super,status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],deadline:0};
+    return {...s,holidayCatalogRevision,catalogRevision:melodyCatalogRevision,used,selected,
+      revealed:selected===null?false:s.revealed,attempts:remap(s.attempts),judged:remap(s.judged),auction,super:supergame};
+  }
+
   function needsMelodyMigration(s) {
     return s.catalogRevision!==melodyCatalogRevision && (s.version==='russian'||s.version==='mixed');
   }
   function migrateMelodySave(s) {
+    if(needsHolidayMigration(s))return migrateHolidaySave(s);
     if(!needsMelodyMigration(s)) return {...s,catalogRevision:melodyCatalogRevision};
     const newBoards=window.MELODY_LAYOUT.map(round=>round.flatMap(row=>row.ru));
     const destination=(tour,note)=>{
@@ -467,7 +502,7 @@
   }
   function saveMelody() {
     if(!melodyState)return false;
-    const s={...melodyState,catalogRevision:melodyCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
+    const s={...melodyState,catalogRevision:melodyCatalogRevision,holidayCatalogRevision,files:{},cues:{},super:{...melodyState.super}};
     if(s.super.status==='running') {s.super.seconds=superRemaining(melodyState);s.super.status=s.super.seconds?'paused':'lost';s.super.deadline=0;}
     return writeGameSave('melody',s);
   }
@@ -479,7 +514,7 @@
     if(!saved){start(null);return;}
     const body=$('#gameBody'),reset=$('#resetCurrentGame');if(reset)reset.hidden=true;
     const begin=s=>{if(reset)reset.hidden=false;start(game==='melody' && s ? migrateMelodySave(s) : s);};
-    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && needsMelodyMigration(saved)?'<p>Подборка обновилась: имена и очки сохранятся, сыгранные ноты и незавершённые ответы перенесутся по песням, оставшимся в том же туре. Удалённые песни и их отметки исчезнут; новые ноты будут доступны. Суперигра тоже обновлена, её время и прогресс сохранятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
+    body.innerHTML=`<section class="game-resume"><span>✦ ИГРА СОХРАНЕНА</span><h2>Продолжить игру?</h2><p>На этом устройстве найдена сохранённая игра. Продолжите с прежнего места или начните заново.</p>${game==='field'?'<p>После обновления страницы телефоны и дополнительный экран участников нужно подключить заново, телефоны — также назначить игрокам. Если барабан вращался, его нужно крутить ещё раз.</p>':'<p>Свои загруженные аудиофайлы нужно выбрать заново. Встроенные мелодии останутся доступны.</p>'}${game==='melody' && needsMelodyMigration(saved)?'<p>Подборка обновилась: имена и очки сохранятся, сыгранные ноты и незавершённые ответы перенесутся по песням, оставшимся в том же туре. Удалённые песни и их отметки исчезнут; новые ноты будут доступны. Суперигра тоже обновлена, её время и прогресс сохранятся.</p>':''}${game==='melody' && needsHolidayMigration(saved)?'<p>Праздничная подборка обновилась: имена и общие очки сохранятся. Отметки и ответы перенесутся по песням в том же туре; убранные из тура песни и их отметки исчезнут. Торги и суперигра с новыми песнями начнутся заново: их очки и прогресс сбросятся.</p>':''}<div><button id="resumeGame" type="button">▶ Продолжить игру</button><button id="newSavedGame" type="button">Начать заново</button></div></section>`;
     $('#resumeGame').addEventListener('click',()=>begin(saved));
     $('#newSavedGame').addEventListener('click',()=>{if(confirm('Начать заново и удалить сохранённый прогресс этой игры?'))begin(null);});
     publish({game:'idle',revealed:false,instruction:'Ведущий выбирает сохранённую игру.'});
@@ -817,9 +852,9 @@ function renderMelody() {
   body.innerHTML = `<div class="melody-show melody-screen-view melody-main">
     <details class="melody-config"><summary>⚙ Настройки, телефоны и список песен</summary><details class="melody-intro-image"><summary>Заставка «Угадай мелодию»</summary><img src="assets/melody/show-splash.png" alt="Заставка телепередачи Угадай мелодию"></details>
     <p class="game-save-status" role="status">${saveStatus(saved)} · выход из игры сохраняет прогресс</p><div class="melody-setup">
-      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option><option value="newyear" ${s.version==='newyear'?'selected':''}>Только новогодние и рождественские</option></select></label>
+      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option><option value="children" ${s.version==='children'?'selected':''}>Для детей и семьи</option><option value="newyear" ${s.version==='newyear'?'selected':''}>Новогодние и праздничные хиты</option></select></label>
       <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button>
-    </div>${s.version==='newyear'?'<p>Русские новогодние и зарубежные рождественские песни. Все записи встроены; между турами есть повторы.</p>':''}
+    </div>${s.version==='newyear'?'<p>Новогодние, зимние и праздничные песни. Все записи встроены; повторы между турами, торгами и суперигрой исключены.</p>':''}
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
     <details class="melody-invite"><summary>📱 Подключить телефоны · <span id="melodyMemberCount">${connectedPlayers.length} игроков · ${connectedViewers.length} зрителей</span></summary><p>Необязательно: без телефонов ведущий выбирает отвечающего сам. Игроки сканируют QR, выбирают роль «Игрок», а ведущий назначает телефоны на места.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код для игроков" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><div class="connected-members" data-connected-members>${connectedMembersMarkup()}</div><div class="melody-seat-list">${s.names.map((name,i)=>`<label>${escapeHtml(name)}<select data-melody-seat="${i}"><option value="">Без телефона</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.phoneIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>`).join('')}</div><small>После обновления страницы телефоны нужно подключить и назначить заново.</small></details>
     ${melodySongList(s)}<button type="button" class="soft-button" id="melodyCloseSettings">Готово · вернуться к игре</button></details>
@@ -878,13 +913,7 @@ function renderMelody() {
 }
 // Bonus duel: a host-operated adaptation of the show's seven-to-three-note bidding.
 const auctionTracks={
-  newyear:[
-    {language:'russian',index:0,clue:'Танцевальный хит о приближении Нового года.'},
-    {language:'russian',index:4,clue:'Песня о последних минутах перед Новым годом.'},
-    {language:'russian',index:22,clue:'Это деревце родилось в лесу.'},
-    {language:'international',index:36,clue:'Шведская группа поздравляет с Новым годом.'},
-    {language:'international',index:1,clue:'История прошлогоднего Рождества.'}
-  ],
+  newyear:window.MELODY_NEW_YEAR_AUCTION_TRACKS,
   children:[
     {index:3,clue:'Песня о том, что было бы, если бы не было зимы.'},
     {index:22,clue:'Это деревце родилось в лесу.'},
@@ -1012,7 +1041,7 @@ function renderMelodySuper() {
   publishMelody();
 }
 
-function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
+function newMelodyState(version = 'russian') { return {version, catalogRevision:melodyCatalogRevision, holidayCatalogRevision, tour:1, phoneIds:['','',''],attempts:{}, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[]], selected:null, revealed:false, files:{}, cues:{}, judged:{}, auction:{phase:'setup',players:[0,1],points:[0,0],track:0,turn:0,bid:null,bidder:null,lastWinner:null}, super:{status:'ready',seconds:30,queue:[0,1,2,3,4,5,6],player:0,deadline:0}}; }
 
   // A separate, self-contained adaptation; the original PowerPoint is not converted.
   const holidayQuiz = [

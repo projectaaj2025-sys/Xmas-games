@@ -288,7 +288,7 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
-    assert.equal(w.MELODY_SONGS.russian.length,54); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,54);
+    assert.equal(w.MELODY_SONGS.russian.length,55); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,55);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.doesNotMatch(doc.querySelector('.melody-song-list').textContent,/Стекловата|Новогодняя песня — The Limba/);
@@ -436,7 +436,7 @@ test('Russian recordings are playable and updated notes have matching audio', ()
       if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
     assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,43);
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,54);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,55);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'В лесу родилась ёлочка');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/v-lesu-rodilas-elochka\.mp3$/);
@@ -538,11 +538,14 @@ test('holiday-only mode has distinct seasonal songs and local playback in every 
     for(const file of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(file));
     const d=w.document,click=sel=>{const e=d.querySelector(sel);assert.ok(e,sel);assert.equal(e.disabled,false,sel);e.click()};
     click('[data-open="melody"]');let select=d.querySelector('#melodyVersion');
-    assert.match(select.querySelector('[value="newyear"]').textContent,/новогодние/);
+    assert.match(select.querySelector('[value="newyear"]').textContent,/новогодние/i);
     select.value='newyear';select.dispatchEvent(new w.Event('change',{bubbles:true}));
-    assert.match(d.querySelector('.melody-config').textContent,/между турами есть повторы/);
+    assert.match(d.querySelector('.melody-config').textContent,/повторы между турами, торгами и суперигрой исключены/);
     const list=d.querySelector('.melody-song-list').textContent;
-    assert.doesNotMatch(list,/Стекловата|Крошка моя|Батарейка|Нас не догонят|Матушка|Сансара/);
+    assert.doesNotMatch(list,/Стекловата|Федерико Феллини|Новогодняя песня — The Limba/);
+    const entries=[...d.querySelectorAll('.melody-song-list li')].map(li=>li.textContent.split(' — ')[0]);
+    assert.equal(entries.length,72);assert.equal(new Set(entries).size,72,'no repeated songs across rounds, auction and supergame');
+    assert.doesNotMatch(list,/повтор названия/);
     assert.match(list,/Happy New Year — ABBA/);assert.match(list,/Новогодняя — Дискотека Авария/);
     for(let tour=1;tour<=3;tour++){
       click(`[data-melody-tour="${tour}"]`);

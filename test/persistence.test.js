@@ -156,13 +156,38 @@ test('holiday selection saves and resumes its own score and selected note',()=>{
   const a=setup();let saved;try{
     a.click('[data-open="melody"]');const select=a.d.querySelector('#melodyVersion');
     select.value='newyear';select.dispatchEvent(new a.w.Event('change',{bubbles:true}));
-    a.click('[data-melody-note="10"]');a.click('[data-melody-score="0"][data-direction="1"]');a.click('#backHome');saved=a.snapshot();
+    a.click('[data-melody-note="4"]');a.click('[data-melody-score="0"][data-direction="1"]');a.click('#backHome');saved=a.snapshot();
     assert.equal(JSON.parse(saved['snowy-host-melody-v1']).state.version,'newyear');
   }finally{a.w.close()}
   const b=setup(saved);try{
     b.click('[data-open="melody"]');b.click('#resumeGame');
-    assert.equal(b.d.querySelector('#melodyVersion').value,'newyear');assert.equal(b.state().scores[0].score,80);
-    assert.equal(b.state().rows[2][0].selected,true);assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
+    assert.equal(b.d.querySelector('#melodyVersion').value,'newyear');assert.equal(b.state().scores[0].score,70);
+    assert.equal(b.state().rows[0][4].selected,true);assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
     assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
+  }finally{b.w.close()}
+});
+
+test('legacy holiday progress follows matching songs and warns before bonus reset',()=>{
+  const a=setup();let saved;try{
+    a.click('[data-open="melody"]');const select=a.d.querySelector('#melodyVersion');select.value='newyear';select.dispatchEvent(new a.w.Event('change',{bubbles:true}));
+    a.click('#backHome');saved=a.snapshot();const data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
+    delete s.holidayCatalogRevision;s.names=['Аня','Борис','Света'];s.scores=[80,40,-20];
+    s.used=[[0,4,11],[],[0]];s.selected=10;s.revealed=true;
+    s.judged={'newyear-1-10-0':80,'newyear-1-4-1':40,'newyear-3-0-2':-20};
+    s.attempts={'newyear-1-10':{active:null,passed:[0],open:false,finished:false,token:''},'newyear-3-0':{active:null,passed:[2],open:false,finished:false,token:''}};
+    s.auction.phase='result';s.auction.lastWinner=0;s.auction.points=[1,0];
+    s.super.status='paused';s.super.seconds=17;s.super.queue=[2,3,4,5,6];
+    saved['snowy-host-melody-v1']=JSON.stringify(data);
+  }finally{a.w.close()}
+  const b=setup(saved);try{
+    b.click('[data-open="melody"]');assert.match(b.d.querySelector('.game-resume').textContent,/Торги и суперигра.*начнутся заново/);
+    b.click('#resumeGame');const s=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
+    assert.deepEqual(s.names,['Аня','Борис','Света']);assert.deepEqual(s.scores,[80,40,-20]);
+    assert.deepEqual(s.used[0],[0,10,13]);assert.deepEqual(s.used[2],[]);
+    assert.equal(s.selected,4);assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
+    assert.equal(s.judged['newyear-1-4-0'],80);assert.equal(s.judged['newyear-1-10-1'],40);assert.equal(s.judged['newyear-3-0-2'],undefined);
+    assert.ok(s.attempts['newyear-1-4']);assert.equal(s.attempts['newyear-3-0'],undefined);
+    assert.equal(s.auction.phase,'setup');assert.deepEqual(s.auction.points,[0,0]);assert.equal(s.super.status,'ready');assert.equal(s.super.seconds,30);
+    assert.equal(s.holidayCatalogRevision,2);assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
   }finally{b.w.close()}
 });
