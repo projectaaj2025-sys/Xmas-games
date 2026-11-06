@@ -88,7 +88,7 @@ test('melody board keeps three fields, a supergame, three scores and language se
     assert.equal(doc.querySelectorAll('[data-melody-tour]').length, 5);
     assert.equal(doc.querySelectorAll('[data-melody-note]').length, 20);
     assert.equal(doc.querySelectorAll('[data-melody-name]').length, 3);
-    assert.equal(doc.querySelectorAll('#melodyVersion option').length, 4);
+    assert.equal(doc.querySelectorAll('#melodyVersion option').length, 5);
     click('[data-melody-note="0"]');
     assert.equal(payload().answer, '');
     assert.ok(!JSON.stringify(payload()).includes(window.MELODY_SONGS.russian[0]), 'answer must not leak to display');
@@ -525,5 +525,43 @@ test('all Russian board slots and catalog recordings are local, with no repeats 
       }
     }
     assert.match(d.querySelector('.melody-song-list').textContent,/повтор названия/);
+  } finally {w.close()}
+});
+
+test('holiday-only mode has distinct seasonal songs and local playback in every stage', () => {
+  const errors=[], vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e));
+  const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only',virtualConsole:vc});
+  const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  const played=[];w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
+  try {
+    for(const file of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(file));
+    const d=w.document,click=sel=>{const e=d.querySelector(sel);assert.ok(e,sel);assert.equal(e.disabled,false,sel);e.click()};
+    click('[data-open="melody"]');let select=d.querySelector('#melodyVersion');
+    assert.match(select.querySelector('[value="newyear"]').textContent,/новогодние/);
+    select.value='newyear';select.dispatchEvent(new w.Event('change',{bubbles:true}));
+    assert.match(d.querySelector('.melody-config').textContent,/между турами есть повторы/);
+    const list=d.querySelector('.melody-song-list').textContent;
+    assert.doesNotMatch(list,/Стекловата|Крошка моя|Батарейка|Нас не догонят|Матушка|Сансара/);
+    assert.match(list,/Happy New Year — ABBA/);assert.match(list,/Новогодняя — Дискотека Авария/);
+    for(let tour=1;tour<=3;tour++){
+      click(`[data-melody-tour="${tour}"]`);
+      const tracks=w.MELODY_NEW_YEAR_LAYOUT[tour-1].flatMap(row=>row.songs);
+      assert.equal(tracks.length,20);assert.equal(new Set(tracks.map(t=>`${t.language}:${t.index}`)).size,20);
+      for(let note=0;note<20;note++){
+        const t=tracks[note],title=w.MELODY_SONGS[t.language][t.index];
+        const before=played.length;click(`[data-melody-note="${note}"]`);
+        assert.equal(played.length,before+1,`note must autoplay ${tour}:${note}`);
+        assert.equal(d.querySelector('.melody-answer p').textContent,title);assert.ok(fs.existsSync(played.at(-1)),title);
+      }
+    }
+    click('[data-melody-tour="5"]');click('#auctionStart');
+    for(let i=0;i<5;i++){
+      click('[data-auction-bid="3"]');click('#auctionPlay');assert.ok(fs.existsSync(played.at(-1)));
+      if(i<4){click(i===0?'#auctionCorrect':'#auctionWrong');click('#auctionNext');}
+    }
+    click('#auctionWrong');click('#auctionNext');click('#superStart');
+    for(let i=0;i<7;i++){assert.ok(fs.existsSync(played.at(-1)));click('#superCorrect');}
+    assert.match(d.querySelector('.melody-stage').textContent,/Победа/);assert.deepEqual(errors,[]);
   } finally {w.close()}
 });

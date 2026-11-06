@@ -151,3 +151,18 @@ test('legacy mixed saves preserve unchanged English attempts; family and English
     }finally{b.w.close()}
   }
 });
+
+test('holiday selection saves and resumes its own score and selected note',()=>{
+  const a=setup();let saved;try{
+    a.click('[data-open="melody"]');const select=a.d.querySelector('#melodyVersion');
+    select.value='newyear';select.dispatchEvent(new a.w.Event('change',{bubbles:true}));
+    a.click('[data-melody-note="10"]');a.click('[data-melody-score="0"][data-direction="1"]');a.click('#backHome');saved=a.snapshot();
+    assert.equal(JSON.parse(saved['snowy-host-melody-v1']).state.version,'newyear');
+  }finally{a.w.close()}
+  const b=setup(saved);try{
+    b.click('[data-open="melody"]');b.click('#resumeGame');
+    assert.equal(b.d.querySelector('#melodyVersion').value,'newyear');assert.equal(b.state().scores[0].score,80);
+    assert.equal(b.state().rows[2][0].selected,true);assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
+    assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
+  }finally{b.w.close()}
+});

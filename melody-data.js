@@ -92,7 +92,10 @@ window.MELODY_SONGS = {
     "Have Yourself a Merry Little Christmas",
     "I Saw Three Ships",
     "Away in a Manger",
-    "Ding Dong Merrily on High"
+    "Ding Dong Merrily on High",
+    "Happy New Year",
+    "Jingle Bell Rock",
+    "Santa Claus Is Coming to Town"
   ]
 };
 
@@ -109,11 +112,15 @@ window.MELODY_INTERNATIONAL_ARTISTS = [
   'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня',
   'Gene Autry', 'Gene Autry', 'Традиционная рождественская песня',
   'Традиционная рождественская песня', 'Frank Sinatra', 'Традиционная рождественская песня',
-  'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня'
+  'Традиционная песня · инструментальная версия', 'Традиционная рождественская песня',
+  'ABBA', 'Bobby Helms', 'Jackson 5'
 ];
 
 // Local audio: short recordings and instrumental previews (see ATTRIBUTION.md).
 window.MELODY_AUDIO = {
+  'Happy New Year':'assets/melody/audio/happy-new-year-abba.mp3',
+  'Jingle Bell Rock':'assets/melody/audio/jingle-bell-rock.mp3',
+  'Santa Claus Is Coming to Town':'assets/melody/audio/santa-claus-is-coming-to-town.mp3',
   'Last Christmas':'assets/melody/audio/last-christmas-wham.mp3',
   'Let It Snow! Let It Snow! Let It Snow!':'assets/melody/audio/let-it-snow-martin.mp3',
   'Jingle Bells': 'assets/melody/audio/jingle-bells.wav',
@@ -245,6 +252,45 @@ window.MELODY_LAYOUT = [
     {name:'Встречаем праздник', ru:[0,4,33,5,51], en:[0,2,3,12,13]}
   ]
 ];
+// Holiday-only selection. Indices explicitly name the language of each song.
+// All entries have local audio; titles recur between rounds but not within a round.
+{
+  const ru = index => ({language:'russian',index});
+  const en = index => ({language:'international',index});
+  window.MELODY_NEW_YEAR_LAYOUT = [
+    [
+      {name:'Новогодние хиты и кино', songs:[ru(0),ru(4),ru(5),ru(6),ru(39)]},
+      {name:'У праздничной ёлки', songs:[ru(22),ru(32),ru(33),en(4),en(26)]},
+      {name:'Праздничные хиты', songs:[en(36),en(1),en(0),en(3),en(37)]},
+      {name:'Рождественская классика', songs:[en(6),en(14),en(17),en(8),en(38)]}
+    ],
+    [
+      {name:'Ёлка и Новый год', songs:[ru(22),ru(32),ru(33),ru(0),ru(4)]},
+      {name:'Зимние сказки', songs:[ru(39),ru(5),ru(6),en(4),en(26)]},
+      {name:'Известные припевы', songs:[en(36),en(1),en(0),en(3),en(37)]},
+      {name:'Рождественские мелодии', songs:[en(7),en(12),en(28),en(11),en(5)]}
+    ],
+    [
+      {name:'Любимое новогоднее кино', songs:[ru(39),ru(5),ru(6),ru(0),ru(4)]},
+      {name:'Песни у ёлки', songs:[ru(22),ru(32),ru(33),en(4),en(26)]},
+      {name:'Хиты праздника', songs:[en(36),en(1),en(0),en(7),en(12)]},
+      {name:'Рождественское настроение', songs:[en(38),en(37),en(11),en(28),en(5)]}
+    ]
+  ];
+  window.MELODY_NEW_YEAR_SUPER_TRACKS = [ru(0),ru(4),ru(22),ru(33),en(36),en(1),en(0)];
+}
+// Separate local versions for the holiday selection; other modes keep their existing sources.
+window.MELODY_NEW_YEAR_AUDIO = {
+  'All I Want for Christmas Is You':'assets/melody/audio/all-i-want-for-christmas.mp3',
+  "Rockin' Around the Christmas Tree":'assets/melody/audio/rockin-around-christmas-tree.mp3',
+  'White Christmas':'assets/melody/audio/white-christmas-bing.mp3',
+  "It's the Most Wonderful Time of the Year":'assets/melody/audio/most-wonderful-time.mp3',
+  'The Christmas Song':'assets/melody/audio/christmas-song-nat-king-cole.mp3',
+  'Happy Xmas (War Is Over)':'assets/melody/audio/happy-xmas-john-lennon.mp3',
+  'Wonderful Christmastime':'assets/melody/audio/wonderful-christmastime.mp3',
+  'Rudolph the Red-Nosed Reindeer':'assets/melody/audio/rudolph-gene-autry.mp3'
+};
+
 // Family selection: all entries have bundled audio. Repetitions are marked in the host list.
 window.MELODY_CHILDREN_LAYOUT = [
   [
