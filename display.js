@@ -22,6 +22,7 @@
   function safeText(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
   function render(data) {
     if (!data || !data.game) return;
+    stage.classList.toggle('melody-display', data.game === 'melody');
     stage.classList.toggle('quiz-display', data.game === 'quiz');
     stage.classList.toggle('quiz-question-active', data.game === 'quiz' && Boolean(data.questionNumber));
     stage.classList.toggle('memo-photo', data.game === 'memo' && data.deckId === 'photo');
@@ -29,6 +30,13 @@
     const roomNote = `<div class="screen-code">КОД ЭКРАНА: ${safeText(room.toUpperCase())}</div>`;
     if (data.game === 'idle') {
       stage.innerHTML = `<div class="screen-stars">✦　❄　✧　❄　✦</div><div class="waiting-art">🎄</div><div class="screen-kicker">ЭКРАН УЧАСТНИКОВ</div><h1>Ждём начала игры</h1><p>${safeText(data.instruction || 'Выберите игру на главном экране.')}</p>${roomNote}`;
+      return;
+    }
+    if (data.game === 'melody') {
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      const categories = Array.isArray(data.categories) ? data.categories : [];
+      const scores = Array.isArray(data.scores) ? data.scores : [];
+      stage.innerHTML = `<div class="display-melody-heading"><span>УГАДАЙ МЕЛОДИЮ</span><b>ТУР ${safeText(data.tour)} / 4</b></div><div class="display-melody-board">${rows.map((row,ri)=>`<div class="display-melody-row"><div class="display-melody-category">${safeText(categories[ri])}</div><div class="display-melody-notes">${row.map(note=>`<div class="display-melody-note ${note.used?'used':''} ${note.selected?'selected':''}"><span>${safeText(note.value)}</span></div>`).join('')}</div></div>`).join('')}</div>${data.selectedValue != null ? `<p class="display-melody-prompt">${data.answer ? `Ответ: ${safeText(data.answer)}` : `Мелодия на ${safeText(data.selectedValue)} баллов`}</p>` : '<p class="display-melody-prompt">Выберите ноту</p>'}<div class="display-melody-scores">${scores.map((player,i)=>`<div><strong>${i+1}</strong><span><b>${safeText(player.name)}</b><small>${safeText(player.score)}</small></span></div>`).join('')}</div>${roomNote}`;
       return;
     }
     if (data.game === 'quiz') {

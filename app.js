@@ -317,7 +317,7 @@
     bindScreenTools();
     return $('#gameBody');
   }
-  function closeGame() { if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  function closeGame() { disposeMelodyFiles(); melodyState=null; if (memoryState?.timer) clearInterval(memoryState.timer); if (crocState?.timer) clearInterval(crocState.timer); publish({game:'idle',revealed:false,instruction:'Выберите игру на главном экране.'}); modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
 // --- Поле чудес (Field of Wonders) ---
 let fieldState = null;
 function renderField() {
@@ -485,213 +485,75 @@ function renderFieldViewer(state) {
   `;
 }
 
-// --- Угадай мелодию (Guess the Melody) ---
+// --- Угадай мелодию: четыре тура по девять песен ---
 let melodyState = null;
+let melodyAudio = null;
+const melodyCategories = ['Дискотека 90-х', 'Классика ушедших', 'Звучание кино', 'Импортные хиты'];
+const melodyValues = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+const melodyRows = [[0, 1, 2], [3, 4], [5, 6], [7, 8]];
+function melodySong(state, index) {
+  const position = (state.tour - 1) * 9 + index;
+  const language = state.version === 'mixed' ? (position % 2 ? 'international' : 'russian') : state.version;
+  return { title: window.MELODY_SONGS[language][position], language };
+}
+function melodyKey(state, index = state.selected) { return `${state.version}-${state.tour}-${index}`; }
+function stopMelodyAudio(clear = false) {
+  if (melodyAudio) { melodyAudio.pause(); if (clear) melodyAudio = null; }
+}
+function disposeMelodyFiles() {
+  stopMelodyAudio(true);
+  if (melodyState) Object.values(melodyState.files).forEach(file => URL.revokeObjectURL(file.url));
+}
+function publishMelody() {
+  const s = melodyState;
+  if (!s) return;
+  const selectedSong = s.selected == null ? null : melodySong(s, s.selected);
+  publish({game:'melody', tour:s.tour, categories:melodyCategories, rows:melodyRows.map(row => row.map(index => ({index, value:melodyValues[index], used:s.used[s.tour - 1].includes(index), selected:index === s.selected}))), scores:s.names.map((name,i)=>({name,score:s.scores[i]})), selectedValue:s.selected == null ? null : melodyValues[s.selected], answer:s.revealed && selectedSong ? selectedSong.title : '', revealed:s.revealed});
+}
 function renderMelody() {
-  const content = $('#gameBody');
-  const state = melodyState;
-  
-  const html = `
-    <div class="melody-container">
-      <div class="melody-topbar">
-        <div class="melody-tour">Тур: ${state.tour} / 4</div>
-        <div class="melody-score">Счет: ${state.scores[0]} : ${state.scores[1]}</div>
-      </div>
-      
-      <div class="melody-main">
-        ${state.mode === 'screen' ? renderMelodyScreen(state) : ''}
-        ${state.mode === 'player' ? renderMelodyPlayer(state) : ''}
-        ${state.mode === 'viewer' ? renderMelodyViewer(state) : ''}
-      </div>
-      
-      <div class="melody-controls">
-        <button class="melody-button" id="melodyStart">Начать тур</button>
-        <button class="melody-button" id="melodyNext">Следующая мелодия</button>
-        <button class="melody-button" id="melodyReset">Сбросить</button>
-      </div>
+  const s = melodyState;
+  const body = $('#gameBody');
+  const song = s.selected == null ? null : melodySong(s, s.selected);
+  const selectedUsed = s.selected != null && s.used[s.tour - 1].includes(s.selected);
+  const file = song && s.files[melodyKey(s)];
+  body.innerHTML = `<div class="melody-show melody-screen-view">
+    <div class="melody-setup">
+      <label>Песни <select id="melodyVersion"><option value="russian" ${s.version==='russian'?'selected':''}>На русском</option><option value="international" ${s.version==='international'?'selected':''}>На английском</option><option value="mixed" ${s.version==='mixed'?'selected':''}>Смешанные</option></select></label>
+      <span>4 тура · по 9 мелодий</span><button type="button" id="melodyReset">Новая игра</button>
     </div>
-  `;
-  content.innerHTML = html;
-  
-  $('#melodyStart').addEventListener('click', () => {
-    state.tour = 1;
-    state.melodyIndex = 0;
-    state.roundMelodies = shuffle(Array.from({length:9},(_,i)=>i));
-    state.scores = [0, 0];
-    state.activePlayerId = 0;
-    state.viewerReactions = [];
-    state.finished = false;
-    renderMelody();
-    publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, revealed:false, instruction:'Угадай мелодию начато.'});
+    <div class="melody-stage">
+      <div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Угадай мелодию</h2></div><strong>ТУР ${s.tour} <small>/ 4</small></strong></div>
+      <div class="melody-rounds" aria-label="Выбор тура">${[1,2,3,4].map(n=>`<button type="button" data-melody-tour="${n}" class="${s.tour===n?'active':''}" aria-pressed="${s.tour===n}">Тур ${n}</button>`).join('')}</div>
+      <p class="melody-board-hint">Выберите ноту и включите мелодию. Стоимость указана на ноте.</p>
+      <div class="melody-board" aria-label="Игровое поле">${melodyRows.map((row,ri)=>`<div class="melody-board-row"><div class="melody-category">${melodyCategories[ri]}</div><div class="melody-notes">${row.map(i=>`<button type="button" class="melody-note-tile ${s.used[s.tour-1].includes(i)?'used':''} ${s.selected===i?'selected':''}" data-melody-note="${i}" ${s.used[s.tour-1].includes(i)?'disabled':''} aria-label="${escapeHtml(melodyCategories[ri])}, ${melodyValues[i]} баллов${s.used[s.tour-1].includes(i)?', сыграно':''}" aria-pressed="${s.selected===i}"><span>${melodyValues[i]}</span></button>`).join('')}</div></div>`).join('')}</div>
+      <div class="melody-scoreboard">${s.names.map((name,i)=>`<div class="melody-player-score"><span class="melody-player-number">${i+1}</span><div><label><span class="sr-only">Имя игрока ${i+1}</span><input data-melody-name="${i}" maxlength="24" value="${escapeHtml(name)}"></label><strong>${s.scores[i]}</strong></div></div>`).join('')}</div>
+    </div>
+    <section class="melody-host-panel" aria-live="polite"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${song ? `Мелодия на ${melodyValues[s.selected]} баллов` : 'Выберите ноту на поле'}</h3></div><span>${s.used[s.tour-1].length} / 9 сыграно</span></div>
+      ${song ? `<details class="melody-answer"><summary>Подсказка ведущему: название песни</summary><p>${escapeHtml(song.title)} <small>· ${song.language === 'russian' ? 'русская' : 'английская'}</small></p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' новогодняя песня')}" target="_blank" rel="noopener noreferrer">Найти песню ↗</a></details>
+      <div class="melody-audio-controls"><label class="melody-file">${file ? 'Заменить аудиофайл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label><button type="button" id="melodyPlay" ${file?'':'disabled'}>▶ Включить</button><button type="button" id="melodyStop" ${file?'':'disabled'}>■ Остановить</button><span>${file ? escapeHtml(file.name) : 'Аудио в проект не включено: добавьте файл или включите песню из другого источника.'}</span></div>
+      <div class="melody-judge"><span>Начислить или снять ${melodyValues[s.selected]} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button></div>`).join('')}</div>
+      <div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ':'Показать ответ на экране'}</button><button type="button" id="melodyDone" ${selectedUsed?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Название песни будет видно только ведущему после открытия подсказки.</p>'}
+      <p class="melody-help">Ведущий самостоятельно включает фрагмент и оценивает ответ. Названия из прежних туров сохранены; файлы аудио не входят в комплект. Категории оформлены по образцу и не являются проверенной классификацией песен.</p>
+    </section>
+  </div>`;
+  $('#melodyVersion').addEventListener('change', e => {
+    const version = e.target.value;
+    if (!confirm('Сменить подборку и начать новую игру? Очки и сыгранные ноты будут сброшены.')) { e.target.value=s.version; return; }
+    disposeMelodyFiles(); melodyState = newMelodyState(version); renderMelody();
   });
-  
-  $('#melodyNext').addEventListener('click', () => {
-    if (state.melodyIndex < 8) {
-      state.melodyIndex++;
-      renderMelody();
-      publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, revealed:true, instruction:'Следующая мелодия.'});
-    } else if (state.tour < 4) {
-      state.tour++;
-      state.melodyIndex = 0;
-      state.roundMelodies = shuffle(Array.from({length:9},(_,i)=>i));
-      renderMelody();
-      publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, revealed:true, instruction:'Новый тур!'});
-    } else {
-      state.finished = true;
-      renderMelody();
-      publish({game:'idle', revealed:false, instruction:'Игра завершена.'});
-    }
-  });
-  
-  $('#melodyReset').addEventListener('click', () => {
-    state.finished = true;
-    renderMelody();
-    publish({game:'idle', revealed:false, instruction:'Угадай мелодию завершено.'});
-  });
-  
-  if (state.mode === 'player') {
-    $('#melodySignal').addEventListener('click', () => {
-      const score = Math.floor(Math.random() * 10);
-      state.scores[state.activePlayerId] += score;
-      renderMelody();
-      publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, score:score, revealed:true, instruction:'Сигнал отправлен!'});
-    });
-  }
-  
-  if (state.mode === 'viewer') {
-    document.querySelectorAll('.melody-reaction-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const reaction = btn.dataset.reaction;
-        state.viewerReactions.push({reaction, time: Date.now()});
-        renderMelody();
-        publish({game:'melody', tour:state.tour, melodyIndex:state.melodyIndex, reaction:reaction, revealed:true, instruction:'Реакция отправлена!'});
-      });
-    });
-  }
+  $('#melodyReset').addEventListener('click', () => { if (!confirm('Начать новую игру и сбросить очки?')) return; disposeMelodyFiles(); melodyState = newMelodyState(s.version); renderMelody(); });
+  body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(); s.tour=Number(button.dataset.melodyTour); s.selected=null; s.revealed=false; renderMelody(); }));
+  body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(); s.selected=Number(button.dataset.melodyNote); s.revealed=false; renderMelody(); }));
+  body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('change', () => { s.names[Number(input.dataset.melodyName)]=input.value.trim().slice(0,24) || `Игрок ${Number(input.dataset.melodyName)+1}`; renderMelody(); }));
+  $('#melodyFile')?.addEventListener('change', e => { const chosen=e.target.files[0]; if (!chosen) return; const key=melodyKey(s); stopMelodyAudio(true); if(s.files[key]) URL.revokeObjectURL(s.files[key].url); s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
+  $('#melodyPlay')?.addEventListener('click', () => { if (!file) return; stopMelodyAudio(true); melodyAudio=new Audio(file.url); melodyAudio.play().catch(() => notify('Не удалось воспроизвести файл. Попробуйте другой формат.')); });
+  $('#melodyStop')?.addEventListener('click', () => stopMelodyAudio());
+  body.querySelectorAll('[data-melody-score]').forEach(button => button.addEventListener('click', () => { if(selectedUsed) return; s.scores[Number(button.dataset.melodyScore)] += Number(button.dataset.direction)*melodyValues[s.selected]; renderMelody(); }));
+  $('#melodyReveal')?.addEventListener('click', () => { s.revealed=!s.revealed; renderMelody(); });
+  $('#melodyDone')?.addEventListener('click', () => { if(s.selected==null || selectedUsed) return; stopMelodyAudio(); s.used[s.tour-1].push(s.selected); s.selected=null; s.revealed=false; renderMelody(); if(s.used[s.tour-1].length===9) notify(s.tour<4?'Тур завершён! Выберите следующий тур.':'Все мелодии этого тура сыграны!'); });
+  publishMelody();
 }
-
-function renderMelodyScreen(state) {
-  return `
-    <div class="melody-screen-view">
-      <h2>${state.version === 'international' ? 'Угадай мелодию: Иностранные песни' : 'Угадай мелодию: Новый год'}</h2>
-      <p>Тур ${state.tour}, Мелодия ${state.melodyIndex + 1} / 9</p>
-      <div class="melody-player">
-        <button class="melody-play-btn" id="melodyPlay">▶️ Играть мелодию</button>
-        <div class="melody-note">🎵</div>
-      </div>
-      <div class="melody-supergame">
-        <h3>Суперигра</h3>
-        <p>Финалисты выбирают мелодию</p>
-        <ul>
-          ${state.version === 'international' ? `
-            <li>«All I Want for Christmas Is You» (Тур 1, Мелодия 1)</li>
-            <li>«Last Christmas» (Тур 1, Мелодия 2)</li>
-            <li>«Feliz Navidad» (Тур 1, Мелодия 3)</li>
-            <li>«Rockin' Around the Christmas Tree» (Тур 1, Мелодия 4)</li>
-            <li>«Jingle Bells» (Тур 1, Мелодия 5)</li>
-            <li>«Silent Night» (Тур 1, Мелодия 6)</li>
-            <li>«White Christmas» (Тур 1, Мелодия 7)</li>
-            <li>«It's the Most Wonderful Time of the Year» (Тур 1, Мелодия 8)</li>
-            <li>«The Christmas Song» (Тур 1, Мелодия 9)</li>
-            <li>«Santa Tell Me» (Тур 2, Мелодия 1)</li>
-            <li>«Driving Home for Christmas» (Тур 2, Мелодия 2)</li>
-            <li>«Happy Xmas (War Is Over)» (Тур 2, Мелодия 3)</li>
-            <li>«Wonderful Christmastime» (Тур 2, Мелодия 4)</li>
-            <li>«Merry Christmas Everyone» (Тур 2, Мелодия 5)</li>
-            <li>«Let It Snow! Let It Snow! Let It Snow!» (Тур 2, Мелодия 6)</li>
-            <li>«A Holly Jolly Christmas» (Тур 2, Мелодия 7)</li>
-            <li>«O Holy Night» (Тур 2, Мелодия 8)</li>
-            <li>«Deck the Halls» (Тур 2, Мелодия 9)</li>
-            <li>«Do They Know It’s Christmas?» (Тур 3, Мелодия 1)</li>
-            <li>«Fairytale of New York» (Тур 3, Мелодия 2)</li>
-            <li>«Christmas Lights» (Тур 3, Мелодия 3)</li>
-            <li>«Underneath the Tree» (Тур 3, Мелодия 4)</li>
-            <li>«Mistletoe» (Тур 3, Мелодия 5)</li>
-            <li>«Joy to the World» (Тур 3, Мелодия 6)</li>
-            <li>«Hark! The Herald Angels Sing» (Тур 3, Мелодия 7)</li>
-            <li>«God Rest Ye Merry, Gentlemen» (Тур 3, Мелодия 8)</li>
-            <li>«We Wish You a Merry Christmas» (Тур 3, Мелодия 9)</li>
-            <li>«Winter Wonderland» (Тур 4, Мелодия 1)</li>
-            <li>«Rudolph the Red-Nosed Reindeer» (Тур 4, Мелодия 2)</li>
-            <li>«Frosty the Snowman» (Тур 4, Мелодия 3)</li>
-            <li>«Carol of the Bells» (Тур 4, Мелодия 4)</li>
-            <li>«Mary Did You Know?» (Тур 4, Мелодия 5)</li>
-            <li>«Have Yourself a Merry Little Christmas» (Тур 4, Мелодия 6)</li>
-            <li>«I Saw Three Ships» (Тур 4, Мелодия 7)</li>
-            <li>«Away in a Manger» (Тур 4, Мелодия 8)</li>
-            <li>«Ding Dong Merrily on High» (Тур 4, Мелодия 9)</li>
-          ` : `
-            <li>«Зимний вальс» (Тур 1, Мелодия 1)</li>
-            <li>«Снежинки кружатся» (Тур 1, Мелодия 2)</li>
-            <li>«Ёлочка» (Тур 1, Мелодия 3)</li>
-            <li>«Дед Мороз» (Тур 1, Мелодия 4)</li>
-            <li>«Снеговик» (Тур 1, Мелодия 5)</li>
-            <li>«Новогодний карнавал» (Тур 1, Мелодия 6)</li>
-            <li>«Подарки» (Тур 1, Мелодия 7)</li>
-            <li>«Зимний лес» (Тур 1, Мелодия 8)</li>
-            <li>«Рождество» (Тур 1, Мелодия 9)</li>
-            <li>«Снежная королева» (Тур 2, Мелодия 1)</li>
-            <li>«Огни города» (Тур 2, Мелодия 2)</li>
-            <li>«Новогодние огни» (Тур 2, Мелодия 3)</li>
-            <li>«Праздник» (Тур 2, Мелодия 4)</li>
-            <li>«Загадочный лес» (Тур 2, Мелодия 5)</li>
-            <li>«Зимняя сказка» (Тур 2, Мелодия 6)</li>
-            <li>«Снег» (Тур 2, Мелодия 7)</li>
-            <li>«Колокольчики» (Тур 2, Мелодия 8)</li>
-            <li>«Новогодняя ночь» (Тур 2, Мелодия 9)</li>
-            <li>«Зимний сад» (Тур 3, Мелодия 1)</li>
-            <li>«Снежные горы» (Тур 3, Мелодия 2)</li>
-            <li>«Зимний ветер» (Тур 3, Мелодия 3)</li>
-            <li>«Новогодний подарок» (Тур 3, Мелодия 4)</li>
-            <li>«Зимняя сказка» (Тур 3, Мелодия 5)</li>
-            <li>«Новогодний танец» (Тур 3, Мелодия 6)</li>
-            <li>«Снежные шары» (Тур 3, Мелодия 7)</li>
-            <li>«Зимний рассвет» (Тур 3, Мелодия 8)</li>
-            <li>«Новогодний фейерверк» (Тур 3, Мелодия 9)</li>
-            <li>«Зимняя сказка» (Тур 4, Мелодия 1)</li>
-            <li>«Новогодний праздник» (Тур 4, Мелодия 2)</li>
-            <li>«Снежный балет» (Тур 4, Мелодия 3)</li>
-            <li>«Зимняя сказка» (Тур 4, Мелодия 4)</li>
-            <li>«Новогодний карнавал» (Тур 4, Мелодия 5)</li>
-            <li>«Зимний ветер» (Тур 4, Мелодия 6)</li>
-            <li>«Снег» (Тур 4, Мелодия 7)</li>
-            <li>«Зимний лес» (Тур 4, Мелодия 8)</li>
-            <li>«Новогодний фейерверк» (Тур 4, Мелодия 9)</li>
-          ` }
-        </ul>
-      </div>
-    </div>
-  `;
-}
-
-function renderMelodyPlayer(state) {
-  return `
-    <div class="melody-player-view">
-      <h2>Участник: Угадай мелодию</h2>
-      <p>Нажмите кнопку, когда узнаете мелодию!</p>
-      <button class="melody-signal-btn" id="melodySignal">🔘 Сигнал</button>
-      <div class="melody-score-display">Счет: ${state.scores[0]} : ${state.scores[1]}</div>
-    </div>
-  `;
-}
-
-function renderMelodyViewer(state) {
-  return `
-    <div class="melody-viewer-view">
-      <h2>Зритель: Угадай мелодию</h2>
-      <p>Смотрите и ставьте реакции!</p>
-      <div class="melody-reactions">
-        <button class="melody-reaction-btn" data-reaction="clap">👏 Аплодисменты</button>
-        <button class="melody-reaction-btn" data-reaction="wow">😲 Удивление</button>
-        <button class="melody-reaction-btn" data-reaction="laugh">😂 Смех</button>
-        <button class="melody-reaction-btn" data-reaction="sad">😢 Грусть</button>
-      </div>
-      <div class="melody-reaction-history">
-        ${state.viewerReactions.slice(-5).map(r => `<span>${r.reaction}</span>`).join('')}
-      </div>
-    </div>
-  `;
-}
+function newMelodyState(version = 'russian') { return {version, tour:1, names:['Игрок 1','Игрок 2','Игрок 3'], scores:[0,0,0], used:[[],[],[],[]], selected:null, revealed:false, files:{}}; }
 
   function openGame(kind) {
     if (memoryState?.timer) clearInterval(memoryState.timer);
@@ -705,8 +567,7 @@ function renderMelodyViewer(state) {
       return;
     }
     if (kind==='field') { commonFrame('Поле чудес: Новый год','КОЛЕСО И БУКВЫ','Выберите режим и начинайте игру.','field-screen'); fieldState={...createContest(),mode:'screen',wheelSector:0,lettersRevealed:[],chests:[false,false],chestPrize:Math.floor(Math.random()*2),round:1,activePlayerId:0,viewerReactions:[],finished:false}; renderField(); }
-    if (kind==='melody') { commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Узнавайте мелодии всей компанией.','melody-screen'); melodyState={...createContest(),mode:'screen',tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false,version:'russian'}; renderMelody(); }
-    if (kind==='melody-intl') { commonFrame('Угадай мелодию: Иностранные песни','МУЗЫКАЛЬНАЯ ИГРА','Узнавайте мелодии всей компанией.','melody-screen'); melodyState={...createContest(),mode:'screen',tour:1,melodyIndex:0,roundMelodies:shuffle(Array.from({length:9},(_,i)=>i)),scores:Array.from({length:2},()=>0),activePlayerId:0,viewerReactions:[],finished:false,version:'international'}; renderMelody(); }
+    if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, четыре тура и музыкальное поле.','melody-screen'); melodyState=newMelodyState(kind==='melody-intl'?'international':'russian'); renderMelody(); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],activePlayerId:0,round:1}; renderGuess(); }
     if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,cardFaceUp:false,cardFlipAnimating:false,taskSelected:false,deckMode:'simple',finished:false}; renderCroc(); }

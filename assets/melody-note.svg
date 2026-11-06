@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 105">
+ <defs><radialGradient id="r"><stop stop-color="#fa3547"/><stop offset=".7" stop-color="#db0016"/><stop offset="1" stop-color="#a9000c"/></radialGradient><filter id="g" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter></defs>
+ <path d="M15 70 C15 46 40 32 73 33 C89 33 99 35 106 38 L113 14 C116 1 129 1 138 5 C151 10 151 20 145 23 C139 27 134 20 129 21 L123 62 C121 85 100 98 65 97 C35 97 15 87 15 70Z" fill="#ffce77" opacity=".55" filter="url(#g)"/>
+ <path d="M15 70 C15 46 40 32 73 33 C89 33 99 35 106 38 L113 14 C116 1 129 1 138 5 C151 10 151 20 145 23 C139 27 134 20 129 21 L123 62 C121 85 100 98 65 97 C35 97 15 87 15 70Z" fill="url(#r)" stroke="#ff9fa2" stroke-width="5" stroke-dasharray=".5 6" stroke-linecap="round"/>
+</svg>
