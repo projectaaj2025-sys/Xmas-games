@@ -110,3 +110,44 @@ test('undoing an earlier penalty does not undo a later correct answer',()=>{
     a.click('[data-melody-undo="0"]');assert.equal(a.state().scores[0].score,0);assert.equal(a.state().scores[1].score,80);assert.equal(a.state().buzz.finished,true);a.click('#melodyDone');assert.equal(a.state().rows[0][0].used,true);assert.deepEqual(a.errors,[]);
   }finally{a.w.close()}
 });
+
+test('legacy Russian save migrates by song without moving results onto replacement notes',()=>{
+  const a=setup();let saved;try{
+    a.click('[data-open="melody"]');a.click('#backHome');saved=a.snapshot();
+    const data=JSON.parse(saved['snowy-host-melody-v1']),s=data.state;
+    delete s.catalogRevision;s.names=['Аня','Борис','Света'];s.scores=[80,-50,30];
+    // In the old first board, notes 1 and 2 were A4 and Steklovata; note 7 remains unchanged.
+    s.used=[[0,2,7],[],[]];s.selected=1;s.revealed=true;
+    s.judged={'russian-1-1-0':80,'russian-1-2-1':-50,'russian-1-7-2':30};
+    s.attempts={'russian-1-1':{active:0,passed:[1],open:true,finished:false,token:'old'},'russian-1-7':{active:null,passed:[2],open:false,finished:false,token:''}};
+    saved['snowy-host-melody-v1']=JSON.stringify(data);
+  }finally{a.w.close()}
+  const b=setup(saved);try{
+    b.click('[data-open="melody"]');assert.match(b.d.querySelector('.game-resume').textContent,/Подборка обновилась/);b.click('#resumeGame');
+    const current=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
+    assert.deepEqual(current.names,['Аня','Борис','Света']);assert.deepEqual(current.scores,[80,-50,30]);
+    assert.deepEqual(current.used[0],[0,7]);assert.equal(current.selected,null);assert.equal(current.revealed,false);
+    assert.equal(current.judged['russian-1-1-0'],undefined);assert.equal(current.judged['russian-1-2-1'],undefined);assert.equal(current.judged['russian-1-7-2'],30);
+    assert.equal(current.attempts['russian-1-1'],undefined);assert.ok(current.attempts['russian-1-7']);
+    assert.equal(b.state().rows[0][1].used,false);assert.equal(b.state().rows[0][2].used,false);
+    b.click('[data-melody-note="1"]');assert.ok(b.d.querySelector('[data-melody-score="0"][data-direction="1"]:not(:disabled)'));
+    assert.equal(current.catalogRevision,2);assert.deepEqual(b.errors,[]);
+  }finally{b.w.close()}
+});
+
+test('legacy mixed saves preserve unchanged English attempts; family and English have no migration warning',()=>{
+  const a=setup();let base;try{a.click('[data-open="melody"]');a.click('#backHome');base=a.snapshot()}finally{a.w.close()}
+  for(const version of ['mixed','children','international']){
+    const saved={...base},data=JSON.parse(saved['snowy-host-melody-v1']);delete data.state.catalogRevision;
+    data.state.version=version;data.state.used=[[1,2],[],[]];data.state.selected=1;data.state.scores=[42,0,0];
+    data.state.judged={[`${version}-1-1-0`]:42};data.state.attempts={[`${version}-1-1`]:{active:null,passed:[0],open:false,finished:false,token:''}};
+    saved['snowy-host-melody-v1']=JSON.stringify(data);
+    const b=setup(saved);try{
+      b.click('[data-open="melody"]');assert.equal(/Подборка обновилась/.test(b.d.querySelector('.game-resume').textContent),version==='mixed');b.click('#resumeGame');
+      const s=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
+      assert.equal(s.selected,1);assert.equal(s.judged[`${version}-1-1-0`],42);assert.ok(s.used[0].includes(1));assert.equal(s.scores[0],42);
+      if(version==='mixed')assert.ok(!s.used[0].includes(2));else assert.ok(s.used[0].includes(2));
+      assert.deepEqual(b.errors,[]);
+    }finally{b.w.close()}
+  }
+});

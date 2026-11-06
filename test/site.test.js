@@ -288,10 +288,10 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
   w.Audio=class {play(){return Promise.resolve()} pause(){}};
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']) w.eval(read(f));
-    assert.equal(w.MELODY_SONGS.russian.length,47); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,47);
+    assert.equal(w.MELODY_SONGS.russian.length,54); assert.equal(w.MELODY_RUSSIAN_SOURCES.length,54);
     assert.equal(w.MELODY_SONGS.russian.filter(x=>x==='Новый год').length,1);
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
-    assert.match(doc.querySelector('.melody-song-list').textContent,/Новый год — Стекловата \(повтор названия\)/);
+    assert.doesNotMatch(doc.querySelector('.melody-song-list').textContent,/Стекловата|Новогодняя песня — The Limba/);
     doc.querySelector('[data-melody-note="0"]').click();
     assert.match(doc.querySelector('.melody-answer p').textContent,/Новогодняя/);
     assert.match(doc.querySelector('.melody-audio-controls a').href,/song\/9293226/);
@@ -424,7 +424,7 @@ test('game cards show features and player counts, never estimated duration', () 
   } finally {dom.window.close()}
 });
 
-test('new Russian recordings are playable, with duplicate titles mapped to the right artist', () => {
+test('Russian recordings are playable and updated notes have matching audio', () => {
   const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
   const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
   w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
@@ -436,15 +436,15 @@ test('new Russian recordings are playable, with duplicate titles mapped to the r
       if(path){const data=fs.readFileSync(path);assert.ok(data.length>100000,title);assert.ok(data.subarray(0,3).toString()==='ID3'||data[0]===0xff,title)}
     }
     assert.equal(w.MELODY_SONGS.russian.slice(0,43).filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,43);
-    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,47);
+    assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,54);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
-    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новый год');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/novy-god-steklovata\.mp3$/);
-    d.querySelector('[data-melody-note="1"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Новогодняя песня');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/novogodnyaya-pesnya-a4\.mp3$/);
+    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'В лесу родилась ёлочка');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/v-lesu-rodilas-elochka\.mp3$/);
+    d.querySelector('[data-melody-note="1"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Маленькой ёлочке холодно зимой');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/malenkoy-elochke\.mp3$/);
   } finally {w.close()}
 });
 
-test('new winter songs play from local files without replacing earlier catalogue entries', () => {
+test('famous new songs play locally with matching titles and artists', () => {
   const dom=new JSDOM(read('index.html'),{url:'http://localhost:4173/',runScripts:'outside-only'});
   const w=dom.window;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;
   w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
@@ -452,15 +452,17 @@ test('new winter songs play from local files without replacing earlier catalogue
   try {
     for(const f of ['quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js'])w.eval(read(f));
     const all=w.MELODY_LAYOUT.flatMap(t=>t.flatMap(row=>row.ru));
-    for(let i=0;i<43;i++)assert.ok(all.includes(i),`catalogue index ${i} is still on a board`);
+    for(const i of [34,35,36,37,40,30,31])assert.ok(!all.includes(i),`removed catalogue index ${i}`);
+    assert.ok(!w.MELODY_SUPER_TRACKS.russian.includes(34));
     const d=w.document;d.querySelector('[data-open="melody"]').click();
     const positions=[
-      [2,6,'Снег','sneg-kirkorov.mp3'],[2,1,'Новогодняя песня','novogodnyaya-pesnya-a4.mp3'],
-      [2,5,'Зима в сердце','zima-v-serdtse.mp3'],[3,4,'Синий иней','siniy-iney.mp3'],[3,9,'Диалог у новогодней ёлки','dialog-u-elki.mp3']
+      [1,15,'Невозможное возможно','nevozmozhnoe-vozmozhno.mp3','Дима Билан'],[1,19,'Крошка моя','kroshka-moya.mp3','Руки Вверх!'],
+      [2,17,'Нас не догонят','nas-ne-dogonyat.mp3','t.A.T.u.'],[2,13,'Моё сердце','moe-serdtse.mp3','Сплин'],
+      [3,10,'Сансара','sansara.mp3','Баста'],[3,12,'Батарейка','batareyka.mp3','Жуки'],[3,19,'Матушка','matushka.mp3','Татьяна Куртукова']
     ];
-    for(const [tour,note,title,file] of positions){
+    for(const [tour,note,title,file,artist] of positions){
       d.querySelector(`[data-melody-tour="${tour}"]`).click();d.querySelector(`[data-melody-note="${note}"]`).click();
-      assert.equal(d.querySelector('.melody-answer p').textContent,title);assert.equal(d.querySelector('#melodyPlay').disabled,false);
+      assert.equal(d.querySelector('.melody-answer p').textContent,title);assert.ok(d.querySelector('.melody-answer small').textContent.includes(artist));assert.equal(d.querySelector('#melodyPlay').disabled,false);
       d.querySelector('#melodyPlay').click();assert.ok(played.at(-1).endsWith(file),title);
       const bytes=fs.readFileSync(played.at(-1));assert.ok(bytes.length>100000,title);
       assert.ok(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===0xff,title);

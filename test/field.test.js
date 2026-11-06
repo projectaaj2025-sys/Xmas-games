@@ -48,7 +48,7 @@ test('special sectors, chest and single-player three-move rule',()=>{
 test('new Russian and English melodies are bundled in the intended board cells',()=>{
   const {w,d,click}=setup();try{const played=[];w.Audio=class{constructor(url){this.url=url}play(){played.push(this.url);return Promise.resolve()}pause(){}};
     click('[data-open="melody"]');click('[data-melody-tour="2"]');
-    for(const [index,title,file] of [[8,'Падал прошлогодний снег (Финал)','padal-proshlogodniy-sneg.mp3'],[7,'Отпусти и забудь','otpusti-i-zabud.mp3']]){click(`[data-melody-note="${index}"]`);assert.equal(d.querySelector('.melody-answer p').textContent,title);click('#melodyPlay');assert.ok(played.at(-1).endsWith(file));}
+    for(const [index,title,file] of [[8,'Диалог у новогодней ёлки','dialog-u-elki.mp3'],[7,'Отпусти и забудь','otpusti-i-zabud.mp3']]){click(`[data-melody-note="${index}"]`);assert.equal(d.querySelector('.melody-answer p').textContent,title);click('#melodyPlay');assert.ok(played.at(-1).endsWith(file));}
     const select=d.querySelector('#melodyVersion');select.value='international';select.dispatchEvent(new w.Event('change',{bubbles:true}));click('[data-melody-tour="1"]');click('[data-melody-note="1"]');click('#melodyPlay');assert.ok(played.at(-1).endsWith('last-christmas-wham.mp3'));
     click('[data-melody-note="6"]');click('#melodyPlay');assert.ok(played.at(-1).endsWith('let-it-snow-martin.mp3'));
   }finally{w.close()}

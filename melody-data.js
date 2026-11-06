@@ -47,7 +47,14 @@ window.MELODY_SONGS = {
     "Голубой вагон",
     "Кто ходит в гости по утрам",
     "Песня царевны Забавы",
-    "Песенка Красной Шапочки"
+    "Песенка Красной Шапочки",
+    "Крошка моя",
+    "Батарейка",
+    "Нас не догонят",
+    "Невозможное возможно",
+    "Матушка",
+    "Моё сердце",
+    "Сансара"
 ],
   "international": [
     "All I Want for Christmas Is You",
@@ -206,29 +213,36 @@ window.MELODY_RUSSIAN_SOURCES = [
   {"artist": "Из мультфильма «Шапокляк»", "source": null, "youtube": null},
   {"artist": "Из мультфильма «Винни-Пух идёт в гости»", "source": null, "youtube": null},
   {"artist": "Из мультфильма «Летучий корабль»", "source": null, "youtube": null},
-  {"artist": "Из фильма «Про Красную Шапочку»", "source": null, "youtube": null}
+  {"artist": "Из фильма «Про Красную Шапочку»", "source": null, "youtube": null},
+  {"artist": "Руки Вверх!", "source": null, "youtube": null},
+  {"artist": "Жуки", "source": null, "youtube": null},
+  {"artist": "t.A.T.u.", "source": null, "youtube": null},
+  {"artist": "Дима Билан", "source": null, "youtube": null},
+  {"artist": "Татьяна Куртукова", "source": null, "youtube": null},
+  {"artist": "Сплин", "source": null, "youtube": null},
+  {"artist": "Баста", "source": null, "youtube": null}
 ];
 
 // Three boards, each with four themed rows and five fixed positions.
 // Each row's arrays point into the Russian and international catalogues above.
 window.MELODY_LAYOUT = [
   [
-    {name:'Новогодние хиты', ru:[0,40,34,4,5], en:[0,1,2,3,4]},
-    {name:'Снег и зима', ru:[1,9,14,38,10], en:[6,14,27,28,29]},
+    {name:'Новогодние хиты', ru:[0,32,22,4,5], en:[0,1,2,3,4]},
+    {name:'Снег и зима', ru:[1,33,14,38,10], en:[6,14,27,28,29]},
     {name:'Любимые мелодии', ru:[3,6,7,2,17], en:[4,5,17,26,34]},
-    {name:'Танцуем вместе', ru:[11,12,18,19,31], en:[0,2,3,12,13]}
+    {name:'Танцуем вместе', ru:[50,12,18,19,47], en:[0,2,3,12,13]}
   ],
   [
-    {name:'Хиты у ёлки', ru:[0,40,34,22,32], en:[3,12,17,22,20]},
-    {name:'Зимние истории', ru:[36,37,41,42,9], en:[6,14,27,28,29]},
-    {name:'Караоке за столом', ru:[21,20,23,15,26], en:[1,9,10,11,13]},
-    {name:'Праздничное настроение', ru:[11,18,30,12,35], en:[0,2,3,19,21]}
+    {name:'Хиты у ёлки', ru:[0,33,5,22,32], en:[3,12,17,22,20]},
+    {name:'Зимние истории', ru:[1,14,41,39,3], en:[6,14,27,28,29]},
+    {name:'Караоке за столом', ru:[21,20,23,52,26], en:[1,9,10,11,13]},
+    {name:'Праздничное настроение', ru:[47,18,49,12,50], en:[0,2,3,19,21]}
   ],
   [
-    {name:'Снежные мелодии', ru:[1,9,10,14,38], en:[6,14,27,28,29]},
+    {name:'Снежные мелодии', ru:[1,3,10,14,38], en:[6,14,27,28,29]},
     {name:'Музыкальные истории', ru:[6,7,8,16,39], en:[4,28,29,33,34]},
-    {name:'Знакомые припевы', ru:[24,25,27,28,29], en:[1,9,15,21,32]},
-    {name:'Встречаем праздник', ru:[0,40,33,34,13], en:[0,2,3,12,13]}
+    {name:'Знакомые припевы', ru:[53,52,48,49,29], en:[1,9,15,21,32]},
+    {name:'Встречаем праздник', ru:[0,4,33,5,51], en:[0,2,3,12,13]}
   ]
 ];
 // Family selection: all entries have bundled audio. Repetitions are marked in the host list.
@@ -254,10 +268,17 @@ window.MELODY_CHILDREN_LAYOUT = [
 ];
 window.MELODY_CHILDREN_SUPER_TRACKS = [3,22,32,33,43,44,41];
 window.MELODY_SUPER_TRACKS = {
-  russian:[3,7,5,0,32,34,9],
+  russian:[3,7,5,0,32,22,33],
   international:[4,1,26,2,14,0,34]
 };
 window.MELODY_RUSSIAN_AUDIO = {
+  "Крошка моя":"assets/melody/audio/kroshka-moya.mp3",
+  "Батарейка":"assets/melody/audio/batareyka.mp3",
+  "Нас не догонят":"assets/melody/audio/nas-ne-dogonyat.mp3",
+  "Невозможное возможно":"assets/melody/audio/nevozmozhnoe-vozmozhno.mp3",
+  "Матушка":"assets/melody/audio/matushka.mp3",
+  "Моё сердце":"assets/melody/audio/moe-serdtse.mp3",
+  "Сансара":"assets/melody/audio/sansara.mp3",
   "Песня про зайцев":"assets/melody/audio/pesnya-pro-zaytsev.mp3",
   "Ой, мороз, мороз":"assets/melody/audio/oy-moroz.mp3",
   "Хали-гали":"assets/melody/audio/hali-gali.mp3",
