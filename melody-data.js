@@ -1,43 +1,43 @@
 // Названия из прежних четырёх туров. Аудиофайлы добавляет ведущий.
 window.MELODY_SONGS = {
   "russian": [
-    "Зимний вальс",
-    "Снежинки кружатся",
+    "Новогодняя",
+    "Зима-холода",
+    "С Новым Годом!",
+    "Кабы не было зимы",
+    "Пять минут",
+    "Три белых коня",
+    "Песенка о снежинке",
+    "Звенит январская вьюга",
+    "Песенка о медведях",
+    "Снег идёт",
+    "Новогодние игрушки",
+    "Снег-снежок",
+    "Это новый год",
+    "Снегом стать",
+    "Зима",
+    "С Новым годом, Россия!",
+    "Белая зима",
+    "Белые снежинки",
+    "Новогодняя песня",
+    "Новый год",
+    "Старый год",
+    "Праздник к нам приходит",
     "Ёлочка",
-    "Дед Мороз",
-    "Снеговик",
-    "Новогодний карнавал",
-    "Подарки",
-    "Зимний лес",
-    "Рождество",
-    "Снежная королева",
-    "Огни города",
-    "Новогодние огни",
-    "Праздник",
-    "Загадочный лес",
-    "Зимняя сказка",
-    "Снег",
-    "Колокольчики",
-    "Новогодняя ночь",
-    "Зимний сад",
-    "Снежные горы",
-    "Зимний ветер",
-    "Новогодний подарок",
-    "Зимняя сказка",
-    "Новогодний танец",
-    "Снежные шары",
-    "Зимний рассвет",
-    "Новогодний фейерверк",
-    "Зимняя сказка",
-    "Новогодний праздник",
-    "Снежный балет",
-    "Зимняя сказка",
-    "Новогодний карнавал",
-    "Зимний ветер",
-    "Снег",
-    "Зимний лес",
-    "Новогодний фейерверк"
-  ],
+    "В этот Новый год",
+    "Новогодний поцелуй",
+    "Снег падает",
+    "Первый час января",
+    "Заметёт зима",
+    "Выходи играть в снежки",
+    "Снег на Новый год",
+    "Загадай желание",
+    "Рождественская",
+    "Маленькой ёлочке холодно зимой",
+    "Расскажи, Снегурочка",
+    "Новый год",
+    "О мой год!"
+],
   "international": [
     "All I Want for Christmas Is You",
     "Last Christmas",
@@ -128,3 +128,187 @@ window.MELODY_YOUTUBE = {
   'I Saw Three Ships': 'GD7a0g9uODg',
   'Ding Dong Merrily on High': 'zJbRURK3zWo'
 };
+
+// Sources identify different recordings even when their titles coincide.
+window.MELODY_RUSSIAN_SOURCES = [
+  {
+    "artist": "Дискотека Авария",
+    "source": "https://rus.hitmos.fm/song/9293226",
+    "youtube": "1-bxBXOE368"
+  },
+  {
+    "artist": "Андрей Губин",
+    "source": "https://rus.hitmos.fm/song/10097515",
+    "youtube": "JnqKGDJD8gg"
+  },
+  {
+    "artist": "Руки Вверх!",
+    "source": "https://rus.hitmos.fm/song/10084841",
+    "youtube": "QRopTjoZWSA"
+  },
+  {
+    "artist": "Валентина Толкунова",
+    "source": "https://rus.hitmos.fm/song/12586473",
+    "youtube": null
+  },
+  {
+    "artist": "Людмила Гурченко",
+    "source": "https://rus.hitmos.fm/song/7716573",
+    "youtube": null
+  },
+  {
+    "artist": "Лариса Долина",
+    "source": null,
+    "youtube": "jWiKX6wE9fY"
+  },
+  {
+    "artist": "Чародеи",
+    "source": null,
+    "youtube": "EaOu9c_WR7c"
+  },
+  {
+    "artist": "Нина Бродская",
+    "source": "https://rus.hitmos.fm/song/12586413",
+    "youtube": "2QdBGUHV0uA"
+  },
+  {
+    "artist": "Аида Ведищева",
+    "source": "https://rus.hitmos.fm/song/12586443",
+    "youtube": null
+  },
+  {
+    "artist": "Глюкоза",
+    "source": "https://rus.hitmos.fm/song/12540932",
+    "youtube": "ruvZrmwlX8M"
+  },
+  {
+    "artist": "Инна Маликова, Новые Самоцветы",
+    "source": "https://rus.hitmos.fm/song/12586475",
+    "youtube": null
+  },
+  {
+    "artist": "Балаган Лимитед",
+    "source": "https://rus.hitmos.fm/song/10737950",
+    "youtube": null
+  },
+  {
+    "artist": "Reflex",
+    "source": "https://rus.hitmos.fm/song/10097526",
+    "youtube": null
+  },
+  {
+    "artist": "Силуянова",
+    "source": "https://rus.hitmos.fm/song/10729667",
+    "youtube": null
+  },
+  {
+    "artist": "Инна Маликова и Новые Самоцветы",
+    "source": "https://rus.hitmos.fm/song/10733860",
+    "youtube": null
+  },
+  {
+    "artist": "Ezziati",
+    "source": "https://rus.hitmos.fm/song/11401566",
+    "youtube": null
+  },
+  {
+    "artist": "Александр Добронравов и Варвара",
+    "source": "https://rus.hitmos.fm/song/12377175",
+    "youtube": null
+  },
+  {
+    "artist": "Детские Новогодние Песенки",
+    "source": "https://rus.hitmos.fm/song/7388015",
+    "youtube": null
+  },
+  {
+    "artist": "Блестящие",
+    "source": "https://rus.hitmos.fm/song/7310147",
+    "youtube": null
+  },
+  {
+    "artist": "Вирус",
+    "source": "https://rus.hitmos.fm/song/8886634",
+    "youtube": null
+  },
+  {
+    "artist": "Валерий Меладзе",
+    "source": "https://rus.hitmos.fm/song/9303584",
+    "youtube": null
+  },
+  {
+    "artist": "Клава Кока",
+    "source": "https://rus.hitmos.fm/song/10071794",
+    "youtube": "eptzcBeAOnk"
+  },
+  {
+    "artist": "Балаган Лимитед",
+    "source": "https://rus.hitmos.fm/song/10737949",
+    "youtube": null
+  },
+  {
+    "artist": "Sasha Ray",
+    "source": "https://rus.hitmos.fm/song/10084837",
+    "youtube": null
+  },
+  {
+    "artist": "Чай Вдвоём",
+    "source": "https://rus.hitmos.fm/song/7288668",
+    "youtube": null
+  },
+  {
+    "artist": "Марк Тишман",
+    "source": "https://rus.hitmos.fm/song/12378128",
+    "youtube": null
+  },
+  {
+    "artist": "Алсу",
+    "source": "https://rus.hitmos.fm/song/8265424",
+    "youtube": null
+  },
+  {
+    "artist": "Маргарита Позоян",
+    "source": "https://rus.hitmos.fm/song/10090154",
+    "youtube": null
+  },
+  {
+    "artist": "The Hatters",
+    "source": "https://rus.hitmos.fm/song/12374411",
+    "youtube": null
+  },
+  {
+    "artist": "Би-2",
+    "source": "https://rus.hitmos.fm/song/12195592",
+    "youtube": null
+  },
+  {
+    "artist": "Мари Атлас",
+    "source": "https://rus.hitmos.fm/song/11401557",
+    "youtube": null
+  },
+  {
+    "artist": "Жасмин",
+    "source": "https://rus.hitmos.fm/song/7272601",
+    "youtube": null
+  },
+  {
+    "artist": "детская песня",
+    "source": null,
+    "youtube": "KCA3oUv1r4M"
+  },
+  {
+    "artist": "Ну, погоди!",
+    "source": null,
+    "youtube": "NRdGSXPmn2s"
+  },
+  {
+    "artist": "Стекловата",
+    "source": null,
+    "youtube": "3m4c5vnLh_E"
+  },
+  {
+    "artist": "Олег Попков",
+    "source": "https://rus.hitmos.fm/song/10737957",
+    "youtube": null
+  }
+];
