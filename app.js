@@ -282,20 +282,24 @@
             else if(current && old && current.name!==old.name){const former=p.name;p.name=current.name;if(s.message.includes(former))s.message=s.message.replace(former,current.name);changed=true;}
           }
           for(const p of [...s.winners,...(s.champion?[s.champion]:[])]){const old=previousPlayers.find(q=>q.id===p.id),current=connectedPlayers.find(q=>q.id===p.id);if(old&&current&&old.name!==current.name){p.name=current.name;changed=true;}}
-          if(s.phase==='setup'){
+          const setup=s.phase==='setup';
+          if(setup){
             s.setupIds=s.setupIds.map((id,i)=>{const current=connectedPlayers.find(p=>p.id===id),old=previousPlayers.find(p=>p.id===id);if(current&&old&&current.name!==old.name)s.setupNames[i]=current.name;return id&&!current?'':id;});
-            renderField();
-          } else if(changed){
-            renderFieldPreservingAnswer();
-          } else refreshFieldSeats();
+          }
+          if(fieldAutoSeats(s))changed=true;
+          if(setup)renderField();
+          else if(changed)renderFieldPreservingAnswer();
+          else refreshFieldSeats();
         }
         if(melodyState && content.classList.contains('melody-screen')){
           const s=melodyState;initMelodyControls(s);let changed=false;
+          pendingMelodySeats=connectedPlayers.filter(p=>!s.phoneIds.includes(p.id));
           s.phoneIds=s.phoneIds.map((id,i)=>{
             const old=previousPlayers.find(p=>p.id===id),current=connectedPlayers.find(p=>p.id===id);
             if(id && connectedViewers.some(p=>p.id===id)){changed=true;return '';}
             if(old&&current&&old.name!==current.name){s.names[i]=current.name;changed=true;}return id;
           });
+          if(melodyAutoSeats(s))changed=true;
           if(changed)renderMelody();else refreshMelodySeats();
         }
         updateConnectedMembers();
@@ -784,6 +788,49 @@ const fieldLabel = s => s.superRound ? 'СУПЕРИГРА' : s.round === 4 ? '�
 function newFieldState() {
   return {round:1,phase:'setup',queue:shuffle((window.FIELD_QUESTIONS||[]).map((_,i)=>i)),question:null,players:[],winners:[],active:0,guessed:[],sector:null,angle:0,streak:0,soloHits:0,lastPassed:null,message:'Подготовьте первую тройку и начните тур.',setupNames:['Игрок 1','Игрок 2','Игрок 3'],setupIds:['','',''],count:3,chestPrize:0,reaction:'',superRound:false,champion:null,seconds:60,deadline:0};
 }
+// A phone that connects while free seats exist is seated automatically, so it can act on its turn.
+// Only empty seats are filled: the host can still detach a seat with «Управляет ведущий».
+function fieldAutoSeats(s) {
+  let changed=false;
+  const used=new Set([...s.setupIds,...s.players.map(p=>p.id)].filter(Boolean));
+  const pool=connectedPlayers.filter(p=>!used.has(p.id));
+  let cursor=0;
+  const next=()=>pool[cursor++]||null;
+  if(s.phase==='setup'&&!s.superRound&&s.round<4){
+    for(let i=0;i<s.count;i++){
+      if(s.setupIds[i]&&connectedPlayers.some(p=>p.id===s.setupIds[i]))continue;
+      const name=s.setupNames[i],custom=name&&name!==`Игрок ${i+1}`;
+      const member=next();
+      if(!member)break;
+      s.setupIds[i]=member.id;
+      if(!custom)s.setupNames[i]=member.name;
+      changed=true;
+    }
+  } else if(s.players.length&&!s.superRound){
+    for(const player of s.players){
+      if(player.out||player.id)continue;
+      const member=next();
+      if(!member)break;
+      const former=player.name,custom=former&&!former.startsWith('Игрок ');
+      player.id=member.id;
+      if(!custom)player.name=member.name;
+      if(!custom&&s.message.includes(former))s.message=s.message.replace(former,player.name);
+      changed=true;
+    }
+  }
+  return changed;
+}
+function fieldAutoSeatNotice(s) {
+  const name=id=>connectedPlayers.find(p=>p.id===id)?.name||'';
+  if(s.phase==='setup'&&!s.superRound&&s.round<4){
+    const seats=s.setupIds.slice(0,s.count).map((id,i)=>id&&(s.setupNames[i]===name(id)?s.setupNames[i]:`${s.setupNames[i]} — ${name(id)}`)).filter(Boolean);
+    if(seats.length)return `Телефоны автоматически назначены на места: ${seats.join('; ')}. Сменить или отключить можно в списке «Управление ходом».`;
+  } else if(s.players.length&&!s.superRound){
+    const seats=s.players.filter(p=>p.id).map(p=>p.name===name(p.id)?p.name:`${p.name} — ${name(p.id)}`).filter(seat=>seat&&!seat.endsWith(' — '));
+    if(seats.length)return `Телефоны подключены к местам: ${seats.join('; ')}. Сменить или отключить можно в блоке «Назначить или переподключить телефоны».`;
+  }
+  return 'Подключите телефоны по QR-коду — они встанут на свободные места автоматически.';
+}
 function fieldCurrent(s) { return s.players[s.active]; }
 function fieldBoard(s) {
   if(!s.question) return [];
@@ -802,7 +849,7 @@ function fieldSetup(s) {
   const final=s.round===4;
   if(final && !s.winners.length) return `<div class="field-setup"><h3>Финал не состоялся</h3><p>Ни одна из троек не определила победителя.</p><button id="fieldRestart">Новая игра</button></div>`;
   const rows=final?s.winners.map(p=>`<div class="field-finalist">✦ ${escapeHtml(p.name)}</div>`).join(''):Array.from({length:s.count},(_,i)=>`<div class="field-seat"><label>Участник ${i+1}<input data-field-name="${i}" maxlength="24" value="${escapeHtml(s.setupNames[i])}" ${s.setupIds[i]?'disabled':''}></label><label>Управление ходом<select data-field-seat="${i}"><option value="">Управляет ведущий</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.setupIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label></div>`).join('');
-  return `<div class="field-setup"><span class="field-eyebrow">${fieldLabel(s)} · НАСТРОЙКА</span><h3>${final?'Финалисты':'Пригласите участников'}</h3><p>${final?'Победители троек разыгрывают финал.':'Назначьте от одного до трёх участников: ведущий управляет их ходом или участники играют со своих телефонов. Счётчик подключений показывает все телефоны, в том числе зрителей.'}</p>${final?'':`<label class="field-count">Участников в тройке <select id="fieldCount">${[1,2,3].map(n=>`<option ${n===s.count?'selected':''}>${n}</option>`).join('')}</select></label>`}${rows}<button id="fieldStart">Начать ${final?'финал':'тур'} →</button></div>`;
+  return `<div class="field-setup"><span class="field-eyebrow">${fieldLabel(s)} · НАСТРОЙКА</span><h3>${final?'Финалисты':'Пригласите участников'}</h3><p>${final?'Победители троек разыгрывают финал.':'Подключённые телефоны встают на свободные места автоматически — на своём ходу участник сразу видит кнопки. Переставить или выбрать «Управляет ведущий» можно ниже. Счётчик подключений показывает все телефоны, в том числе зрителей.'}</p><p class="field-seat-status">${escapeHtml(fieldAutoSeatNotice(s))}</p>${final?'':`<label class="field-count">Участников в тройке <select id="fieldCount">${[1,2,3].map(n=>`<option ${n===s.count?'selected':''}>${n}</option>`).join('')}</select></label>`}${rows}<button id="fieldStart">Начать ${final?'финал':'тур'} →</button></div>`;
 }
 function fieldControls(s) {
   const inPlay=!['setup','over','spinning'].includes(s.phase);
@@ -817,7 +864,7 @@ function renderFieldPreservingAnswer(){
 }
 function fieldReconnect(s) {
   if(!s.players.length)return '';
-  return `<details class="field-reconnect"><summary>📱 Назначить или переподключить телефоны</summary><p>Подключите игроков по QR и выберите телефон для каждого участника. Имена и очки не изменятся; без телефона ходом управляет ведущий на этом экране.</p><div class="field-reconnect-seats">${s.players.map((p,i)=>`<div class="field-reconnect-person"><label>Имя в игре <input data-field-player-name="${i}" maxlength="24" value="${escapeHtml(p.name)}"></label><label>Управление ходом<select data-field-player-seat="${i}"><option value="">Управляет ведущий</option>${connectedPlayers.map(q=>`<option value="${escapeHtml(q.id)}" ${q.id===p.id?'selected':''}>${escapeHtml(q.name)}</option>`).join('')}</select></label></div>`).join('')}</div><button type="button" id="fieldRefreshPlayers">Обновить список телефонов</button></details>`;
+  return `<details class="field-reconnect"><summary>📱 Назначить или переподключить телефоны · <span class="field-seat-count">${s.players.filter(p=>p.id).length} из ${s.players.length} с телефоном</span></summary><p>Подключённые телефоны автоматически занимают свободные места, поэтому игрок сразу видит кнопки своего хода. Здесь можно переставить телефон на другого участника или выбрать «Управляет ведущий». Имена и очки не изменятся.</p><p class="field-seat-status">${escapeHtml(fieldAutoSeatNotice(s))}</p><div class="field-reconnect-seats">${s.players.map((p,i)=>`<div class="field-reconnect-person"><label>Имя в игре <input data-field-player-name="${i}" maxlength="24" value="${escapeHtml(p.name)}"></label><label>Управление ходом<select data-field-player-seat="${i}"><option value="">Управляет ведущий</option>${connectedPlayers.map(q=>`<option value="${escapeHtml(q.id)}" ${q.id===p.id?'selected':''}>${escapeHtml(q.name)}</option>`).join('')}</select></label></div>`).join('')}</div><button type="button" id="fieldRefreshPlayers">Обновить список телефонов</button></details>`;
 }
 function renderField() {
   const s=fieldState, body=$('#gameBody'); if(!s||!body)return;
@@ -855,6 +902,8 @@ function fieldStart() {
   let players=s.round===4?s.winners.map(p=>({...p,score:0,out:false})):Array.from({length:s.count},(_,i)=>({name:s.setupNames[i].trim().slice(0,24)||`Игрок ${i+1}`,id:s.setupIds[i]||'',score:0,out:false}));
   if(!players.length)return;
   players.forEach(p=>{if(p.id&&!connectedPlayers.some(q=>q.id===p.id))p.id='';});
+  s.setupIds=s.setupIds.map((id,i)=>i<s.count&&connectedPlayers.some(p=>p.id===id)?id:'');
+  s.players=players;
   if(!s.queue.length)s.queue=shuffle(window.FIELD_QUESTIONS.map((_,i)=>i));
   s.question=window.FIELD_QUESTIONS[s.queue.shift()];s.players=players;s.active=0;s.guessed=[];s.sector=null;s.streak=0;s.soloHits=0;s.lastPassed=null;s.phase='spin';s.message=`${players[0].name}, крутите барабан или назовите слово.`;renderField();
 }
@@ -1024,7 +1073,31 @@ function melodyAttempt(s){
 }
 function freshBuzzToken(){const a=new Uint8Array(12);if(window.crypto?.getRandomValues)window.crypto.getRandomValues(a);else for(let i=0;i<a.length;i++)a[i]=Math.random()*256;return [...a].map(x=>x.toString(16).padStart(2,'0')).join('');}
 function melodyEligible(s,a,i){return !!a&&!a.passed.includes(i)&&!s.judged[melodyKey(s)+'-'+i];}
+// Phones buzz while the attempt is open. A note opens the buzzers as it starts, so every player
+// has a working screen of their own during the melody instead of watching the host screen.
 function melodyReady(s,a){return !!(a&&a.open&&!a.finished&&a.active===null&&s.selected!=null&&!s.revealed&&!s.used[s.tour-1].includes(s.selected)&&s.names.some((_,i)=>melodyEligible(s,a,i)));}
+// Phones that connect right now get the free seats. Only members of this presence event are
+// considered, so a phone the host deliberately detached is not seated again by a later event.
+let pendingMelodySeats=[];
+function melodyAutoSeats(s){
+  initMelodyControls(s);let changed=false;
+  const used=new Set(s.phoneIds.filter(Boolean));
+  for(let i=0;i<3;i++){
+    if(s.phoneIds[i]&&connectedPlayers.some(p=>p.id===s.phoneIds[i]))continue;
+    const member=pendingMelodySeats.find(p=>!used.has(p.id));
+    if(!member)continue;
+    s.phoneIds[i]=member.id;used.add(member.id);
+    if(!s.names[i]||/^Игрок \d$/.test(s.names[i]))s.names[i]=member.name;
+    pendingMelodySeats=pendingMelodySeats.filter(p=>p.id!==member.id);
+    changed=true;
+  }
+  return changed;
+}
+function melodySeatNotice(s){
+  const name=id=>connectedPlayers.find(p=>p.id===id)?.name||'';
+  const seats=s.phoneIds.map((id,i)=>id&&(s.names[i]===name(id)?s.names[i]:`${s.names[i]} — ${name(id)}`)).filter(Boolean);
+  return seats.length?`Телефоны на местах: ${seats.join('; ')}.`:'Подключите телефоны по QR — игроки встанут на свободные места автоматически.';
+}
 function melodySelectResponder(index,token){
   const s=melodyState,a=s&&melodyAttempt(s);if(!a||s.revealed||s.used[s.tour-1].includes(s.selected)||a.finished||a.active!==null||a.passed.includes(index)||!Number.isInteger(index)||index<0||index>2||s.judged[melodyKey(s)+'-'+index])return;
   if(token!==undefined&&(!melodyReady(s,a)||token!==a.token))return;
@@ -1053,7 +1126,7 @@ function melodyJudge(result){
   const i=a.active,key=melodyKey(s)+'-'+i;if(s.judged[key])return;
   if(result==='correct'||result==='wrong'){const delta=(result==='correct'?1:-1)*melodyValue(s);s.judged[key]=delta;s.scores[i]+=delta;}
   if(result==='correct'){a.finished=true;a.open=false;s.revealed=true;}
-  else if(result==='wrong'||result==='pass'){a.passed.push(i);a.active=null;a.open=s.names.some((_,j)=>melodyEligible(s,a,j));a.token=a.open?freshBuzzToken():'';}
+  else if(result==='wrong'||result==='pass'){a.passed.push(i);a.active=null;a.open=!s.revealed&&s.names.some((_,j)=>melodyEligible(s,a,j));a.token=a.open?freshBuzzToken():'';}
   renderMelody();
 }
 function renderMelody() {
@@ -1079,7 +1152,7 @@ function renderMelody() {
       <span>3 тура · по 20 мелодий + суперигра</span><button type="button" id="melodyIntro">♫ Заставка</button><button type="button" id="melodyMusicStop">■ Стоп</button>
     </div><p>${s.version==='newyear'?'Новогодние, зимние и праздничные песни. Все записи встроены; п':'П'}овторы между турами, торгами и суперигрой исключены.</p>
     <details class="melody-cue-settings"><summary>Своя музыка для заставки и переходов</summary><p>Загрузите скачанные файлы со звуками шоу, если у вас есть право их использовать. Файлы останутся только до закрытия игры.</p><div><label>Заставка <input id="melodyIntroFile" type="file" accept="audio/*"></label><span>${s.cues.intro ? escapeHtml(s.cues.intro.name) : 'Стандартная заставка'}</span></div><div><label>Переход <input id="melodyTransitionFile" type="file" accept="audio/*"></label><span>${s.cues.transition ? escapeHtml(s.cues.transition.name) : 'Стандартный переход'}</span></div><a href="https://zvukipro.com/teleshow/716-zvuki-iz-teleperedachi-ugadaj-melodiju.html" target="_blank" rel="noopener noreferrer">Открыть страницу со звуками шоу ↗</a></details>
-    <details class="melody-invite"><summary>📱 Подключить телефоны · <span id="melodyMemberCount">${connectedPlayers.length} игроков · ${connectedViewers.length} зрителей</span></summary><p>Необязательно: без телефонов ведущий выбирает отвечающего сам. Игроки сканируют QR, выбирают роль «Игрок», а ведущий назначает телефоны на места.</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код для игроков" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><div class="connected-members" data-connected-members>${connectedMembersMarkup()}</div><div class="melody-seat-list">${s.names.map((name,i)=>`<label>${escapeHtml(name)}<select data-melody-seat="${i}"><option value="">Без телефона</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.phoneIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>`).join('')}</div><small>После обновления страницы телефоны нужно подключить и назначить заново.</small></details>
+    <details class="melody-invite"><summary>📱 Подключить телефоны · <span id="melodyMemberCount">${connectedPlayers.length} игроков · ${connectedViewers.length} зрителей</span></summary><p>Необязательно: без телефонов ведущий выбирает отвечающего сам. Игроки сканируют QR и выбирают роль «Игрок» — телефон встанет на свободное место автоматически. Переставить можно в списке ниже.</p><p class="field-seat-status">${escapeHtml(melodySeatNotice(s))}</p><div class="local-join-box"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код для игроков" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div><div class="connected-members" data-connected-members>${connectedMembersMarkup()}</div><div class="melody-seat-list">${s.names.map((name,i)=>`<label>${escapeHtml(name)}<select data-melody-seat="${i}"><option value="">Без телефона</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${s.phoneIds[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>`).join('')}</div><small>После обновления страницы телефоны нужно подключить и назначить заново.</small></details>
     ${melodySongList(s)}<button type="button" class="soft-button" id="melodyCloseSettings">Готово · вернуться к игре</button></details>
     <div class="melody-stage">
       <div class="melody-show-heading"><div><span>МУЗЫКАЛЬНАЯ ИГРА</span><h2>Угадай мелодию</h2></div><strong>ТУР ${s.tour} <small>/ 3</small></strong></div>
@@ -1089,13 +1162,18 @@ function renderMelody() {
       <div class="melody-scoreboard">${s.names.map((name,i)=>`<div class="melody-player-score ${a?.active===i?'active':''} ${a?.passed.includes(i)?'passed':''}"><span class="melody-player-number">${i+1}</span><div><label><span class="sr-only">Имя игрока ${i+1}</span><input data-melody-name="${i}" maxlength="24" value="${escapeHtml(name)}"></label><strong>${s.scores[i]}</strong><small>${a?.active===i?'ОТВЕЧАЕТ':a?.passed.includes(i)?'ПРОПУСК':''}</small></div></div>`).join('')}</div>
     </div>
     <section class="melody-host-panel" aria-live="polite"><div class="melody-host-title"><div><span>ПУЛЬТ ВЕДУЩЕГО</span><h3>${song ? `Мелодия на ${melodyValue(s)} баллов` : 'Выберите ноту на поле'}</h3></div><span>${s.used[s.tour-1].length} / 20 сыграно</span></div>
-      ${song ? `<details class="melody-answer" data-answer-key="${melodyKey(s)}"><summary>Ответ ведущему</summary><p>${escapeHtml(song.title)}</p><small>Исполнитель / известная версия: ${escapeHtml(song.artist||'не указан')}</small></details>
-      <div class="melody-buzzer-panel"><p role="status">${a.finished?'Ответ принят. Завершите мелодию.':a.active!==null?`Отвечает: <strong>${escapeHtml(s.names[a.active])}</strong>`:melodyReady(s,a)?'Кнопки открыты: кто нажмёт первым, отвечает.':'Выберите отвечающего вручную или откройте кнопки на телефонах.'}</p>${a.active===null&&!a.finished?`<div class="melody-buzzer-actions">${s.names.map((name,i)=>`<button type="button" data-melody-answerer="${i}" aria-label="${escapeHtml(name)} отвечает" ${a.passed.includes(i)||s.judged[melodyKey(s)+'-'+i]?'disabled':''}>${escapeHtml(name)}</button>`).join('')}<button type="button" id="melodyBuzzOpen" ${s.revealed||!s.names.some((_,i)=>melodyEligible(s,a,i))?'disabled':''}>${melodyReady(s,a)?'Закрыть кнопки':'Открыть кнопки'}</button></div>`:''}${a.passed.some(i=>!s.judged[melodyKey(s)+'-'+i])?`<div class="melody-buzzer-actions">${a.passed.filter(i=>!s.judged[melodyKey(s)+'-'+i]).map(i=>`<button type="button" data-melody-unpass="${i}">Вернуть ${escapeHtml(s.names[i])}</button>`).join('')}</div>`:''}${a.active!==null&&!a.finished?'<div class="melody-buzzer-actions"><button type="button" id="melodyCorrect">✓ Правильно</button><button type="button" id="melodyWrong">✕ Неправильно</button><button type="button" id="melodyPass">Пропуск без штрафа</button></div>':''}</div>
+      ${song ? `<p class="melody-answer-note">${
+        s.revealed?'Ответ открыт участникам: он виден на этом пульте, на проекторе и на телефонах.':
+        a.hostAnswer?'Название открыто только здесь — на этом пульте ведущего. Нажмите на стрелку, чтобы прочитать; на проектор и телефоны оно не отправляется.':
+        'Название откроется после нажатия «Стоп» или окончания фрагмента — только здесь, на пульте ведущего. Участникам оно не отправляется, пока вы не нажмёте «Показать ответ участникам».'
+      }</p><details class="melody-answer" data-answer-key="${melodyKey(s)}"><summary>Ответ ведущему · только этот экран</summary><p>${escapeHtml(song.title)}</p><small>Исполнитель / известная версия: ${escapeHtml(song.artist||'не указан')}</small></details>
+      <p class="melody-phone-status">${escapeHtml(melodySeatNotice(s))}</p>
+      <div class="melody-buzzer-panel"><p role="status">${a.finished?'Ответ принят. Завершите мелодию.':a.active!==null?`Отвечает: <strong>${escapeHtml(s.names[a.active])}</strong>`:melodyReady(s,a)?(a.hostAnswer?'Кнопки на телефонах уже открыты — ответ показан только вам. Ответьте первым нажатием или выберите игрока.':'Кнопки открыты: кто нажмёт первым, отвечает.'):'Выберите отвечающего вручную или откройте кнопки на телефонах.'}</p>${a.active===null&&!a.finished?`<div class="melody-buzzer-actions">${s.names.map((name,i)=>`<button type="button" data-melody-answerer="${i}" aria-label="${escapeHtml(name)} отвечает" ${a.passed.includes(i)||s.judged[melodyKey(s)+'-'+i]?'disabled':''}>${escapeHtml(name)}</button>`).join('')}<button type="button" id="melodyBuzzOpen" ${s.revealed||!s.names.some((_,i)=>melodyEligible(s,a,i))?'disabled':''}>${melodyReady(s,a)?'Закрыть кнопки':'Открыть кнопки'}</button></div>`:''}${a.passed.some(i=>!s.judged[melodyKey(s)+'-'+i])?`<div class="melody-buzzer-actions">${a.passed.filter(i=>!s.judged[melodyKey(s)+'-'+i]).map(i=>`<button type="button" data-melody-unpass="${i}">Вернуть ${escapeHtml(s.names[i])}</button>`).join('')}</div>`:''}${a.active!==null&&!a.finished?'<div class="melody-buzzer-actions"><button type="button" id="melodyCorrect">✓ Правильно</button><button type="button" id="melodyWrong">✕ Неправильно</button><button type="button" id="melodyPass">Пропуск без штрафа</button></div>':''}</div>
       <div class="melody-audio-controls"><button type="button" id="melodyPlay" ${file||youtubeId?'':'disabled'}>▶ ${file?'Продолжить':'Включить снова'}</button><button type="button" id="melodyStop" ${(file || youtubeId)?'':'disabled'}>■ Стоп</button><span>${file ? '' : youtubeId ? 'Онлайн: YouTube' : 'Добавьте аудиофайл.'}</span></div>
       <details class="melody-extra-audio"><summary>Другие источники и свой файл</summary><div class="melody-audio-controls">${song.source?.source ? `<a class="melody-file" href="${escapeHtml(song.source.source)}" target="_blank" rel="noopener noreferrer">Слушать в источнике ↗</a>` : ''}${youtubeId ? `<button type="button" id="melodyYoutube">▶ Слушать на YouTube</button>` : ''}<label class="melody-file">${file ? 'Выбрать свой файл' : 'Добавить аудиофайл'}<input type="file" id="melodyFile" accept="audio/*"></label></div></details>
       <details class="melody-score-correction"><summary>Ручная корректировка очков</summary><div class="melody-judge"><span>Начислить или снять ${melodyValue(s)} баллов:</span>${s.names.map((name,i)=>`<div class="melody-judge-player"><b>${escapeHtml(name)}</b><button type="button" data-melody-score="${i}" data-direction="1" ${selectedUsed||a.active!==null||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Начислить баллы: ${escapeHtml(name)}">+</button><button type="button" data-melody-score="${i}" data-direction="-1" ${selectedUsed||a.active!==null||s.judged[melodyKey(s)+'-'+i]?'disabled':''} aria-label="Снять баллы: ${escapeHtml(name)}">−</button>${s.judged[melodyKey(s)+'-'+i]&&!selectedUsed?`<button type="button" data-melody-undo="${i}" aria-label="Отменить начисление или штраф: ${escapeHtml(name)}">↶</button>`:''}</div>`).join('')}</div></details>
       ${s.revealed?`<p class="melody-revealed-answer" role="status">Ответ: <strong>${escapeHtml(song.title)} — ${escapeHtml(song.artist||'исполнитель не указан')}</strong></p>`:''}<div class="melody-actions"><button type="button" id="melodyReveal">${s.revealed?'Скрыть ответ от участников':'Показать ответ участникам'}</button><button type="button" id="melodyDone" ${selectedUsed||a.active!==null&&!a.finished?'disabled':''}>Завершить мелодию ✓</button></div>` : '<p>Нажмите на любую доступную ноту. Музыка запустится сразу. Ответ появится здесь после окончания фрагмента или выбора отвечающего.</p>'}
-      <details class="melody-help"><summary>Как играть и источники музыки</summary><p>Встроенные фрагменты запускаются сразу. Для YouTube нужен интернет; сайт может ограничить воспроизведение или показать рекламу. Плеер и ответы видны на экране ведущего. Для онлайн-записей указан известный исполнитель песни, но доступная версия может отличаться. Свой файл можно выбрать в дополнительных источниках.</p></details>
+      <details class="melody-help"><summary>Как играть и источники музыки</summary><p>Встроенные фрагменты запускаются сразу. Для YouTube нужен интернет; сайт может ограничить воспроизведение или показать рекламу. Название и исполнитель видны только на пульте ведущего и не отправляются ни на экран участников, ни на телефоны; участники получают название только после правильного ответа или по кнопке «Показать ответ участникам». Кнопки на телефонах открываются сразу, как только ведущий запустил ноту, — первое нажатие выбирает отвечающего. Для онлайн-записей указан известный исполнитель песни, но доступная версия может отличаться. Свой файл можно выбрать в дополнительных источниках.</p></details>
     </section>
   </div>`;
   openDetails.forEach(sel=>{const el=body.querySelector(sel);if(el)el.open=true;});
@@ -1105,8 +1183,8 @@ function renderMelody() {
   $('#copyPlayerLink')?.addEventListener('click',async()=>{const url=appPageUrl(`player.html?room=${roomCode}`);try{await navigator.clipboard.writeText(url);notify('Ссылка скопирована.');}catch{prompt('Ссылка для телефонов:',url);}});
   body.querySelectorAll('[data-melody-seat]').forEach(select=>select.addEventListener('change',()=>{const i=Number(select.dataset.melodySeat),id=select.value;if(id&&s.phoneIds.some((x,j)=>j!==i&&x===id)){notify('Этот телефон уже назначен другому игроку.');renderMelody();return;}s.phoneIds[i]=id;if(id)s.names[i]=connectedPlayers.find(p=>p.id===id)?.name||s.names[i];renderMelody();}));
   body.querySelectorAll('[data-melody-answerer]').forEach(b=>b.addEventListener('click',()=>melodySelectResponder(Number(b.dataset.melodyAnswerer))));
-  body.querySelectorAll('[data-melody-unpass]').forEach(b=>b.addEventListener('click',()=>{if(!a||a.active!==null||a.finished)return;a.passed=a.passed.filter(i=>i!==Number(b.dataset.melodyUnpass));a.open=false;a.token='';renderMelody();}));
-  $('#melodyBuzzOpen')?.addEventListener('click',()=>{if(!a||a.finished||a.active!==null)return;a.open=!a.open;a.token=a.open?freshBuzzToken():'';renderMelody();});
+  body.querySelectorAll('[data-melody-unpass]').forEach(b=>b.addEventListener('click',()=>{if(!a||a.active!==null||a.finished)return;a.passed=a.passed.filter(i=>i!==Number(b.dataset.melodyUnpass));if(a.token)a.token=freshBuzzToken();renderMelody();}));
+  $('#melodyBuzzOpen')?.addEventListener('click',()=>{if(!a||a.finished||a.active!==null)return;a.open=!a.open;a.token=melodyReady(s,a)?freshBuzzToken():'';renderMelody();});
   for(const [id,result] of [['melodyCorrect','correct'],['melodyWrong','wrong'],['melodyPass','pass']])$('#'+id)?.addEventListener('click',()=>melodyJudge(result));
   $('#melodyVersion').addEventListener('change', e => {
     const version = e.target.value;
@@ -1119,7 +1197,7 @@ function renderMelody() {
   }
   $('#melodyMusicStop').addEventListener('click', () => stopMelodyAudio());
   body.querySelectorAll('[data-melody-tour]').forEach(button => button.addEventListener('click', () => { const nextTour=Number(button.dataset.melodyTour); if(nextTour!==s.tour) playMelodyAudio(s.cues.transition?.url || 'assets/melody/audio/show-endround.mp3'); else stopMelodyAudio(); if(nextTour===5 && s.auction.phase==='setup') {const ranked=[0,1,2].sort((a,b)=>s.scores[b]-s.scores[a]);s.auction.players=ranked.slice(0,2);} if(nextTour===4 && s.tour!==4 && s.super.status==='ready' && s.auction.phase!=='finished') s.super.player=s.scores.indexOf(Math.max(...s.scores)); if(a){a.open=false;a.token='';}s.tour=nextTour; s.selected=null; s.revealed=false; renderMelody(); }));
-  body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(true);if(a){a.open=false;a.token='';} s.selected=Number(button.dataset.melodyNote); s.revealed=false; const key=melodyKey(s),selectedSong=melodySong(s,s.selected),url=s.files[key]?.url||bundledMelodyUrl(selectedSong),youtube=selectedSong.language==='russian'?selectedSong.source?.youtube:window.MELODY_YOUTUBE?.[selectedSong.title]; renderMelody(); if(url)playMelodyAudio(url,()=>melodyShowHostAnswer(s,key),()=>notify('Не удалось запустить аудио. Нажмите «Включить» или выберите файл.'));else if(youtube)playMelodyYoutube(youtube,()=>melodyShowHostAnswer(s,key));else notify('Для этой ноты нет записи: добавьте свой файл.'); }));
+  body.querySelectorAll('[data-melody-note]').forEach(button => button.addEventListener('click', () => { stopMelodyAudio(true);s.selected=Number(button.dataset.melodyNote); s.revealed=false;const attempt=melodyAttempt(s);if(attempt){attempt.open=true;attempt.hostAnswer=false;attempt.token=freshBuzzToken();attempt.active=null;attempt.finished=false;} const key=melodyKey(s),selectedSong=melodySong(s,s.selected),url=s.files[key]?.url||bundledMelodyUrl(selectedSong),youtube=selectedSong.language==='russian'?selectedSong.source?.youtube:window.MELODY_YOUTUBE?.[selectedSong.title]; renderMelody(); if(url)playMelodyAudio(url,()=>melodyShowHostAnswer(s,key),()=>notify('Не удалось запустить аудио. Нажмите «Включить» или выберите файл.'));else if(youtube)playMelodyYoutube(youtube,()=>melodyShowHostAnswer(s,key));else notify('Для этой ноты нет записи: добавьте свой файл.'); }));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('input', () => {s.names[Number(input.dataset.melodyName)]=input.value.slice(0,24);saveMelody();}));
   body.querySelectorAll('[data-melody-name]').forEach(input => input.addEventListener('change', () => { s.names[Number(input.dataset.melodyName)]=input.value.trim().slice(0,24) || `Игрок ${Number(input.dataset.melodyName)+1}`; renderMelody(); }));
   $('#melodyFile')?.addEventListener('change', e => { const chosen=e.target.files[0]; if (!chosen) return; const key=melodyKey(s); stopMelodyAudio(true); if(s.files[key]) URL.revokeObjectURL(s.files[key].url); s.files[key]={url:URL.createObjectURL(chosen),name:chosen.name}; renderMelody(); });
@@ -1342,8 +1420,8 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     if (crocState?.timer) clearInterval(crocState.timer);
     if(kind==='music'){openMusicLibrary();return;}
     if (kind==='drive') { openHolidayInstructions(); return; }
-    if (kind==='field') { commonFrame('Поле чудес: Новый год','КРУТИТЕ БАРАБАН','Ведущий управляет игрой на этом экране; участники могут подключиться с телефонов. Три тройки и финал.','field-screen'); chooseSavedGame('field',saved=>{fieldState=saved||newFieldState();if(saved){fieldState.setupIds=fieldState.setupIds.map(id=>connectedPlayers.some(p=>p.id===id)?id:'');fieldState.players.forEach(p=>{if(!connectedPlayers.some(q=>q.id===p.id))p.id='';});if(fieldState.phase==='superSolve'){if(fieldState.seconds<=0){fieldState.phase='over';fieldState.message='Время вышло. Суперигра проиграна. Ответ: '+fieldState.question.answer+'.';}else{fieldState.deadline=Date.now()+fieldState.seconds*1000;fieldSuperTimer=setInterval(fieldSuperTick,250);}}}renderField();}); }
-    if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, три тура и суперигра.','melody-screen'); content.insertAdjacentHTML('beforeend', '<div id="melodyExternalPlayer" class="melody-external-player" hidden></div>'); chooseSavedGame('melody',saved=>{melodyState=saved?{...saved,files:{},cues:{}}:newMelodyState(kind==='melody-intl'?'international':'russian');initMelodyControls(melodyState);melodyState.phoneIds=melodyState.phoneIds.map(id=>connectedPlayers.some(p=>p.id===id)?id:'');for(const [key,attempt] of Object.entries(melodyState.attempts)){if(attempt&&typeof attempt==='object'){attempt.open=false;attempt.token='';}else delete melodyState.attempts[key];}renderMelody();}); }
+    if (kind==='field') { commonFrame('Поле чудес: Новый год','КРУТИТЕ БАРАБАН','Ведущий управляет игрой на этом экране; участники могут подключиться с телефонов. Три тройки и финал.','field-screen'); chooseSavedGame('field',saved=>{fieldState=saved||newFieldState();if(saved){fieldState.setupIds=fieldState.setupIds.map(id=>connectedPlayers.some(p=>p.id===id)?id:'');fieldAutoSeats(fieldState);fieldState.players.forEach(p=>{if(!connectedPlayers.some(q=>q.id===p.id))p.id='';});if(fieldState.phase==='superSolve'){if(fieldState.seconds<=0){fieldState.phase='over';fieldState.message='Время вышло. Суперигра проиграна. Ответ: '+fieldState.question.answer+'.';}else{fieldState.deadline=Date.now()+fieldState.seconds*1000;fieldSuperTimer=setInterval(fieldSuperTick,250);}}}renderField();}); }
+    if (kind==='melody' || kind==='melody-intl') { disposeMelodyFiles(); commonFrame('Угадай мелодию: Новый год','МУЗЫКАЛЬНАЯ ИГРА','Три игрока, три тура и суперигра.','melody-screen'); content.insertAdjacentHTML('beforeend', '<div id="melodyExternalPlayer" class="melody-external-player" hidden></div>'); chooseSavedGame('melody',saved=>{melodyState=saved?{...saved,files:{},cues:{}}:newMelodyState(kind==='melody-intl'?'international':'russian');initMelodyControls(melodyState);melodyState.phoneIds=melodyState.phoneIds.map(id=>connectedPlayers.some(p=>p.id===id)?id:'');melodyAutoSeats(melodyState);for(const [key,attempt] of Object.entries(melodyState.attempts)){if(attempt&&typeof attempt==='object'){attempt.open=false;attempt.token='';}else delete melodyState.attempts[key];}renderMelody();}); }
     if (kind==='memo') { memoryState={...createContest(),pairs:15,deckId:'illustrated',extraMode:'classic',questionQueue:shuffle(memoQuestions.map((_,i)=>i)),questionCursor:0,lastQuestionIndex:null,factQueue:shuffle(memoFacts.map((_,i)=>i)),factCursor:0,lastFactIndex:null,pendingEvent:null,moves:0,seconds:0,deck:[],opened:[],matched:[],locked:false,timer:null,started:false}; renderMemo(); }
     if (kind==='guess') { guessState={...createContest(),playMode:'forehead',index:Math.floor(Math.random()*guessDeck.length),visible:false,screenVisible:true,asked:0,circlePlayers:[],circleHistory:[],activePlayerId:0,round:1}; renderGuess(); }
     if (kind==='croc') { const drawPile=shuffle(Array.from({length:100},(_,i)=>i)); crocState={...createContest(),pawns:crocPawnChoices.map(p=>p.id),card:drawPile.shift(),task:0,seconds:60,remaining:60,timer:null,track:Array(1).fill(0),scores:Array(1).fill(0),drawPile,discardPile:[],roundBlocked:{},round:1,turnsInRound:0,revealed:false,cardHidden:false,cardFaceUp:false,cardFlipAnimating:false,taskSelected:false,deckMode:'simple',finished:false}; renderCroc(); }
