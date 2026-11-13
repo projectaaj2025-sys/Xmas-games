@@ -12,6 +12,7 @@
       <div id="manualRoomEntry" class="manual-room-entry" hidden><label class="phone-name-label" for="roomCodeInput">Код комнаты от ведущего</label><input id="roomCodeInput" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Например, A7B2C"><small>Введите код ведущего. Телефону и компьютеру нужен интернет.</small></div>
       <label class="phone-name-label" for="phoneRole">Выберите роль</label><select id="phoneRole" class="phone-role"><option value="player">Игрок</option><option value="viewer">Зритель</option></select>
       <button id="joinButton" class="join-button" type="button">Подключиться к игре <span>→</span></button>
+      <div class="join-feedback" id="joinFeedback" role="status" aria-live="polite"></div>
       <div class="phone-room" id="phoneRoom"></div>
     </section>
     <section id="gamePanel" class="phone-card player-card" hidden>
