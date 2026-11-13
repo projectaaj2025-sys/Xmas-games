@@ -573,3 +573,11 @@
   .melody-main .melody-show-heading h2{font-size:clamp(27px,2.4vw,42px)}
   .melody-main .melody-show-heading strong{font-size:clamp(24px,2vw,32px)}
 }
+/* Панель «Телефоны по очереди» на пульте ведущего */
+.turn-seats{margin:10px 0 14px;padding:10px 12px;border:1px solid #d7e8f2;border-radius:12px;background:#f7fcff}
+.turn-seats summary{cursor:pointer;font-weight:900;color:#2f5673;overflow-wrap:anywhere}
+.turn-seats p{margin:8px 0;font-size:13px;line-height:1.45;color:#5b7488}
+.turn-seat-list{display:grid;gap:8px;margin:8px 0}
+.turn-seat-list label{display:grid;gap:4px;font-size:13px;font-weight:800;color:#33566f}
+.turn-seat-list select{width:100%;max-width:320px;padding:8px;border:1px solid #c6ddea;border-radius:9px;background:#fff;color:#26415a;font:inherit}
+.turn-phone-link{display:inline-block;font-size:12.5px;color:#3d7896;word-break:break-all}

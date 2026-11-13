@@ -66,6 +66,8 @@
   function renderPlayerState(state){
     if(state?.game==='field'){$('#melodyPhone').hidden=true;renderFieldPhone(state);return;}
     if(state?.game==='melody'){renderMelodyPhone(state);return;}
+    // The circle already shows each card and its own buttons; only these games need the turn panel.
+    if(['quiz','memo','croc'].includes(state?.game)&&state.turn){renderTurnPhone(state);return;}
     $('#melodyPhone').hidden=true;$('#fieldPhone').hidden=true;$('#playerCardFace').hidden=false;document.querySelector('.phone-reminder').hidden=false;
     if(!state||state.game!=='guess'||state.guessMode!=='circle'||!state.playerView){
       $('#playerTurn').textContent='ЖДЁМ ВЕДУЩЕГО';$('#playerHeading').textContent=phoneRole==='viewer'?'Вы подключены как зритель':'Телефонный круг ещё не начался';
@@ -102,6 +104,95 @@
     const enabled=phoneRole==='player'&&i>=0&&!passed&&buzz.eligible?.[i]!==false&&buzz.open&&typeof buzz.token==='string'&&!!buzz.token&&!melodyPendingToken&&socket?.readyState===WebSocket.OPEN;
     box.innerHTML=`<button type="button" id="melodyBuzz" class="join-button phone-buzz" ${enabled?'':'disabled'}>♫ Я знаю!</button>`;
     box.querySelector('#melodyBuzz').addEventListener('click',e=>{if(!enabled||!socket||socket.readyState!==WebSocket.OPEN)return;e.currentTarget.disabled=true;melodyPendingToken=buzz.token;$('#playerInstructions').textContent='Сигнал отправлен. Ждём подтверждения ведущего…';try{socket.send(JSON.stringify({type:'player-action',action:{kind:'melody-buzz',token:buzz.token}}));}catch{melodyPendingToken='';e.currentTarget.disabled=socket.readyState!==WebSocket.OPEN;$('#playerInstructions').textContent='Не удалось отправить сигнал. Проверьте связь и попробуйте снова.';return;}clearTimeout(melodyPendingTimer);melodyPendingTimer=setTimeout(()=>{if(melodyPendingToken===buzz.token){melodyPendingToken='';if(lastState?.game==='melody'&&lastState.buzz?.token===buzz.token){renderMelodyPhone(lastState);$('#playerInstructions').textContent='Нет подтверждения. Проверьте связь и попробуйте ещё раз.';}}},2500);});
+  }
+  // --- «Моя очередь»: телефон заменяет пульт, пока ходит этот игрок ---
+  let turnDraft={game:'',tiles:[]};
+  function sendTurn(state,action){
+    if(!socket||socket.readyState!==WebSocket.OPEN)return false;
+    try{socket.send(JSON.stringify({type:'player-action',action:{kind:'turn-action',game:state.game,action}}));return true;}
+    catch{return false;}
+  }
+  function renderTurnPhone(state){
+    const turn=state.turn||{},box=$('#fieldPhone');
+    $('#melodyPhone').hidden=true;$('#playerCardFace').hidden=true;$('#playerActions').hidden=true;document.querySelector('.phone-reminder').hidden=true;$('#playerHint').textContent='';
+    box.hidden=false;
+    const mine=Number.isInteger(turn.mine)?turn.mine:null,active=Number.isInteger(turn.active)?turn.active:-1;
+    const myName=mine!==null&&Array.isArray(turn.names)?turn.names[mine]:'';
+    const activeName=active>=0&&Array.isArray(turn.names)?turn.names[active]:'';
+    const isMyTurn=mine!==null&&mine===active;
+    $('#playerTurn').textContent=state.game==='quiz'?'НОВОГОДНЯЯ ВИКТОРИНА':state.game==='memo'?'МЕМО · НОВЫЙ ГОД':state.game==='croc'?'СУПЕРКРОКОДИЛ':'НОВОГОДНИЕ ТАРАНТИНКИ';
+    $('#playerHeading').textContent=phoneRole==='viewer'?'Вы зритель':isMyTurn?'ВАША ОЧЕРЕДЬ!':activeName?`Отвечает: ${activeName}`:'Ждём ведущего';
+    $('#playerInstructions').textContent=phoneRole==='viewer'?'Следите за игрой на большом экране. Для участия выберите роль игрока в настройках профиля.':mine===null?'Телефон не привязан к игроку. Попросите ведущего выбрать ваше имя в блоке «Телефоны по очереди» — или играйте с его экрана.':isMyTurn?'Нажимайте кнопки здесь — ведущий увидит ваш выбор сразу.':'Сейчас не ваш ход. Телефон включится сам, когда очередь дойдёт до вас.';
+    if(phoneRole==='viewer'||mine===null){box.innerHTML='';return;}
+    if(!isMyTurn){box.innerHTML=`<p class="phone-turn-wait">Сейчас ходит <b>${esc(activeName||'другой игрок')}</b>. Ваш ход придёт сюда автоматически.</p>`;return;}
+    const content=state.game==='quiz'?quizTurnMarkup(state):state.game==='memo'?memoTurnMarkup(state):crocTurnMarkup(state);
+    box.innerHTML=`<div class="phone-turn-box">${content}</div>`;
+    bindTurnPhone(state);
+  }
+  function quizTurnMarkup(state){
+    const quiz=state.turn.quiz||{};
+    if(state.turn.phase==='finished')return '<p class="phone-turn-done">Игра завершена. Спасибо за игру!</p>';
+    if(quiz.selected==null){
+      const free=Array.isArray(quiz.free)?quiz.free:[];
+      return `<p class="phone-turn-lead">Ваш ход: выберите любой свободный вопрос.</p><div class="phone-quiz-board">${free.map(i=>`<button class="phone-quiz-cell" data-quiz-cell="${i}">${i+1}</button>`).join('')}</div>`;
+    }
+    if(quiz.type==='choice'&&!state.turn.revealed){
+      return `<p class="phone-turn-lead">Вопрос ${Number(quiz.selected)+1}: выберите ответ.</p><div class="phone-quiz-options">${(quiz.options||[]).map((option,i)=>`<button class="phone-quiz-option" data-quiz-option="${i}"><b>${String.fromCharCode(65+i)}.</b> ${esc(option)}</button>`).join('')}</div>`;
+    }
+    if(state.turn.revealed){
+      if(quiz.type==='choice')return `<p class="phone-turn-done">${quiz.result?'Верно! +1 балл, ход остаётся ваш.':'Не угадали — ход переходит дальше.'}</p><button class="join-button" data-quiz-continue>Следующий вопрос →</button>`;
+      return `<p class="phone-turn-done">Правильный ответ: <b>${esc(quiz.answer||'')}</b></p><div class="phone-turn-row"><button class="join-button" data-quiz-judge="1">Ответ верный · +1</button><button class="pass-button" data-quiz-judge="0">Не угадали</button></div>`;
+    }
+    return `<p class="phone-turn-lead">Откройте ответ, когда команда ответит вслух.</p><button class="join-button" data-quiz-reveal>Узнать ответ</button><button class="pass-button" data-quiz-back>← К игровому полю</button>`;
+  }
+  function memoTurnMarkup(state){
+    const memo=state.turn.memo||{};
+    if(memo.event&&memo.event.type==='question'){
+      if(memo.event.answered)return `<p class="phone-turn-done">Ответ принят.</p><button class="join-button" data-memo-continue>Продолжить игру →</button>`;
+      return `<p class="phone-turn-lead">Бонусный вопрос: выберите вариант.</p><div class="phone-quiz-options">${(memo.event.options||[]).map((option,i)=>`<button class="phone-quiz-option" data-memo-answer="${i}">${esc(option)}</button>`).join('')}</div>`;
+    }
+    if(memo.event)return `<p class="phone-turn-lead">Новогодний факт — прочитайте его на большом экране.</p><button class="join-button" data-memo-continue>Продолжить игру →</button>`;
+    const size=Number(memo.size)||0,opened=Array.isArray(memo.opened)?memo.opened:[],matched=Array.isArray(memo.matched)?memo.matched:[];
+    const keep=turnDraft.game==='memo'?turnDraft.tiles:[];
+    const selected=keep.filter(i=>opened.includes(i)&&!matched.includes(i));
+    return `<p class="phone-turn-lead">${memo.locked?'Ход закрыт — ждём ведущего.':'Ваш ход: откройте две карточки.'}</p><div class="phone-memo-grid ${size>16?'compact':''}">${Array.from({length:size},(_,i)=>{const isMatched=matched.includes(i),isOpen=opened.includes(i)||selected.includes(i);return `<button class="phone-memo-tile ${isMatched?'matched':''} ${isOpen?'open':''}" data-memo-tile="${i}" ${memo.locked||isMatched||isOpen?'disabled':''}>${isMatched?'✓':isOpen?'❄':String(i+1).padStart(2,'0')}</button>`;}).join('')}</div><p class="phone-turn-hint">Пары и баллы считает ведущий.</p>`;
+  }
+  function crocTurnMarkup(state){
+    const croc=state.turn.croc||{},words=Array.isArray(croc.words)?croc.words:[];
+    if(croc.selected){
+      return `<p class="phone-turn-lead">Слово ${croc.task+1}${words[croc.task]?`: <b>${esc(words[croc.task])}</b>`:''}</p><div class="phone-turn-row"><button class="join-button" data-croc-reveal>${croc.revealed?'Скрыть слово':'Показать слово'}</button><button class="join-button" data-croc-correct>Угадали ✓</button></div><div class="phone-turn-row"><button class="pass-button" data-croc-skip>Пропустить слово ↷</button></div>`;
+    }
+    return `<p class="phone-turn-lead">Ваш ход: выберите номер слова на карточке ведущего.</p><div class="phone-quiz-options">${Array.from({length:5},(_,i)=>`<button class="phone-quiz-option" data-croc-task="${i}"><span class="task-number">${i+1}</span> Слово ${i+1}</button>`).join('')}</div>`;
+  }
+  function guessTurnMarkup(){
+    return '<p class="phone-turn-lead">Вы угадываете! Задавайте вопросы остальным — они видят вашу карточку.</p><div class="phone-turn-row"><button class="join-button" data-guess-solved>Угадал! 🎉</button><button class="pass-button" data-guess-pass>Передать ход →</button></div>';
+  }
+  function bindTurnPhone(state){
+    const box=$('#fieldPhone');
+    box.querySelectorAll('[data-quiz-cell]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'pick',value:+b.dataset.quizCell})));
+    box.querySelectorAll('[data-quiz-option]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'option',value:+b.dataset.quizOption})));
+    box.querySelector('[data-quiz-reveal]')?.addEventListener('click',()=>sendTurn(state,{kind:'reveal'}));
+    box.querySelectorAll('[data-quiz-judge]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'judge',value:b.dataset.quizJudge==='1'})));
+    box.querySelector('[data-quiz-continue]')?.addEventListener('click',()=>sendTurn(state,{kind:'continue'}));
+    box.querySelector('[data-quiz-back]')?.addEventListener('click',()=>sendTurn(state,{kind:'back'}));
+    box.querySelectorAll('[data-memo-tile]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const tile=Number(b.dataset.memoTile);
+        if(turnDraft.game!=='memo')turnDraft={game:'memo',tiles:[]};
+        if(turnDraft.tiles.includes(tile))turnDraft.tiles=turnDraft.tiles.filter(t=>t!==tile);
+        else turnDraft.tiles=[...turnDraft.tiles,tile].slice(-2);
+        if(turnDraft.tiles.length===2){const pair=turnDraft.tiles.slice();turnDraft.tiles=[];sendTurn(state,{kind:'pair',value:pair});return;}
+        renderTurnPhone(state);
+      });
+    });
+    box.querySelectorAll('[data-memo-answer]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'answer',value:+b.dataset.memoAnswer})));
+    box.querySelector('[data-memo-continue]')?.addEventListener('click',()=>sendTurn(state,{kind:'continue'}));
+    box.querySelectorAll('[data-croc-task]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'select',value:+b.dataset.crocTask})));
+    box.querySelector('[data-croc-reveal]')?.addEventListener('click',()=>sendTurn(state,{kind:'reveal'}));
+    box.querySelector('[data-croc-correct]')?.addEventListener('click',()=>sendTurn(state,{kind:'correct'}));
+    box.querySelector('[data-croc-skip]')?.addEventListener('click',()=>sendTurn(state,{kind:'skip'}));
+    box.querySelector('[data-guess-solved]')?.addEventListener('click',()=>sendTurn(state,{kind:'solved'}));
+    box.querySelector('[data-guess-pass]')?.addEventListener('click',()=>sendTurn(state,{kind:'pass'}));
   }
   let fieldPhonePhase='', fieldPhoneActive='';
   function renderFieldPhone(state){

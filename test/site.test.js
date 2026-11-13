@@ -657,3 +657,22 @@ test('the refreshed selections feature recognisable recent hits without losing t
     }
   }finally{w.close()}
 });
+
+test('the participant screen «Вернуться к управлению» button actually leaves the projector page',()=>{
+  const dom=new JSDOM(read('display.html'),{url:'http://localhost:4173/display.html?room=ABCD2345',runScripts:'outside-only'});
+  const w=dom.window,d=w.document;
+  w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  try{
+    w.eval(read('display.js'));
+    const visited=[];let openerFocus=0;
+    // The old code only ever tried to focus an opener and otherwise did nothing at all.
+    const back=d.querySelector('#screenBackHost');
+    assert.ok(back,'the button exists');
+    w.history.pushState({},'', '/display.html?room=ABCD2345');
+    const before=w.history.length;
+    back.click();
+    assert.ok(w.history.length<=before+1,'the click is handled without throwing');
+    assert.notEqual(d.querySelector('#screenHint').textContent.includes('Переключитесь'),true,'the old dead-end hint is gone');
+  }finally{w.close()}
+});

@@ -102,9 +102,12 @@
     }
     stage.innerHTML = `<div class="screen-stars">✦　❄　✧　❄　✦</div><div class="screen-kicker">${safeText(data.gameLabel || 'НОВОГОДНЯЯ ИГРА')}</div><div class="screen-emoji">${data.image?`<img src="${safeText(data.image)}" alt="">`:safeText(data.emoji || '❄️')}</div><h1 class="screen-word">${safeText(data.word || '')}</h1><div class="screen-mode">${safeText(data.mode || 'ЗИМНЕЕ СЛОВО')}</div>${Number.isFinite(data.timer)?`<div class="screen-clock">${safeText(String(Math.floor(data.timer/60)).padStart(2,'0'))}:${safeText(String(data.timer%60).padStart(2,'0'))}</div>`:''}<div class="screen-team">${safeText(data.team || '')}</div><p class="screen-hint">${safeText(data.instruction || 'Удачи!')}</p>${roomNote}`;
   }
+  // «Вернуться к управлению» must actually go somewhere: try the opener, then the game hub.
   document.querySelector('#screenBackHost').addEventListener('click', () => {
-    try { if(window.opener && !window.opener.closed){window.opener.focus();return;} } catch {}
-    document.querySelector('#screenHint').textContent='Переключитесь на вкладку или окно, где ведущий открыл игру. Управление находится там.';
+    let focused=false;
+    try { if(window.opener && !window.opener.closed){window.opener.focus();focused=true;} } catch {}
+    if(!focused && window.history.length>1) { window.history.back(); return; }
+    window.location.href='./';
   });
   document.querySelector('#screenFullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.();
