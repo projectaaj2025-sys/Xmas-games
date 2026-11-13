@@ -21,7 +21,7 @@ test('a note starts audio immediately, shows the host title and artist on end, t
   a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');
   const audio=a.audios.at(-1);assert.match(audio.url,/novogodnyaya.mp3$/);assert.equal(audio.plays,1);
   assert.equal(a.d.querySelector('.melody-answer').open,false);assert.equal(a.state().answer,'');assert.equal(a.state().answerArtist,'');
-  audio.onended();assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/Новогодняя/);assert.match(a.d.querySelector('.melody-answer').textContent,/Дискотека Авария/);assert.equal(a.state().answer,'');
+  audio.onended();assert.ok(a.d.querySelector('.melody-answer-open'));assert.match(a.d.querySelector('.melody-answer-open').textContent,/Новогодняя/);assert.match(a.d.querySelector('.melody-answer-open').textContent,/Дискотека Авария/);assert.equal(a.state().answer,'');
   a.click('[data-melody-answerer="0"]');assert.ok(a.d.querySelector('#melodyCorrect'));a.click('#melodyCorrect');
   assert.equal(a.state().answer,'Новогодняя');assert.equal(a.state().answerArtist,'Дискотека Авария');assert.equal(a.state().scores[0].score,80);
   a.click('[data-melody-undo="0"]');assert.equal(a.state().answer,'');assert.equal(a.state().scores[0].score,0);a.click('[data-melody-answerer="1"]');a.click('#melodyWrong');
@@ -33,8 +33,8 @@ test('buzz and stop pause playback and show the host answer; old ended events ca
  const a=setup();try{
   a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');const old=a.audios.at(-1);
   a.click('[data-melody-note="1"]');const next=a.audios.at(-1);assert.ok(old.pauses);old.onended();assert.equal(a.d.querySelector('.melody-answer').open,false);
-  a.click('#melodyStop');assert.ok(next.pauses);assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/Стас Костюшкин/);
-  a.click('#melodyPlay');assert.equal(next.plays,2);a.click('[data-melody-answerer="0"]');assert.ok(next.pauses>=2);assert.equal(a.d.querySelector('.melody-answer').open,true);assert.ok(a.d.querySelector('#melodyWrong'));assert.deepEqual(a.errors,[]);
+  a.click('#melodyStop');assert.ok(next.pauses);assert.ok(a.d.querySelector('.melody-answer-open'));assert.match(a.d.querySelector('.melody-answer-open').textContent,/Стас Костюшкин/);
+  a.click('#melodyPlay');assert.equal(next.plays,2);a.click('[data-melody-answerer="0"]');assert.ok(next.pauses>=2);assert.ok(a.d.querySelector('.melody-answer-open'));assert.ok(a.d.querySelector('#melodyWrong'));assert.deepEqual(a.errors,[]);
  }finally{a.w.close()}
 });
 
@@ -43,7 +43,7 @@ test('English note without local audio opens YouTube and handles its completion 
   a.click('[data-open="melody"]');const version=a.d.querySelector('#melodyVersion');version.value='international';version.dispatchEvent(new a.w.Event('change',{bubbles:true}));
   a.click('[data-melody-note="0"]');const frame=a.d.querySelector('#melodyExternalPlayer iframe');assert.ok(frame);assert.match(frame.src,/yXQViqx6GMY.*autoplay=1/);assert.equal(a.state().answer,'');
   a.w.dispatchEvent(new a.w.MessageEvent('message',{origin:'https://www.youtube-nocookie.com',source:frame.contentWindow,data:JSON.stringify({event:'onStateChange',info:0})}));
-  assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/Mariah Carey/);assert.equal(a.state().answer,'');
+  assert.ok(a.d.querySelector('.melody-answer-open'));assert.match(a.d.querySelector('.melody-answer-open').textContent,/Mariah Carey/);assert.equal(a.state().answer,'');
   a.click('[data-melody-answerer="0"]');assert.equal(a.d.querySelector('#melodyExternalPlayer').hidden,true);a.click('#melodyCorrect');assert.equal(a.state().answerArtist,'Mariah Carey');assert.deepEqual(a.errors,[]);
  }finally{a.w.close()}
 });
@@ -64,7 +64,37 @@ test('holiday hit starts locally and reveals title and artist after the clip end
   a.click('[data-open="melody"]');const version=a.d.querySelector('#melodyVersion');version.value='newyear';version.dispatchEvent(new a.w.Event('change',{bubbles:true}));
   a.click('[data-melody-note="4"]');const audio=a.audios.at(-1);
   assert.match(audio.url,/happy-new-year-abba\.mp3$/);assert.equal(audio.plays,1);assert.equal(a.state().answer,'');
-  audio.onended();assert.equal(a.d.querySelector('.melody-answer').open,true);assert.match(a.d.querySelector('.melody-answer').textContent,/Happy New Year/);assert.match(a.d.querySelector('.melody-answer').textContent,/ABBA/);assert.equal(a.state().answer,'');
+  audio.onended();assert.ok(a.d.querySelector('.melody-answer-open'));assert.match(a.d.querySelector('.melody-answer-open').textContent,/Happy New Year/);assert.match(a.d.querySelector('.melody-answer-open').textContent,/ABBA/);assert.equal(a.state().answer,'');
   a.click('[data-melody-answerer="0"]');a.click('#melodyCorrect');assert.equal(a.state().answer,'Happy New Year');assert.equal(a.state().answerArtist,'ABBA');assert.deepEqual(a.errors,[]);
+ }finally{a.w.close()}
+});
+
+test('«Стоп» shows the title on the host console at once, without opening the answer block',()=>{
+ const a=setup();try{
+  a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');
+  assert.equal(a.d.querySelector('details.melody-answer').open,false);
+  assert.equal(a.d.querySelector('.melody-answer-open'),null);
+  a.click('#melodyStop');
+  const visible=a.d.querySelector('.melody-answer-open');
+  assert.ok(visible,'the title is rendered openly after stop');
+  assert.match(visible.textContent,/Новогодняя/);assert.match(visible.textContent,/Дискотека Авария/);
+  assert.equal(a.d.querySelector('details.melody-answer'),null);assert.equal(visible.tagName,'DIV');
+  // The next note folds it away again until the host stops or the clip ends.
+  a.click('[data-melody-note="1"]');assert.equal(a.d.querySelector('.melody-answer-open'),null);
+  a.audios.at(-1).onended();assert.match(a.d.querySelector('.melody-answer-open').textContent,/Стас Костюшкин/);
+  assert.equal(a.state().answer,'','the title is still not sent to phones or the projector');
+ }finally{a.w.close()}
+});
+
+test('auction and supergame open the answer block right away instead of hiding it behind a click',()=>{
+ const a=setup();try{
+  a.click('[data-open="melody"]');a.click('[data-melody-tour="5"]');
+  a.click('#auctionStart');a.click('[data-auction-bid="3"]');
+  assert.equal(a.d.querySelector('#auctionAnswer').open,true,'the auction answer is already open');
+  a.click('[data-auction-tour="4"]');a.click('#superStart');
+  assert.equal(a.d.querySelector('#superAnswer').open,true,'the supergame answer is already open');
+  assert.match(a.d.querySelector('#superAnswer').textContent,/Тает лёд/);
+  a.click('#superStop');assert.equal(a.d.querySelector('#superAnswer').open,true);
+  assert.deepEqual(a.errors,[]);
  }finally{a.w.close()}
 });

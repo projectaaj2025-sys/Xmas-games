@@ -32,7 +32,9 @@ test('all game frames identify this device as the host and the participant displ
 test('melody answer is visible on the host screen only after reveal and is hidden again',()=>{
  const {w,d,click,socket,errors}=setup();try{
   click('[data-open="melody"]');click('[data-melody-note="0"]');
-  const title=d.querySelector('.melody-answer p').textContent;
+  assert.equal(d.querySelector('.melody-answer-open'),null,'the title is not thrown open just by picking a note');
+  click('#melodyStop');
+  const title=d.querySelector('.melody-answer-open p').textContent;
   assert.equal(d.querySelector('.melody-revealed-answer'),null);
   assert.equal(socket.messages.filter(x=>x.type==='state').at(-1).payload.answer,'');
   assert.match(d.querySelector('#melodyReveal').textContent,/участникам/);
