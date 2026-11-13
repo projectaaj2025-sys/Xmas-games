@@ -1,17 +1,19 @@
 (() => {
   const $ = s => document.querySelector(s);
+  // localStorage can throw in in-app browsers and private mode; fall back to memory so the page still works.
+  const store={get(key){try{return localStorage.getItem(key)}catch{return null}},set(key,value){try{localStorage.setItem(key,value)}catch{}}};
   const params = new URLSearchParams(location.search);
   let room = params.get('room') || '';
-  let playerId = localStorage.getItem('snowyPlayerId') || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  localStorage.setItem('snowyPlayerId', playerId);
+  let playerId = store.get('snowyPlayerId') || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  store.set('snowyPlayerId', playerId);
   const tokenKey='snowyPlayerToken';
-  let reconnectToken=localStorage.getItem(tokenKey);
+  let reconnectToken=store.get(tokenKey);
   if(!reconnectToken || !/^[a-f0-9]{64}$/.test(reconnectToken)) {
     const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);
     reconnectToken=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
-    localStorage.setItem(tokenKey,reconnectToken);
+    store.set(tokenKey,reconnectToken);
   }
-  const savedName = localStorage.getItem('snowyPlayerName') || '';
+  const savedName = store.get('snowyPlayerName') || '';
   let socket = null, playerName = '', joined = false, retryTimer = null, phoneRole = 'player', lastState = null, profileTimer = null, profileRequest = 0;
   let melodyPendingToken='',melodyPendingTimer=null;
   $('#playerName').value = savedName;
@@ -24,11 +26,22 @@
   function status(text, state='') {
     const el=$('#phoneConnection');el.className=`phone-connection ${state}`;el.innerHTML=`<i></i> ${text}`;
   }
+  const wsScheme=()=>location.protocol==='https:'?'wss:':'ws:';
+  const hostedStatic=()=>location.protocol==='https:' && typeof window.StaticSync==='function';
+  let staticTried=false, directTried=false;
+  // HTTPS pages (GitHub Pages, previews) try the hosted PeerJS channel first, then the same-origin /sync socket as a fallback.
+  function buildSocket() {
+    if (hostedStatic() && !staticTried) { staticTried=true; try { return new window.StaticSync(room,'client'); } catch {} }
+    directTried = directTried || !hostedStatic();
+    return new WebSocket(`${wsScheme()}//${location.host}/sync`);
+  }
   function connect() {
     if (!room || !playerName) return;
-    clearTimeout(retryTimer);
-    const scheme=location.protocol==='https:'?'wss:':'ws:';
-    socket=location.protocol==='https:' && window.StaticSync ? new window.StaticSync(room,'client') : new WebSocket(`${scheme}//${location.host}/sync`);
+    clearTimeout(retryTimer); staticTried=false; directTried=false;
+    attach(buildSocket());
+  }
+  function attach(next) {
+    socket=next;
     socket.addEventListener('open',()=>socket.send(JSON.stringify({type:'join',room,role:phoneRole,playerId,reconnectToken,name:playerName})));
     socket.addEventListener('message',event=>{
       let data;try{data=JSON.parse(event.data)}catch{return}
@@ -39,7 +52,7 @@
       if(data.type==='profile-updated' && data.requestId===profileRequest){
         clearTimeout(profileTimer);$('#saveProfile').disabled=false;
         playerName=data.name;phoneRole=data.role;playerId=data.playerId||playerId;
-        localStorage.setItem('snowyPlayerName',playerName);$('#playerName').value=playerName;$('#phoneRole').value=phoneRole;updateProfileUI();
+        store.set('snowyPlayerName',playerName);$('#playerName').value=playerName;$('#phoneRole').value=phoneRole;updateProfileUI();
         $('#profileFeedback').textContent='Сохранено.';$('#profileSettings').open=false;
         if(lastState?.game==='field')renderPlayerState(lastState);
         else if(phoneRole==='viewer'){lastState=null;renderPlayerState(null);}
@@ -47,7 +60,14 @@
       if(data.type==='profile-error' && data.requestId===profileRequest){clearTimeout(profileTimer);$('#saveProfile').disabled=false;$('#profileFeedback').textContent='Не удалось сохранить. Проверьте имя и роль.';}
       if(data.type==='state'){lastState=data.payload;renderPlayerState(data.payload);}
     });
-    socket.addEventListener('close',()=>{clearTimeout(melodyPendingTimer);melodyPendingToken='';if($('#melodyBuzz'))$('#melodyBuzz').disabled=true;clearTimeout(profileTimer);$('#saveProfile').disabled=false;if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300)}else{status('Не удалось подключиться','disconnected');$('#phoneRoom').textContent='Проверьте связь, код комнаты и открытую страницу ведущего, затем попробуйте ещё раз.'}});
+    socket.addEventListener('close',()=>{clearTimeout(melodyPendingTimer);melodyPendingToken='';if($('#melodyBuzz'))$('#melodyBuzz').disabled=true;clearTimeout(profileTimer);$('#saveProfile').disabled=false;
+      if(joined){status('Связь прервалась — подключаемся…','disconnected');retryTimer=setTimeout(connect,1300);return;}
+      // Hosted channel failed — give the same-origin socket one chance before giving up.
+      if(hostedStatic() && staticTried && !directTried && socket===next){directTried=true;status('Пробуем напрямую…');try{attach(new WebSocket(`${wsScheme()}//${location.host}/sync`));}catch{directTried=true;status('Не удалось подключиться','disconnected');const hint='Проверьте интернет и открытую страницу ведущего, затем нажмите «Подключиться к игре» ещё раз.';$('#phoneRoom').textContent=hint;joinFeedback(hint);}return;}
+      status('Не удалось подключиться','disconnected');
+      const hint='Проверьте интернет и открытую страницу ведущего, затем нажмите «Подключиться к игре» ещё раз.';
+      $('#phoneRoom').textContent=hint;
+      const feedback=$('#joinFeedback');if(feedback)feedback.textContent=hint;});
     socket.addEventListener('error',()=>socket.close());
   }
   function updateProfileUI(){
@@ -227,11 +247,12 @@
   }
   function sendField(action){if(!socket||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type:'player-action',action}));}
   function sendAction(action){if(!socket||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type:'player-action',action,playerId}));$('#playerActions').hidden=true;$('#playerHeading').textContent='Ход передан ведущему…';}
+  function joinFeedback(text){const el=$('#joinFeedback');if(el)el.textContent=text||'';}
   $('#joinButton').addEventListener('click',()=>{
     playerName=$('#playerName').value.trim().slice(0,24); phoneRole=$('#phoneRole').value;
-    if(!room){room=$('#roomCodeInput').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(room.length<4){$('#phoneRoom').textContent='Введи код комнаты из сообщения ведущего.';$('#roomCodeInput').focus();return;}$('#roomCode').textContent=room;$('#phoneRoom').textContent=`КОМНАТА ${room}`;}
-    if(!playerName){$('#playerName').focus();return;}
-    localStorage.setItem('snowyPlayerName',playerName);status('Подключаемся…');connect();
+    if(!room){room=$('#roomCodeInput').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(room.length<4){joinFeedback('Введи код комнаты из сообщения ведущего (4–8 символов).');$('#roomCodeInput').focus();return;}$('#roomCode').textContent=room;$('#phoneRoom').textContent=`КОМНАТА ${room}`;}
+    if(!playerName){joinFeedback('Введи имя, чтобы подключиться к игре.');$('#playerName').focus();return;}
+    store.set('snowyPlayerName',playerName);joinFeedback('');status('Подключаемся…');connect();
   });
   $('#playerName').addEventListener('keydown',e=>{if(e.key==='Enter')$('#joinButton').click()});
   $('#solvedButton').addEventListener('click',()=>sendAction('solved'));

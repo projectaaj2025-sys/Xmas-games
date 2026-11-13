@@ -283,3 +283,25 @@ test('a seating phone drives the quiz and memo on its turn, and the host rejects
     }
   }finally{for(const dom of doms)dom.window.close()}
 });
+
+test('the «Подключиться к игре» button works even when storage is blocked, and gives inline feedback',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  const vc=new (require('jsdom').VirtualConsole)();vc.on('jsdomError',()=>{});
+  const dom=new JSDOM(fs.readFileSync('player.html','utf8'),{url:'https://example.com/Xmas-games/player.html?room=ABCD2345',runScripts:'outside-only',virtualConsole:vc,beforeParse(window){
+    const bad={getItem(){throw new Error('SecurityError')},setItem(){throw new Error('SecurityError')},removeItem(){},clear(){},key(){return null},length:0};
+    Object.defineProperty(window,'localStorage',{value:bad,configurable:true});
+  }});
+  doms.push(dom);
+  const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});
+  try{
+    w.eval(fs.readFileSync('static-sync.js','utf8'));w.eval(fs.readFileSync('player.js','utf8'));
+    const d=w.document;
+    d.querySelector('#joinButton').click();
+    assert.match(d.querySelector('#joinFeedback').textContent,/имя/i,'an empty name produces an inline message, not silence');
+    d.querySelector('#playerName').value='Аня';
+    d.querySelector('#joinButton').click();
+    assert.equal(d.querySelector('#phoneConnection').textContent.trim(),'Подключаемся…');
+    assert.equal(d.querySelector('#gamePanel').hidden,true);
+    await wait();await wait();
+  }finally{for(const d2 of doms)d2.window.close()}
+});
