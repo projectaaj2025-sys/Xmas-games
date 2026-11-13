@@ -47,7 +47,7 @@ test('melody saves notes, scores and selection, safely disposes audio and allows
   const a=setup();let saved;
   try{
     a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');
-    a.click('#melodyStop');assert.ok(a.d.querySelector('.melody-answer-open'));a.click('[data-melody-score="0"][data-direction="-1"]');assert.equal(a.state().scores[0].score,-80);assert.ok(a.d.querySelector('.melody-answer-open'),'the open answer survives a re-render');
+    a.click('#melodyReveal');assert.ok(a.d.querySelector('.melody-answer-open'));a.click('[data-melody-score="0"][data-direction="-1"]');assert.equal(a.state().scores[0].score,-80);assert.ok(a.d.querySelector('.melody-answer-open'),'the open answer survives a re-render');
     a.click('[data-melody-undo="0"]');assert.equal(a.state().scores[0].score,0);
     a.click('[data-melody-score="0"][data-direction="1"]');a.click('#melodyDone');a.click('[data-melody-note="1"]');
     const file=a.d.querySelector('#melodyFile');Object.defineProperty(file,'files',{value:[new a.w.File(['x'],'custom.mp3')]});file.dispatchEvent(new a.w.Event('change',{bubbles:true}));
@@ -162,7 +162,9 @@ test('holiday selection saves and resumes its own score and selected note',()=>{
   const b=setup(saved);try{
     b.click('[data-open="melody"]');b.click('#resumeGame');
     assert.equal(b.d.querySelector('#melodyVersion').value,'newyear');assert.equal(b.state().scores[0].score,70);
-    assert.equal(b.state().rows[0][4].selected,true);assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
+    assert.equal(b.state().rows[0][4].selected,true);
+    assert.equal(b.d.querySelector('.melody-answer'),null,'a resumed game does not show the title until the host asks for it');
+    b.click('#melodyReveal');assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
     assert.deepEqual(b.played,[]);assert.deepEqual(b.errors,[]);
   }finally{b.w.close()}
 });
@@ -184,7 +186,8 @@ test('legacy holiday progress follows matching songs and warns before bonus rese
     b.click('#resumeGame');const s=JSON.parse(b.snapshot()['snowy-host-melody-v1']).state;
     assert.deepEqual(s.names,['Аня','Борис','Света']);assert.deepEqual(s.scores,[80,40,-20]);
     assert.deepEqual(s.used[0],[0,10,13]);assert.deepEqual(s.used[2],[]);
-    assert.equal(s.selected,4);assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year');
+    assert.equal(s.selected,4);
+    assert.equal(b.d.querySelector('.melody-answer p').textContent,'Happy New Year','this saved game was already revealed');
     assert.equal(s.judged['newyear-1-4-0'],80);assert.equal(s.judged['newyear-1-10-1'],40);assert.equal(s.judged['newyear-3-0-2'],undefined);
     assert.ok(s.attempts['newyear-1-4']);assert.equal(s.attempts['newyear-3-0'],undefined);
     assert.equal(s.auction.phase,'setup');assert.deepEqual(s.auction.points,[0,0]);assert.equal(s.super.status,'ready');assert.equal(s.super.seconds,30);

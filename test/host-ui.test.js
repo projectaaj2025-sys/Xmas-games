@@ -29,18 +29,20 @@ test('all game frames identify this device as the host and the participant displ
  }finally{w.close()}
 });
 
-test('melody answer is visible on the host screen only after reveal and is hidden again',()=>{
+test('the melody title appears on the host screen and for participants only after «Показать ответ»',()=>{
  const {w,d,click,socket,errors}=setup();try{
+  const last=()=>socket.messages.filter(x=>x.type==='state').at(-1).payload;
   click('[data-open="melody"]');click('[data-melody-note="0"]');
-  assert.equal(d.querySelector('.melody-answer-open'),null,'the title is not thrown open just by picking a note');
-  click('#melodyStop');
+  assert.equal(d.querySelector('.melody-answer'),null,'the title is not rendered just by picking a note');
+  click('#melodyStop');assert.equal(d.querySelector('.melody-answer'),null,'«Стоп» does not render the title');
+  assert.equal(last().answer,'','participants get nothing automatically');
+  assert.match(d.querySelector('#melodyReveal').textContent,/Показать ответ/);
+  click('#melodyReveal');
   const title=d.querySelector('.melody-answer-open p').textContent;
-  assert.equal(d.querySelector('.melody-revealed-answer'),null);
-  assert.equal(socket.messages.filter(x=>x.type==='state').at(-1).payload.answer,'');
-  assert.match(d.querySelector('#melodyReveal').textContent,/участникам/);
-  click('#melodyReveal');assert.match(d.querySelector('.melody-revealed-answer').textContent,new RegExp(title));
-  assert.equal(socket.messages.filter(x=>x.type==='state').at(-1).payload.answer,title);
-  click('#melodyReveal');assert.equal(d.querySelector('.melody-revealed-answer'),null);
-  assert.equal(socket.messages.filter(x=>x.type==='state').at(-1).payload.answer,'');assert.deepEqual(errors,[]);
+  assert.ok(title);assert.match(d.querySelector('.melody-answer-open').textContent,/участники тоже видят/);
+  assert.equal(last().answer,title,'participants see the title after the host presses the button');
+  assert.equal(d.querySelector('.melody-revealed-answer').textContent.includes(title),true);
+  click('#melodyReveal');assert.equal(d.querySelector('.melody-answer'),null);
+  assert.equal(last().answer,'','hiding takes it back');assert.deepEqual(errors,[]);
  }finally{w.close()}
 });

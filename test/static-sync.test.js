@@ -215,12 +215,15 @@ test('a melody note opens the phone buzzers at once while the answer stays on th
     d.querySelector('[data-melody-note="0"]').click();await wait();await wait();
     assert.equal(phone.document.querySelector('#melodyBuzz').disabled,false,'buzz is live while the clip plays');
     assert.match(phone.document.querySelector('#playerHeading').textContent,/Нажмите|знаете/);
-    assert.equal(d.querySelector('details.melody-answer').open,false,'host answer is hidden until stop or end');
+    assert.equal(d.querySelector('.melody-answer'),null,'host answer is hidden until the host reveals it');
     phone.document.querySelector('#melodyBuzz').click();await wait();await wait();
     assert.equal(host.__hostSync.state.buzz.active,0);
     d.querySelector('#melodyStop').click();await wait();
-    assert.ok(d.querySelector('.melody-answer-open'),'host sees the answer after stop');
+    assert.equal(d.querySelector('.melody-answer'),null,'«Стоп» still shows nothing to the host');
     assert.equal(host.__hostSync.state.answer,'','participants never receive the title');
+    d.querySelector('#melodyReveal').click();await wait();
+    assert.ok(d.querySelector('.melody-answer-open'),'the host button shows the title');
+    assert.equal(host.__hostSync.state.answer,'Новогодняя','and then the participants see it too');
   }finally{for(const dom of doms)dom.window.close()}
 });
 
