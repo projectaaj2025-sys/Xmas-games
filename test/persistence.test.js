@@ -47,7 +47,7 @@ test('melody saves notes, scores and selection, safely disposes audio and allows
   const a=setup();let saved;
   try{
     a.click('[data-open="melody"]');a.click('[data-melody-note="0"]');
-    a.d.querySelector('.melody-answer').open=true;a.click('[data-melody-score="0"][data-direction="-1"]');assert.equal(a.state().scores[0].score,-80);assert.equal(a.d.querySelector('.melody-answer').open,true);
+    a.click('#melodyStop');assert.ok(a.d.querySelector('.melody-answer-open'));a.click('[data-melody-score="0"][data-direction="-1"]');assert.equal(a.state().scores[0].score,-80);assert.ok(a.d.querySelector('.melody-answer-open'),'the open answer survives a re-render');
     a.click('[data-melody-undo="0"]');assert.equal(a.state().scores[0].score,0);
     a.click('[data-melody-score="0"][data-direction="1"]');a.click('#melodyDone');a.click('[data-melody-note="1"]');
     const file=a.d.querySelector('#melodyFile');Object.defineProperty(file,'files',{value:[new a.w.File(['x'],'custom.mp3')]});file.dispatchEvent(new a.w.Event('change',{bubbles:true}));
