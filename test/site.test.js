@@ -293,12 +293,16 @@ test('Russian melody sources follow the right note, including mixed mode', () =>
     const doc=w.document; doc.querySelector('[data-open="melody"]').click();
     assert.doesNotMatch(doc.querySelector('.melody-song-list').textContent,/Стекловата|Новогодняя песня — The Limba/);
     doc.querySelector('[data-melody-note="0"]').click();
+    assert.equal(doc.querySelector('.melody-answer'),null,'the title is never rendered automatically');
+    assert.equal(doc.querySelector('.melody-answer-open'),null);
+    doc.querySelector('#melodyReveal').click();
     assert.match(doc.querySelector('.melody-answer p').textContent,/Новогодняя/);
     assert.match(doc.querySelector('.melody-audio-controls a').href,/song\/9293226/);
     doc.querySelector('#melodyYoutube').click();
     assert.match(doc.querySelector('#melodyExternalPlayer iframe').src,/1-bxBXOE368/);
     const select=doc.querySelector('#melodyVersion'); select.value='mixed'; select.dispatchEvent(new w.Event('change',{bubbles:true}));
     doc.querySelector('[data-melody-note="1"]').click();
+    doc.querySelector('#melodyReveal').click();
     assert.match(doc.querySelector('.melody-answer p').textContent,/Last Christmas/);
     assert.ok(doc.querySelector('#melodyYoutube'));
   } finally {w.close()}
@@ -343,12 +347,17 @@ test('supergame skips and revisits, wins after seven, ends on error or timeout, 
     socket.listeners.open();const d=w.document;d.querySelector('[data-open="melody"]').click();d.querySelector('[data-melody-tour="4"]').click();
     assert.match(d.querySelector('.melody-stage').textContent,/семь мелодий за 30 секунд/i);
     d.querySelector('#superStart').click();assert.match(plays.at(-1),/modern-ru-22\.mp3$/);
+    assert.equal(d.querySelector('.melody-answer'),null,'supergame keeps the title hidden');
+    d.querySelector('#superReveal').click();
     const first=d.querySelector('.melody-answer p').textContent;
+    d.querySelector('#superReveal').click();
     const last=()=>socket.messages.filter(m=>m.type==='state').at(-1).payload;
     assert.equal(last().mode,'super');assert.ok(!JSON.stringify(last()).includes(first));
-    d.querySelector('#superSkip').click();assert.notEqual(d.querySelector('.melody-answer p').textContent,first);
+    d.querySelector('#superSkip').click();d.querySelector('#superReveal').click();
+    assert.notEqual(d.querySelector('.melody-answer p').textContent,first);d.querySelector('#superReveal').click();
     for(let i=0;i<6;i++)d.querySelector('#superCorrect').click();
-    assert.equal(d.querySelector('.melody-answer p').textContent,first);
+    d.querySelector('#superReveal').click();
+    assert.equal(d.querySelector('.melody-answer p').textContent,first);d.querySelector('#superReveal').click();
     d.querySelector('#superCorrect').click();assert.match(d.querySelector('.melody-stage').textContent,/Победа/);assert.equal(last().status,'won');
     d.querySelector('#superStart').click();d.querySelector('#superWrong').click();assert.equal(last().status,'lost');
     d.querySelector('#superStart').click();now+=31000;d.querySelector('#superCorrect').click();assert.equal(last().status,'lost');
@@ -390,7 +399,8 @@ test('bonus auction enforces bids, awards mistakes to the opponent and sends the
     click('#auctionStart');assert.equal(d.querySelector('#auctionPass').disabled,true);
     click('[data-auction-bid="7"]');assert.equal(d.querySelector('[data-auction-bid="7"]').disabled,true);
     click('[data-auction-bid="5"]');assert.equal(d.querySelector('[data-auction-bid="5"]').disabled,true);
-    click('#auctionPass');const answer=d.querySelector('.melody-answer p').textContent;
+    click('#auctionPass');assert.equal(d.querySelector('.melody-answer'),null,'auction keeps the title hidden');
+    click('#auctionReveal');const answer=d.querySelector('.melody-answer p').textContent;
     assert.equal(payload().phase,'guess');assert.equal(payload().bid,5);assert.equal(payload().answer,'');assert.ok(!JSON.stringify(payload()).includes(answer));
     click('#auctionWrong');assert.deepEqual(Array.from(payload().players,p=>p.score),[1,0]);assert.equal(payload().answer,answer);
     click('#auctionNext');click('[data-auction-bid="3"]');assert.equal(payload().phase,'guess');click('#auctionCorrect');
@@ -439,8 +449,8 @@ test('Russian recordings are playable and updated notes have matching audio', ()
     assert.equal(w.MELODY_SONGS.russian.filter((title,i)=>w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[title]).length,162);
     for(const i of w.MELODY_SUPER_TRACKS.russian) assert.ok(w.MELODY_RUSSIAN_AUDIO_BY_INDEX[i]||w.MELODY_RUSSIAN_AUDIO[w.MELODY_SONGS.russian[i]]);
     const d=w.document;d.querySelector('[data-open="melody"]').click();
-    d.querySelector('[data-melody-note="2"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Одиночество');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-31\.mp3$/);
-    d.querySelector('[data-melody-note="1"]').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Женщина, я не танцую');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-30\.mp3$/);
+    d.querySelector('[data-melody-note="2"]').click();d.querySelector('#melodyReveal').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Одиночество');assert.equal(d.querySelector('#melodyPlay').disabled,false);d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-31\.mp3$/);
+    d.querySelector('[data-melody-note="1"]').click();d.querySelector('#melodyReveal').click();assert.equal(d.querySelector('.melody-answer p').textContent,'Женщина, я не танцую');d.querySelector('#melodyPlay').click();assert.match(played.at(-1),/modern-ru-30\.mp3$/);
   } finally {w.close()}
 });
 
@@ -462,6 +472,8 @@ test('famous new songs play locally with matching titles and artists', () => {
     ];
     for(const [tour,note,title,file,artist] of positions){
       d.querySelector(`[data-melody-tour="${tour}"]`).click();d.querySelector(`[data-melody-note="${note}"]`).click();
+      assert.equal(d.querySelector('.melody-answer'),null,'hidden until the host reveals');
+      d.querySelector('#melodyReveal').click();
       assert.equal(d.querySelector('.melody-answer p').textContent,title);assert.ok(d.querySelector('.melody-answer small').textContent.includes(artist));assert.equal(d.querySelector('#melodyPlay').disabled,false);
       d.querySelector('#melodyPlay').click();assert.ok(played.at(-1).endsWith(file),title);
       const bytes=fs.readFileSync(played.at(-1));assert.ok(bytes.length>100000,title);
@@ -519,6 +531,8 @@ test('all Russian board slots and catalog recordings are local, with no repeats 
       for(let note=0;note<20;note++) {
         d.querySelector(`[data-melody-note="${note}"]`).click();
         assert.equal(d.querySelector('#melodyPlay').disabled,false,`${tour}:${note}`);
+        assert.equal(d.querySelector('.melody-answer'),null,'hidden until the host reveals');
+        d.querySelector('#melodyReveal').click();
         assert.equal(d.querySelector('.melody-answer p').textContent,w.MELODY_SONGS.russian[indices[note]]);
         d.querySelector('#melodyPlay').click();const bytes=fs.readFileSync(played.at(-1));
         assert.ok(bytes.length>80000);assert.ok(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===0xff);
@@ -560,6 +574,7 @@ test('holiday-only mode has distinct seasonal songs and local playback in every 
         const t=tracks[note],title=w.MELODY_SONGS[t.language][t.index];
         const before=played.length;click(`[data-melody-note="${note}"]`);
         assert.equal(played.length,before+1,`note must autoplay ${tour}:${note}`);
+        d.querySelector('#melodyReveal').click();
         assert.equal(d.querySelector('.melody-answer p').textContent,title);assert.ok(fs.existsSync(played.at(-1)),title);
       }
     }
@@ -588,6 +603,9 @@ test('every melody mode has 72 distinct songs with usable sources across boards 
       assert.equal(d.querySelectorAll('.melody-song-list li').length,72);assert.doesNotMatch(d.querySelector('.melody-song-list').textContent,/повтор названия/);
       const songs=[];
       const capture=()=>{
+        // Reveal is a toggle: only press it while the title is still hidden.
+        const reveal=d.querySelector('#melodyReveal')||d.querySelector('#auctionReveal')||d.querySelector('#superReveal');
+        if(!d.querySelector('.melody-answer-open'))reveal.click();
         const title=d.querySelector('.melody-answer p')?.textContent,artist=d.querySelector('.melody-answer small')?.textContent;
         assert.ok(title,mode);assert.ok(artist && !artist.endsWith('не указан'),`${mode}: ${title}`);songs.push(title);
       };
