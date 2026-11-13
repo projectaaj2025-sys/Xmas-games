@@ -255,28 +255,31 @@ test('a seating phone drives the quiz and memo on its turn, and the host rejects
     const b=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
     for(const [w,name] of [[a,'Команда 1'],[b,'Команда 2']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#joinButton').click()}
     await wait();await wait();
-    // Phones named after the teams are seated automatically, so the turn panel is enough.
-    assert.equal(a.document.querySelector('#playerHeading').textContent,'ВАША ОЧЕРЕДЬ!');
-    assert.match(b.document.querySelector('#playerHeading').textContent,/Отвечает: Команда 1/);
-    const before=b.document.querySelectorAll('[data-quiz-cell]').length;assert.equal(before,0,'only the phone on its turn gets the board');
-    a.document.querySelector('[data-quiz-cell]').click();await wait();
+    // The active team is announced on the host console; read it instead of guessing.
+    const activeName=host.__hostSync.state.turn?.names[host.__hostSync.state.turn.active];
+    const phones={'Команда 1':a,'Команда 2':b};
+    const driver=phones[activeName],other=activeName==='Команда 1'?b:a,otherName=activeName==='Команда 1'?'Команда 2':'Команда 1';
+    assert.equal(driver.document.querySelector('#playerHeading').textContent,'ВАША ОЧЕРЕДЬ!');
+    assert.match(other.document.querySelector('#playerHeading').textContent,new RegExp('Отвечает: '+activeName));
+    assert.equal(other.document.querySelectorAll('[data-quiz-cell]').length,0,'only the phone on its turn gets the board');
+    driver.document.querySelector('[data-quiz-cell]').click();await wait();
     assert.ok(d.querySelector('.quiz-question-card'),'the host opens the chosen question');
-    assert.ok(a.document.querySelectorAll('[data-quiz-option]').length>0,'the phone gets the answer options');
-    a.document.querySelector('[data-quiz-option]').click();await wait();
-    assert.match(a.document.querySelector('.phone-turn-done').textContent,/Верно|Не угадали/);
+    assert.ok(driver.document.querySelectorAll('[data-quiz-option]').length>0,'the phone gets the answer options');
+    driver.document.querySelector('[data-quiz-option]').click();await wait();
+    assert.match(driver.document.querySelector('.phone-turn-done').textContent,/Верно|Не угадали/);
     // A device that is not on its turn cannot drive the quiz.
-    b.document.querySelector('#playerName').value='Команда 2';
-    const forged=[...host.__hostSync.members].find(m=>m.name==='Команда 2');
-    forged.conn.other.send({type:'player-action',action:{kind:'turn-action',game:'quiz',action:{kind:'pick',value:5}}});await wait();
-    assert.notEqual(d.querySelector('.quiz-question-card')?.textContent.includes('6'),true,'the host keeps the same question');
+    const forged=[...host.__hostSync.members].find(m=>m.name===otherName);
+    forged.conn.other.send({type:'player-action',action:{kind:'turn-action',game:'quiz',action:{kind:'pick',value:69}}});await wait();await wait();
+    assert.ok(!d.querySelector('.quiz-question-card')?.textContent.includes(String(70)),'the host keeps the current question');
     // Memo: the phone of the active player opens pairs.
     d.querySelector('#backHome').click();d.querySelector('[data-open="memo"]').click();await wait();
-    const memoPhone=a,d2=memoPhone.document;
-    if(memoPhone.document.querySelector('#playerHeading').textContent==='ВАША ОЧЕРЕДЬ!'){
-      const tiles=d2.querySelectorAll('[data-memo-tile]');assert.ok(tiles.length>0,'the phone draws the memo grid');
-      tiles[0].click();tiles[1].click();await wait();
-      assert.ok(host.__hostSync.state.tiles.some(tile=>tile.open),'the host flips the chosen pair');
+    const memoName=host.__hostSync.state.turn?.names[host.__hostSync.state.turn.active];
+    const memoDriver=memoName==='Команда 1'?a:b;
+    if(memoDriver.document.querySelector('#playerHeading').textContent==='ВАША ОЧЕРЕДЬ!'){
+      const tiles=memoDriver.document.querySelectorAll('[data-memo-tile]');
+      assert.ok(tiles.length>0,'the phone draws the memo grid');
+      tiles[0].click();tiles[1].click();await wait();await wait();
+      assert.equal(d.querySelectorAll('.memory-tile.revealed,.memory-tile.matched').length>=1,true,'the host flips the chosen pair');
     }
-    assert.deepEqual(host.__hostSync.state?[]:[],[]);
   }finally{for(const dom of doms)dom.window.close()}
 });

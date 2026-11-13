@@ -37,3 +37,4 @@
 .phone-memo-tile{aspect-ratio:1;min-height:36px;border:1px solid #a9c9d9;border-radius:8px;background:#e6f2fa;color:#3b6076;font-size:11px;font-weight:800}
 .phone-memo-tile.open{background:#ffe9b3;color:#7b5c14}
 .phone-memo-tile.matched{border-color:#8fd0a8;background:#e6f7ec;color:#1f7a4c}
+.phone-turn-box .task-number{display:inline-grid;place-items:center;width:28px;height:28px;margin-right:6px;border-radius:50%;background:#f1a328;color:#fff;font-weight:900;box-shadow:0 1px 3px rgba(182,121,52,.4)}
