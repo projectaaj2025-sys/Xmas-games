@@ -869,7 +869,8 @@
       s.selected=question;s.selectedOption=null;s.revealed=false;s.answerResult=null;renderQuiz();return;
     }
     if(!q)return;
-    if(action.kind==='reveal'&&q.type!=='choice'){s.revealed=true;renderQuiz();return;}
+    // Ответ открывает только ведущий на своём экране; телефонное «reveal» игнорируем.
+    if(action.kind==='reveal'){return;}
     if(action.kind==='option'&&q.type==='choice'&&!s.revealed){
       const option=Number(action.value);
       if(!Number.isInteger(option)||option<0||option>=q.options.length)return;
