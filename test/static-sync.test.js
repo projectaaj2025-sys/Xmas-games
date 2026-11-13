@@ -23,6 +23,8 @@ function fakeNetwork() {
   return Peer;
 }
 const wait=()=>new Promise(resolve=>setTimeout(resolve,30));
+// Re-rendered state messages race with assertions in slow/loaded runs; poll for the outcome instead of a fixed delay.
+async function waitFor(condition, tries=80){for(let i=0;i<tries;i++){if(condition())return true;await wait();}return condition();}
 function create(Peer,role,token,name,requestedId) {
   const dom=new JSDOM('',{url:'https://example.com/',runScripts:'outside-only'});const w=dom.window;w.Peer=Peer;w.eval(source);
   const socket=new w.StaticSync('ABCD2345',role==='host'?'host':'client');const messages=[];
@@ -80,9 +82,9 @@ test('HTTPS host, phones and projector cooperate through the static transport',a
     assert.match(projector.document.querySelector('#screenConnection').textContent,/связи|подключён/);
     assert.equal(a.document.querySelector('#playerActions').hidden,false);assert.equal(a.document.querySelector('#playerWord').textContent,'ТВОЯ КАРТОЧКА');
     assert.notEqual(b.document.querySelector('#playerWord').textContent,'');
-    a.document.querySelector('#solvedButton').click();await wait();
-    assert.match(d.querySelector('.circle-player-list').textContent,/1 ★/);
-    assert.equal(b.document.querySelector('#playerActions').hidden,false);
+    a.document.querySelector('#solvedButton').click();
+    assert.ok(await waitFor(()=>/1 ★/.test(d.querySelector('.circle-player-list').textContent)),'the host counts the point');
+    assert.ok(await waitFor(()=>b.document.querySelector('#playerActions').hidden===false),'the turn passes to Bob');
     // A dropped channel and rejoin must keep Alice's score.
     const member=[...PeerFor(host).members].find(m=>m.name==='Alice');member.conn.close();await wait();
     // Trigger reconnection immediately rather than waiting for the browser timer.
@@ -254,33 +256,33 @@ test('a seating phone drives the quiz and memo on its turn, and the host rejects
     const a=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
     const b=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
     for(const [w,name] of [[a,'Команда 1'],[b,'Команда 2']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#joinButton').click()}
-    await wait();await wait();
     // The active team is announced on the host console; read it instead of guessing.
-    const activeName=host.__hostSync.state.turn?.names[host.__hostSync.state.turn.active];
+    assert.ok(await waitFor(()=>host.__hostSync.state?.turn&&['Команда 1','Команда 2'].includes(host.__hostSync.state.turn.names[host.__hostSync.state.turn.active])),'the host publishes the turn');
+    const activeName=host.__hostSync.state.turn.names[host.__hostSync.state.turn.active];
     const phones={'Команда 1':a,'Команда 2':b};
     const driver=phones[activeName],other=activeName==='Команда 1'?b:a,otherName=activeName==='Команда 1'?'Команда 2':'Команда 1';
-    assert.equal(driver.document.querySelector('#playerHeading').textContent,'ВАША ОЧЕРЕДЬ!');
-    assert.match(other.document.querySelector('#playerHeading').textContent,new RegExp('Отвечает: '+activeName));
+    assert.ok(await waitFor(()=>driver.document.querySelector('#playerHeading').textContent==='ВАША ОЧЕРЕДЬ!'),'the phone on turn gets the turn UI');
+    assert.ok(await waitFor(()=>new RegExp('Отвечает: '+activeName).test(other.document.querySelector('#playerHeading').textContent)),'the other phone waits');
     assert.equal(other.document.querySelectorAll('[data-quiz-cell]').length,0,'only the phone on its turn gets the board');
-    driver.document.querySelector('[data-quiz-cell]').click();await wait();
-    assert.ok(d.querySelector('.quiz-question-card'),'the host opens the chosen question');
-    assert.ok(driver.document.querySelectorAll('[data-quiz-option]').length>0,'the phone gets the answer options');
-    driver.document.querySelector('[data-quiz-option]').click();await wait();
+    driver.document.querySelector('[data-quiz-cell]').click();
+    assert.ok(await waitFor(()=>!!d.querySelector('.quiz-question-card')),'the host opens the chosen question');
+    assert.ok(await waitFor(()=>driver.document.querySelectorAll('[data-quiz-option]').length>0),'the phone gets the answer options');
+    driver.document.querySelector('[data-quiz-option]').click();
+    assert.ok(await waitFor(()=>driver.document.querySelector('.phone-turn-done')!==null),'the phone shows the result');
     assert.match(driver.document.querySelector('.phone-turn-done').textContent,/Верно|Не угадали/);
     // A device that is not on its turn cannot drive the quiz.
     const forged=[...host.__hostSync.members].find(m=>m.name===otherName);
-    forged.conn.other.send({type:'player-action',action:{kind:'turn-action',game:'quiz',action:{kind:'pick',value:69}}});await wait();await wait();
+    forged.conn.other.send({type:'player-action',action:{kind:'turn-action',game:'quiz',action:{kind:'pick',value:69}}});await wait();await wait();await wait();
     assert.ok(!d.querySelector('.quiz-question-card')?.textContent.includes(String(70)),'the host keeps the current question');
-    // Memo: the phone of the active player opens pairs.
+    // Memo is a solo game named «Игрок 1»: rename phone a in its profile so the host seats it.
     d.querySelector('#backHome').click();d.querySelector('[data-open="memo"]').click();await wait();
-    const memoName=host.__hostSync.state.turn?.names[host.__hostSync.state.turn.active];
-    const memoDriver=memoName==='Команда 1'?a:b;
-    if(memoDriver.document.querySelector('#playerHeading').textContent==='ВАША ОЧЕРЕДЬ!'){
-      const tiles=memoDriver.document.querySelectorAll('[data-memo-tile]');
-      assert.ok(tiles.length>0,'the phone draws the memo grid');
-      tiles[0].click();tiles[1].click();await wait();await wait();
-      assert.equal(d.querySelectorAll('.memory-tile.revealed,.memory-tile.matched').length>=1,true,'the host flips the chosen pair');
-    }
+    a.document.querySelector('#profileName').value='Игрок 1';
+    a.document.querySelector('#saveProfile').click();
+    assert.ok(await waitFor(()=>a.document.querySelector('#playerHeading').textContent==='ВАША ОЧЕРЕДЬ!',120),'the phone gets the memo turn after matching the seated player');
+    const tiles=a.document.querySelectorAll('[data-memo-tile]');
+    assert.ok(tiles.length>0,'the phone draws the memo grid');
+    tiles[0].click();tiles[1].click();
+    assert.ok(await waitFor(()=>d.querySelectorAll('.memory-tile.revealed,.memory-tile.matched').length>=1,120),'the host flips the chosen pair');
   }finally{for(const dom of doms)dom.window.close()}
 });
 

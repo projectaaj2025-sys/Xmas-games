@@ -163,7 +163,7 @@
       if(quiz.type==='choice')return `<p class="phone-turn-done">${quiz.result?'Верно! +1 балл, ход остаётся ваш.':'Не угадали — ход переходит дальше.'}</p><button class="join-button" data-quiz-continue>Следующий вопрос →</button>`;
       return `<p class="phone-turn-done">Правильный ответ: <b>${esc(quiz.answer||'')}</b></p><div class="phone-turn-row"><button class="join-button" data-quiz-judge="1">Ответ верный · +1</button><button class="pass-button" data-quiz-judge="0">Не угадали</button></div>`;
     }
-    return `<p class="phone-turn-lead">Откройте ответ, когда команда ответит вслух.</p><button class="join-button" data-quiz-reveal>Узнать ответ</button><button class="pass-button" data-quiz-back>← К игровому полю</button>`;
+    return `<p class="phone-turn-lead">Ждём, пока ведущий откроет ответ на своём экране.</p><button class="pass-button" data-quiz-back>← К игровому полю</button>`;
   }
   function memoTurnMarkup(state){
     const memo=state.turn.memo||{};
@@ -191,7 +191,6 @@
     const box=$('#fieldPhone');
     box.querySelectorAll('[data-quiz-cell]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'pick',value:+b.dataset.quizCell})));
     box.querySelectorAll('[data-quiz-option]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'option',value:+b.dataset.quizOption})));
-    box.querySelector('[data-quiz-reveal]')?.addEventListener('click',()=>sendTurn(state,{kind:'reveal'}));
     box.querySelectorAll('[data-quiz-judge]').forEach(b=>b.addEventListener('click',()=>sendTurn(state,{kind:'judge',value:b.dataset.quizJudge==='1'})));
     box.querySelector('[data-quiz-continue]')?.addEventListener('click',()=>sendTurn(state,{kind:'continue'}));
     box.querySelector('[data-quiz-back]')?.addEventListener('click',()=>sendTurn(state,{kind:'back'}));
