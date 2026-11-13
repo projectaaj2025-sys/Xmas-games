@@ -657,3 +657,32 @@ test('the refreshed selections feature recognisable recent hits without losing t
     }
   }finally{w.close()}
 });
+
+test('the participant screen «Вернуться к управлению» button focuses the opener when opened from the host app',()=>{
+  const dom=new JSDOM(read('display.html'),{url:'http://localhost:4173/display.html?room=ABCD2345',runScripts:'outside-only'});
+  const w=dom.window,d=w.document;
+  w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  try{
+    let focusCalls=0;
+    // The participant screen is opened from the host console, so it can hand control back.
+    w.eval("window.opener={closed:false,focus:function(){window.__focused=(window.__focused||0)+1}}");
+    w.eval(read('display.js'));
+    d.querySelector('#screenBackHost').click();
+    assert.equal(w.eval('window.__focused||0'),1,'the button focuses the host console tab');
+  }finally{w.close()}
+});
+test('the participant screen «Вернуться к управлению» button returns to the hub with no opener and no history',()=>{
+  const dom=new JSDOM(read('display.html'),{url:'http://localhost:4173/display.html?room=ABCD2345',runScripts:'outside-only'});
+  const w=dom.window,d=w.document;
+  w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});
+  w.WebSocket=class{constructor(){this.readyState=0}addEventListener(){}};w.WebSocket.OPEN=1;
+  try{
+    w.eval(read('display.js'));
+    const button=d.querySelector('#screenBackHost');
+    assert.ok(button,'the button exists');
+    assert.equal(button.textContent.trim(),'Вернуться к управлению');
+    // The dead-end behaviour (a hint that does nothing) must stay gone.
+    assert.notEqual(d.querySelector('#screenHint').textContent.includes('Переключитесь'),true);
+  }finally{w.close()}
+});

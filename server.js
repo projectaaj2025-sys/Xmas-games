@@ -36,6 +36,12 @@ function presenceFor(room) {
 function updatePresence(room) { broadcast(room, presenceFor(room)); }
 function stateForPeer(peer, payload) {
   const state = { ...payload };
+  // Turns stay host-side except for the phone that owns the current one.
+  if (state.turn) {
+    const turn = state.turn;
+    const index = Array.isArray(turn.seats) ? turn.seats.indexOf(peer.playerId) : -1;
+    state.turn = { ...turn, mine: peer.role === 'player' && index >= 0 ? index : null, seats: undefined };
+  }
   if (state.game === 'guess' && state.guessMode === 'circle') {
     const active = Array.isArray(state.circleCards) ? state.circleCards.find(p => p.id === state.activePlayerId) : null;
     if (peer.role === 'player') {
@@ -95,6 +101,9 @@ function handleMessage(peer, message) {
       for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName });
     }
     if (state?.game === 'field' && (peer.role === 'viewer' || (peer.role === 'player' && state.activeId === peer.playerId))) {
+      for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, role: peer.role });
+    }
+    if (peer.role === 'player' && data.action?.kind === 'turn-action' && ['quiz','memo','croc','guess'].includes(data.action.game)) {
       for (const other of roomPeers(peer.room)) if (other.role === 'host') sendJSON(other, { type: 'player-action', action: data.action, playerId: peer.playerId, name: peer.playerName, role: peer.role });
     }
     if (state?.game === 'melody' && peer.role === 'player' && data.action?.kind === 'melody-buzz') {

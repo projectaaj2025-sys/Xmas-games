@@ -3,6 +3,11 @@
   const OPEN=1, CLOSED=3;
   function privateState(payload, member) {
     const state={...payload};
+    // Turns are host bookkeeping; phones get only the one player they act for.
+    if(state.turn){
+      const turn=state.turn,index=Array.isArray(turn.seats)?turn.seats.indexOf(member.playerId):-1;
+      state.turn={...turn,mine:member.role==='player'&&index>=0?index:null,seats:undefined};
+    }
     if(state.game==='guess' && state.guessMode==='circle') {
       const active=Array.isArray(state.circleCards) ? state.circleCards.find(p=>p.id===state.activePlayerId) : null;
       if(member.role==='player') {
@@ -87,6 +92,9 @@
         if(member.role==='player' && this.state?.game==='melody' && data.action?.kind==='melody-buzz')
           this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name,role:member.role})});
         if(member.role==='player' && this.state?.game==='guess' && this.state.guessMode==='circle' && this.state.activePlayerId===member.playerId && ['solved','pass'].includes(data.action))
+          this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name})});
+        // Quiz/memo/croc turns: the host re-checks that this phone's player is the one whose turn it is.
+        if(member.role==='player' && data.action?.kind==='turn-action' && ['quiz','memo','croc','guess'].includes(data.action.game))
           this.emit('message',{data:JSON.stringify({type:'player-action',action:data.action,playerId:member.playerId,name:member.name})});
       }
     }

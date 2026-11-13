@@ -303,11 +303,20 @@
           if(changed)renderMelody();else refreshMelodySeats();
         }
         updateConnectedMembers();
+        syncTurnSeats();
+        if(content.classList.contains('quiz-screen')&&quizState)renderQuiz();
+        else if(content.classList.contains('memo-screen')&&memoryState)renderMemo();
+        else if(content.classList.contains('croc-screen')&&crocState)renderCroc();
       }
       if (data.type === 'joined') { screenCount = data.screenCount || 0; updateScreenStatus(); }
       if (data.type === 'player-action' && fieldState && content.classList.contains('field-screen')) fieldRemote(data);
       if (data.type === 'player-action' && melodyState && content.classList.contains('melody-screen')) melodyRemote(data);
-      if (data.type === 'player-action' && content.classList.contains('guess-screen') && guessState?.playMode === 'circle' && data.playerId === guessState.activePlayerId) circleAnswer(data.action === 'solved');
+      // The circle answers only from the phone whose player is guessing right now.
+      if (data.type === 'player-action' && guessState?.playMode === 'circle' && data.playerId === guessState.activePlayerId && ['solved','pass'].includes(data.action)) circleAnswer(data.action === 'solved');
+      if (data.type === 'player-action' && data.action?.kind === 'turn-action') {
+        const game = String(data.action.game || '');
+        if (content.classList.contains(`${game}-screen`)) turnAction(game, data.playerId, data.action.action);
+      }
     });
     syncSocket.addEventListener('close', () => { syncAvailable=false;updateScreenStatus(false);setTimeout(connectSync,1500); });
     syncSocket.addEventListener('error', () => syncSocket.close());
@@ -385,7 +394,7 @@
     const event=pending?.type==='question'
       ? {type:'question',prompt:pending.item.prompt,options:pending.item.options,answered:Boolean(pending.answered),chosenOption:pending.answered?pending.chosen:null,correctAnswer:pending.answered?pending.item.options[pending.item.correct]:'',wasCorrect:pending.answered?Boolean(pending.wasCorrect):null,bonus:pending.bonus}
       : pending?.type==='fact'?{type:'fact',text:pending.item}:null;
-    publish({game:'memo',title:'Мемо: Новый год',modeLabel:s.mode === 'teams' ? 'КОМАНДЫ' : 'ЛИЧНЫЙ ЗАЧЁТ',scoreline:`Ходы: ${s.moves} · На очереди: ${s.names[s.active]}`,deckId:s.deckId,deckLabel:s.deckId==='photo'?'НОВОГОДНЯЯ ФОТОКОЛЛЕКЦИЯ':'СНЕЖНЫЕ ИЛЛЮСТРАЦИИ',extraMode:s.extraMode,event,tiles:s.deck.map((c,i)=>({emoji:c.emoji,image:c.image,name:c.name,variant:c.design,open:s.opened.includes(i),matched:s.matched.includes(i)}))});
+    publish(withTurn('memo',{game:'memo',title:'Мемо: Новый год',modeLabel:s.mode === 'teams' ? 'КОМАНДЫ' : 'ЛИЧНЫЙ ЗАЧЁТ',scoreline:`Ходы: ${s.moves} · На очереди: ${s.names[s.active]}`,deckId:s.deckId,deckLabel:s.deckId==='photo'?'НОВОГОДНЯЯ ФОТОКОЛЛЕКЦИЯ':'СНЕЖНЫЕ ИЛЛЮСТРАЦИИ',extraMode:s.extraMode,event,tiles:s.deck.map((c,i)=>({emoji:c.emoji,image:c.image,name:c.name,variant:c.design,open:s.opened.includes(i),matched:s.matched.includes(i)}))}));
   }
   function contestMarkup(state) {
     const isCroc=state===crocState, choices=isCroc?crocPawnChoices:pawnChoices;
@@ -765,6 +774,170 @@
   function connectedMembersMarkup(){
     const people=[...connectedPlayers.map(p=>({...p,role:'Игрок'})),...connectedViewers.map(p=>({...p,role:'Зритель'}))];
     return `<div class="members-heading">Подключено: <strong>${people.length}</strong> · Игроки: ${connectedPlayers.length} · Зрители: ${connectedViewers.length}</div>${people.length?`<ul class="members-list">${people.map(p=>`<li><span>${escapeHtml(p.name)}</span><b>${p.role}</b></li>`).join('')}</ul>`:'<p class="members-empty">Пока никто не подключился. Покажите участникам QR-код.</p>'}`;
+  }
+  // --- Телефонное управление по очереди для викторины, мемо, крокодила и тарантинок ---
+  // Хост публикует в состояние поле `turn`, а телефон присылает `turn-action`.
+  // Хосты хранят имена и счёт у себя; телефоны только дублируют клики в свою очередь.
+  const turnSeats={quiz:[],memo:[],croc:[],guess:[]};
+  // Presence changes must reach the turn panels: seat matching phones by name, forget
+  // detached ones, and rebuild the circle list so everyone keeps their card and score.
+  function syncTurnSeats(){
+    if(guessState?.playMode==='circle')return;
+    for(const game of ['quiz','memo','croc','guess']){
+      const names=turnNames(game);
+      if(!names.length){turnSeats[game]=[];continue;}
+      const seats=turnSeats[game];
+      for(let i=0;i<names.length;i++){
+        if(seats[i]&&!connectedPlayers.some(player=>player.id===seats[i]))seats[i]='';
+      }
+      names.forEach((name,index)=>{
+        if(seats[index])return;
+        const taken=new Set(seats.filter(Boolean));
+        const match=connectedPlayers.find(player=>player.name===name&&!taken.has(player.id));
+        if(match)seats[index]=match.id;
+      });
+      turnSeats[game]=seats.slice(0,names.length);
+    }
+    // The circle keeps its own presence logic; the turn panel simply mirrors its seats.
+  }
+  function turnNames(game,count){
+    if(game==='quiz')return quizState?.names||[];
+    if(game==='memo')return memoryState?.names||[];
+    if(game==='croc')return crocState?.names||[];
+    if(game==='guess')return (guessState?.circlePlayers||[]).map(player=>player.name);
+    return [];
+  }
+  function turnActive(game){
+    if(game==='quiz')return quizState?.active??0;
+    if(game==='memo')return memoryState?.active??0;
+    if(game==='croc')return crocState?.active??0;
+    if(game==='guess')return (guessState?.circlePlayers||[]).findIndex(player=>player.id===guessState?.activePlayerId);
+    return -1;
+  }
+  function turnActiveId(game){
+    const names=turnNames(game),index=turnActive(game);
+    return index>=0&&index<names.length ? `${game}-${index}-${names[index]}` : '';
+  }
+  // Каждому имени даём место на телефоне так, чтобы порядок мест совпадал с порядком игроков.
+  function turnSeatMap(game){
+    const names=turnNames(game),seats=turnSeats[game];
+    const used=new Set();
+    names.forEach((name,index)=>{
+      const connected=connectedPlayers.find(player=>player.name===name&&!used.has(player.id));
+      if(connected){seats[index]=connected.id;used.add(connected.id);}
+      else if(seats[index]&&!connectedPlayers.some(player=>player.id===seats[index]))seats[index]='';
+    });
+    return seats;
+  }
+  function turnState(game){
+    const names=turnNames(game);
+    if(!names.length&&game!=='guess')return null;
+    const seats=turnSeatMap(game),activeIndex=turnActive(game);
+    return {game,names:names.map(escapeHtml),active:activeIndex>=0&&activeIndex<names.length?activeIndex:-1,
+      seats:seats.slice(0,names.length).map(id=>id&&connectedPlayers.some(player=>player.id===id)?id:''),
+      mode:(game==='quiz'?quizState?.mode:game==='memo'?memoryState?.mode:game==='croc'?crocState?.mode:'')||'solo',
+      phase:game==='quiz'?(quizState?.finished?'finished':quizState?.selected!=null?'question':'board'):'',
+      revealed:game==='quiz'?Boolean(quizState?.revealed):false,
+      // Payload is filtered by static-sync before it reaches phones, so the phone needs these.
+      quiz:game==='quiz'&&quizState?{free:quizState.questions.map((_,i)=>i).filter(i=>!quizState.used.includes(i)&&i!==quizState.selected),selected:quizState.selected,type:quizState.selected==null?'':quizState.questions[quizState.selected]?.type||'',options:quizState.selected==null?[]:(quizState.questions[quizState.selected]?.options||[]),answer:quizState.revealed&&quizState.selected!=null?quizState.questions[quizState.selected]?.answer||'':'',result:quizState.answerResult}:null,
+      memo:game==='memo'&&memoryState?{size:memoryState.deck.length,opened:memoryState.opened.slice(),matched:memoryState.matched.slice(),locked:Boolean(memoryState.locked),event:memoryState.pendingEvent?{type:memoryState.pendingEvent.type,answered:Boolean(memoryState.pendingEvent.answered),options:memoryState.pendingEvent.type==='question'?memoryState.pendingEvent.item.options:[]}:null}:null,
+      croc:game==='croc'&&crocState?{words:Array.from({length:5},(_,i)=>{try{return crocState.taskSelected&&crocState.revealed&&crocState.task===i?cardTasks(crocState.card,crocState.deckMode)[i]?.word||'':'';}catch{return '';}}),selected:Boolean(crocState.taskSelected),task:crocState.task,revealed:Boolean(crocState.revealed)}:null};
+  }
+  // Встраиваем панель «моя очередь» в каждую публикацию игры.
+  function withTurn(game,payload){
+    const turn=turnState(game);
+    if(turn)payload.turn=turn;
+    return payload;
+  }
+  function turnAction(game,playerId,action){
+    if(!action)return;
+    const seats=turnSeatMap(game),names=turnNames(game);
+    const index=seats.indexOf(playerId);
+    // Действие принимается только от того, чья сейчас очередь.
+    if(index<0||index>=names.length||index!==turnActive(game))return;
+    if(game==='quiz')turnQuizAction(index,action);
+    else if(game==='memo')turnMemoAction(index,action);
+    else if(game==='croc')turnCrocAction(index,action);
+    else if(game==='guess')turnGuessAction(index,action);
+  }
+  function turnQuizAction(index,action){
+    const s=quizState;if(!s||s.finished)return;
+    const q=s.selected==null?null:s.questions[s.selected];
+    if(action.kind==='pick'&&q===null){
+      const question=Number(action.value);
+      if(!Number.isInteger(question)||question<0||question>=s.questions.length||s.used.includes(question))return;
+      s.selected=question;s.selectedOption=null;s.revealed=false;s.answerResult=null;renderQuiz();return;
+    }
+    if(!q)return;
+    if(action.kind==='reveal'&&q.type!=='choice'){s.revealed=true;renderQuiz();return;}
+    if(action.kind==='option'&&q.type==='choice'&&!s.revealed){
+      const option=Number(action.value);
+      if(!Number.isInteger(option)||option<0||option>=q.options.length)return;
+      s.selectedOption=option;s.answerResult=option===q.correct;s.revealed=true;renderQuiz();return;
+    }
+    if(action.kind==='judge'){if(!s.revealed||q.type==='choice')return;completeQuizAnswer(Boolean(action.value));return;}
+    if(action.kind==='continue'&&s.revealed&&q.type==='choice'){completeQuizAnswer(Boolean(s.answerResult));return;}
+    if(action.kind==='back'&&s.selected!=null){s.selected=null;s.selectedOption=null;s.revealed=false;s.answerResult=null;renderQuiz();}
+  }
+  function turnMemoAction(index,action){
+    const s=memoryState;if(!s)return;
+    if(action.kind==='pair'&&!s.locked&&!s.pendingEvent&&Array.isArray(action.value)&&action.value.length===2){
+      const [a,b]=action.value.map(Number);
+      if(![a,b].every(tile=>Number.isInteger(tile)&&tile>=0&&tile<s.deck.length))return;
+      if(s.matched.includes(a)||s.matched.includes(b)||s.opened.length)return;
+      flipMemo(a);
+      if(!s.locked&&s.opened.length===1)flipMemo(b);
+      return;
+    }
+    if(action.kind==='flip'&&!s.locked&&!s.pendingEvent){
+      const tile=Number(action.value);
+      if(Number.isInteger(tile)&&tile>=0&&tile<s.deck.length)flipMemo(tile);
+      return;
+    }
+    if(action.kind==='answer'&&s.pendingEvent?.type==='question'&&!s.pendingEvent.answered){
+      const option=Number(action.value);
+      if(Number.isInteger(option)&&option>=0&&option<s.pendingEvent.item.options.length)answerMemoQuestion(option);
+      return;
+    }
+    if(action.kind==='continue'&&s.pendingEvent?.type==='question'&&s.pendingEvent.answered)continueMemoEvent?.();
+  }
+  function turnCrocAction(index,action){
+    const s=crocState;if(!s||s.finished)return;
+    if(action.kind==='select'){
+      const slot=Number(action.value);if(!Number.isInteger(slot)||slot<0||slot>4)return;
+      if(Array.isArray(availableTasks?.(s.card))&&!availableTasks(s.card).includes(slot))return;
+      if(s.timer){clearInterval(s.timer);s.timer=null;}
+      s.task=slot;s.taskSelected=true;s.revealed=false;s.remaining=60;renderCroc();publishCroc(false);return;
+    }
+    if(action.kind==='reveal'&&s.taskSelected){s.revealed=!s.revealed;renderCroc();publishCroc(s.revealed);return;}
+    if(action.kind==='correct'&&s.taskSelected){completeCrocTask(true);return;}
+    if(action.kind==='skip'&&s.taskSelected){completeCrocTask(false,false,true);}
+  }
+  function turnGuessAction(index,action){
+    const s=guessState;if(!s||s.playMode!=='circle')return;
+    if(action.kind==='solved')circleAnswer(true);
+    else if(action.kind==='pass')circleAnswer(false);
+  }
+  function turnPhoneUrl(game){
+    const url=appPageUrl(`player.html?room=${roomCode}`);
+    return `<a class="turn-phone-link" href="${url}" target="_blank" rel="noopener">Телефон · ${escapeHtml(url)}</a>`;
+  }
+  // Панель для ведущего: показывает, какой телефон играет за какого игрока.
+  function turnHostPanel(game){
+    const turn=turnState(game);if(!turn)return '';
+    const seats=turnSeats[game];
+    const invite=`<div class="local-join-box turn-invite"><div class="local-qr-wrap"><img id="playerInviteQr" alt="QR-код для телефонов" hidden><div id="localQrPlaceholder">❄</div></div><div class="local-join-details"><button type="button" class="soft-button enlarge-player-qr" id="enlargePlayerQr">Увеличить QR</button><b id="localInviteTitle">Подключение</b><p id="localInviteHint">Готовим ссылку…</p><div class="circle-invite"><span id="playerInviteUrl"></span><button class="soft-button" id="copyPlayerLink">Скопировать</button></div><div class="local-room-code">КОД КОМНАТЫ <strong>${roomCode}</strong></div></div></div>`;
+    return `<details class="turn-seats"><summary>📱 Телефоны по очереди · ${connectedPlayers.length} подключено</summary><p>Игрок, чья очередь, нажимает на своём телефоне: выбирает вопрос и ответ, открывает карточки. Телефон встаёт на место игрока по имени; поменять можно здесь. Без телефона всё делает ведущий на этом экране.</p>${invite}<div class="turn-seat-list">${turn.names.map((name,i)=>`<label>${name}<select data-turn-seat="${i}" data-turn-game="${game}"><option value="">Управляет ведущий</option>${connectedPlayers.map(p=>`<option value="${escapeHtml(p.id)}" ${seats[i]===p.id?'selected':''}>${escapeHtml(p.name)}</option>`).join('')}</select></label>`).join('')}</div><div class="connected-members" data-connected-members>${connectedMembersMarkup()}</div>${turnPhoneUrl(game)}</details>`;
+  }
+  function bindTurnSeats(game,rerender){
+    document.querySelectorAll(`[data-turn-seat][data-turn-game="${game}"]`).forEach(select=>select.addEventListener('change',()=>{
+      const index=Number(select.dataset.turnSeat),id=select.value;
+      const seats=turnSeats[game];
+      if(id){seats.forEach((seat,i)=>{if(seat===id&&i!==index)seats[i]='';});}
+      seats[index]=id;
+      if(game==='guess'&&id){const player=(guessState?.circlePlayers||[]).find(item=>item.id===id);if(player){guessState.activePlayerId=id;}}
+      rerender();
+    }));
   }
   function updateConnectedMembers(){
     document.querySelectorAll('[data-connected-members]').forEach(el=>el.innerHTML=connectedMembersMarkup());
@@ -1446,7 +1619,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     const maxPairs=activeDeck.length;
     const modeCopy=s.extraMode==='questions'?'После каждой найденной пары — один из 50 тестовых вопросов или заданий «правда/ложь» о Новом годе, его истории и традициях. Верный ответ: +2 бонусных балла.':s.extraMode==='facts'?'После каждых двух пар — один из 54 разных новогодних фактов. В пределах партии факты не повторяются.':'Открывай карточки, запоминай картинки и собирай пары.';
     const body=commonFrame('Мемо: Новый год','ТРЕНИРУЙ ПАМЯТЬ И НАХОДИ ПАРЫ',`${s.deckId==='photo'?'«Новогодняя фотоколлекция» по образцу оригинальной игры.':'Колода «Снежные иллюстрации».'} ${modeCopy}`,'memo-screen');
-    body.innerHTML=`<div class="game-controls memo-options"><label class="pill-control">Колода<select id="memoDeck"><option value="illustrated" ${s.deckId==='illustrated'?'selected':''}>Снежные иллюстрации · 50 пар</option><option value="photo" ${s.deckId==='photo'?'selected':''}>Новогодняя фотоколлекция · ${photoMemoryDeck.length} пар</option></select></label><label class="pill-control">Режим<select id="memoExtraMode"><option value="classic" ${s.extraMode==='classic'?'selected':''}>Классика</option><option value="questions" ${s.extraMode==='questions'?'selected':''}>Вопросы · 50 · +2 бонуса</option><option value="facts" ${s.extraMode==='facts'?'selected':''}>Факты · 54 · каждые 2 пары</option></select></label><label class="pill-control">Пар <input id="pairCount" type="number" min="2" max="${maxPairs}" value="${s.pairs}"></label><button class="soft-button" id="memoApply">Применить · новая раскладка ↻</button><span class="stat-pill">Ходы <b id="memoMoves">0</b></span><span class="stat-pill">Время <b id="memoTime">00:00</b></span></div>${contestMarkup(s)}<div class="memory-grid ${s.deckId==='photo'?'photo-deck':''}" id="memoryGrid"></div><div id="memoEvent" aria-live="polite"></div><div id="memoResult"></div><p class="game-hint">Пара найдена — ход остаётся за вами. Ошибка — очередь переходит дальше.</p>`;
+    body.innerHTML=`${turnHostPanel('memo')}<div class="game-controls memo-options"><label class="pill-control">Колода<select id="memoDeck"><option value="illustrated" ${s.deckId==='illustrated'?'selected':''}>Снежные иллюстрации · 50 пар</option><option value="photo" ${s.deckId==='photo'?'selected':''}>Новогодняя фотоколлекция · ${photoMemoryDeck.length} пар</option></select></label><label class="pill-control">Режим<select id="memoExtraMode"><option value="classic" ${s.extraMode==='classic'?'selected':''}>Классика</option><option value="questions" ${s.extraMode==='questions'?'selected':''}>Вопросы · 50 · +2 бонуса</option><option value="facts" ${s.extraMode==='facts'?'selected':''}>Факты · 54 · каждые 2 пары</option></select></label><label class="pill-control">Пар <input id="pairCount" type="number" min="2" max="${maxPairs}" value="${s.pairs}"></label><button class="soft-button" id="memoApply">Применить · новая раскладка ↻</button><span class="stat-pill">Ходы <b id="memoMoves">0</b></span><span class="stat-pill">Время <b id="memoTime">00:00</b></span></div>${contestMarkup(s)}<div class="memory-grid ${s.deckId==='photo'?'photo-deck':''}" id="memoryGrid"></div><div id="memoEvent" aria-live="polite"></div><div id="memoResult"></div><p class="game-hint">Пара найдена — ход остаётся за вами. Ошибка — очередь переходит дальше.</p>`;
     const grid=$('#memoryGrid');
     s.deck.forEach((card,index)=>{
       const tile=document.createElement('button');tile.type='button';tile.className=`memory-tile card-style-${card.design??0}`;tile.setAttribute('aria-label',`Закрытая карточка ${index+1}`);tile.setAttribute('aria-pressed','false');
@@ -1457,7 +1630,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     deckSelect.addEventListener('change',()=>{const limit=deckSelect.value==='photo'?photoMemoryDeck.length:memoryDeck.length;pairInput.max=String(limit);pairInput.value=String(Math.min(Number(pairInput.value)||15,limit));});
     $('#memoApply').addEventListener('click',()=>{s.deckId=deckSelect.value;s.extraMode=$('#memoExtraMode').value;const limit=s.deckId==='photo'?photoMemoryDeck.length:memoryDeck.length;s.pairs=Math.max(2,Math.min(limit,Number(pairInput.value)||15));renderMemo();});
     pairInput.addEventListener('keydown',e=>{if(e.key==='Enter')$('#memoApply').click();});
-    bindContest(s,renderMemo);publishMemo();
+    bindTurnSeats('memo',renderMemo);setupPlayerInvite();bindContest(s,renderMemo);publishMemo();
   }
   function takeMemoQuestion(){const s=memoryState;if(s.questionCursor>=s.questionQueue.length){s.questionQueue=shuffle(memoQuestions.map((_,i)=>i));if(s.questionQueue.length>1&&s.questionQueue[0]===s.lastQuestionIndex)[s.questionQueue[0],s.questionQueue[1]]=[s.questionQueue[1],s.questionQueue[0]];s.questionCursor=0;}const index=s.questionQueue[s.questionCursor++];s.lastQuestionIndex=index;return memoQuestions[index];}
   function takeMemoFact(){const s=memoryState;if(s.factCursor>=s.factQueue.length){s.factQueue=shuffle(memoFacts.map((_,i)=>i));if(s.factQueue.length>1&&s.factQueue[0]===s.lastFactIndex)[s.factQueue[0],s.factQueue[1]]=[s.factQueue[1],s.factQueue[0]];s.factCursor=0;}const index=s.factQueue[s.factCursor++];s.lastFactIndex=index;return memoFacts[index];}
@@ -1542,7 +1715,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     const body=commonFrame('Новогодние тарантинки','КТО ТЫ? УЗНАЙ С ПОМОЩЬЮ ВОПРОСОВ',description,'guess-screen');
     const card=guessDeck[s.index];
     const picker=`<section class="card-choice"><div class="picker-title">ВЫБЕРИ ОДНУ ИЗ ${guessDeck.length} КАРТОЧЕК</div><div class="guess-picker">${guessDeck.map((item,i)=>`<button class="guess-pick card-style-${item.design} ${i===s.index?'selected':''}" data-guess="${i}" title="${escapeHtml(item.name)}"><span class="guess-pick-number">${String(i+1).padStart(2,'0')}</span><span class="guess-pick-season">НОВЫЙ ГОД</span><span class="guess-pick-art">${item.image?`<img src="${item.image}" alt="">`:item.emoji}</span><span class="guess-pick-name">${escapeHtml(item.name)}</span><span class="guess-pick-flourish">✦ ❄ ✦</span></button>`).join('')}</div><button class="soft-button" id="guessRandom">Случайная карточка ✨</button></section>`;
-    body.innerHTML=`${guessModeMarkup()}${isCircle?renderGuessCircleMarkup():`${contestMarkup(s)}<div class="guess-layout"><section class="guess-panel"><div class="guess-box"><div class="guess-label">КАРТОЧКА ${String(s.index+1).padStart(2,'0')} · СЛОВО ДЛЯ ОСТАЛЬНЫХ</div><div class="guess-turn-summary"><span class="guess-turn-icon">🗣️</span><span class="guess-turn-player"><small>СЕЙЧАС УГАДЫВАЕТ</small><b>${escapeHtml(s.names[s.active])}</b></span><span class="guess-turn-stat"><small>ВОПРОСОВ</small><b>${s.asked}</b></span><span class="guess-turn-stat"><small>ОЧКИ</small><b>${s.scores[s.active]||0}</b></span></div><div class="guess-board-status ${s.screenVisible?'is-shown':'is-hidden'}">${s.screenVisible?'❄ Карточка показана на общей доске':'🔒 Карточка скрыта на общей доске'}</div><div class="secret-card card-style-${card.design}"><span class="secret-card-label">НОВОГОДНЯЯ КАРТОЧКА · ${String(s.index+1).padStart(2,'0')}</span>${s.visible?`<span class="secret-emoji">${card.image?`<img src="${card.image}" alt="${escapeHtml(card.name)}">`:card.emoji}</span><span class="secret-word">${escapeHtml(card.name)}</span>`:'<span class="secret-hidden">?</span>'}</div><p class="guess-hint">${s.visible?'Карточка открыта ведущему для проверки.':'Угадывающий стоит спиной к доске; карточку видят остальные участники.'}</p><div class="guess-actions"><button class="solid-button" id="guessScreen" aria-pressed="${s.screenVisible}">${s.screenVisible?'Скрыть карточку с доски':'Показать карточку на доске'}</button><button class="soft-button" id="guessLocal">${s.visible?'Скрыть карточку у ведущего':'Показать ведущему'}</button><button class="soft-button" id="guessQuestion">Вопрос задан · ${s.asked}</button><button class="soft-button" id="guessCorrect">Угадали! +1 🎉</button><button class="soft-button" id="guessSkip">Пропустить карточку ↷</button></div></div><div class="guess-caption">Участник у доски задаёт вопросы, пока не угадает, что изображено на карточке.</div></section>${picker}</div>`}`;
+    body.innerHTML=`${guessModeMarkup()}${isCircle?`${turnHostPanel('guess')}${renderGuessCircleMarkup()}`:`${contestMarkup(s)}<div class="guess-layout"><section class="guess-panel"><div class="guess-box"><div class="guess-label">КАРТОЧКА ${String(s.index+1).padStart(2,'0')} · СЛОВО ДЛЯ ОСТАЛЬНЫХ</div><div class="guess-turn-summary"><span class="guess-turn-icon">🗣️</span><span class="guess-turn-player"><small>СЕЙЧАС УГАДЫВАЕТ</small><b>${escapeHtml(s.names[s.active])}</b></span><span class="guess-turn-stat"><small>ВОПРОСОВ</small><b>${s.asked}</b></span><span class="guess-turn-stat"><small>ОЧКИ</small><b>${s.scores[s.active]||0}</b></span></div><div class="guess-board-status ${s.screenVisible?'is-shown':'is-hidden'}">${s.screenVisible?'❄ Карточка показана на общей доске':'🔒 Карточка скрыта на общей доске'}</div><div class="secret-card card-style-${card.design}"><span class="secret-card-label">НОВОГОДНЯЯ КАРТОЧКА · ${String(s.index+1).padStart(2,'0')}</span>${s.visible?`<span class="secret-emoji">${card.image?`<img src="${card.image}" alt="${escapeHtml(card.name)}">`:card.emoji}</span><span class="secret-word">${escapeHtml(card.name)}</span>`:'<span class="secret-hidden">?</span>'}</div><p class="guess-hint">${s.visible?'Карточка открыта ведущему для проверки.':'Угадывающий стоит спиной к доске; карточку видят остальные участники.'}</p><div class="guess-actions"><button class="solid-button" id="guessScreen" aria-pressed="${s.screenVisible}">${s.screenVisible?'Скрыть карточку с доски':'Показать карточку на доске'}</button><button class="soft-button" id="guessLocal">${s.visible?'Скрыть карточку у ведущего':'Показать ведущему'}</button><button class="soft-button" id="guessQuestion">Вопрос задан · ${s.asked}</button><button class="soft-button" id="guessCorrect">Угадали! +1 🎉</button><button class="soft-button" id="guessSkip">Пропустить карточку ↷</button></div></div><div class="guess-caption">Участник у доски задаёт вопросы, пока не угадает, что изображено на карточке.</div></section>${picker}</div>`}`;
     body.querySelectorAll('[data-guess-mode]').forEach(button=>button.addEventListener('click',()=>{const mode=button.dataset.guessMode;if(mode!==s.playMode){s.playMode=mode;if(mode==='circle')syncCirclePlayers(connectedPlayers);else renderGuess();}}));
     if(isCircle){bindGuessCircle();publishGuessCircle();return;}
     bindContest(s,renderGuess);
@@ -1584,6 +1757,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
   }
   function bindGuessCircle(){
     const s=guessState;
+    bindTurnSeats('guess',renderGuess);
     setupPlayerInvite();
     $('#copyPlayerLink')?.addEventListener('click',async()=>{const url=$('#playerInviteUrl')?.textContent||appPageUrl(`player.html?room=${roomCode}`);try{await navigator.clipboard.writeText(url);notify('Ссылка для телефонов скопирована.');}catch{prompt(`Адрес телефонов · код комнаты ${roomCode}:`,url);}});
     $('#circleCorrect')?.addEventListener('click',()=>circleAnswer(true));
@@ -1604,7 +1778,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
   function publishGuess(reveal) { const card=guessDeck[guessState.index];publish({game:'guess',guessMode:'forehead',revealed:reveal,gameLabel:'НОВОГОДНИЕ ТАРАНТИНКИ',word:card.name,emoji:card.emoji,image:card.image,mode:'КАРТОЧКА '+String(guessState.index+1).padStart(2,'0'),team:guessState.names[guessState.active],instruction:'Угадывающий стоит спиной к экрану. Остальные задают вопросы, на которые отвечают «да» или «нет».'}); }
   function publishGuessCircle(){
     const s=guessState,players=s.circlePlayers||[],active=players.find(player=>player.id===s.activePlayerId);
-    publish({game:'guess',guessMode:'circle',revealed:false,gameLabel:'НОВОГОДНИЕ ТАРАНТИНКИ',word:'',emoji:'',image:'',mode:`РАУНД ${s.round||1}`,team:active?.name||'',activePlayerId:s.activePlayerId||'',round:s.round||1,circleCards:players.map(player=>({id:player.id,name:player.name,word:player.card.name,emoji:player.card.emoji,image:player.card.image,style:player.card.design,hint:''})),instruction:'Участники смотрят карточки на телефонах. Активный игрок не видит свою карточку.'});
+    publish(withTurn('guess',{game:'guess',guessMode:'circle',revealed:false,gameLabel:'НОВОГОДНИЕ ТАРАНТИНКИ',word:'',emoji:'',image:'',mode:`РАУНД ${s.round||1}`,team:active?.name||'',activePlayerId:s.activePlayerId||'',round:s.round||1,circleCards:players.map(player=>({id:player.id,name:player.name,word:player.card.name,emoji:player.card.emoji,image:player.card.image,style:player.card.design,hint:''})),instruction:'Участники смотрят карточки на телефонах. Активный игрок не видит свою карточку.'}));
   }
 
   const methodTexts=[
@@ -1641,6 +1815,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
   function renderCroc() {
     const s=crocState,tasks=cardTasks(s.card,s.deckMode),task=tasks[s.task];
     const body=commonFrame('Новогодний Суперкрокодил','6 ФИШЕК · 100 КАРТ · ПЕСОЧНЫЕ ЧАСЫ','Выберите одно из пяти слов и объясните его способом на карте. Угадали — передвиньте фишку на номер слова; не угадали — карта возвращается вниз колоды.','croc-screen');
+    const turnPanel=turnHostPanel('croc');
     const board=Array.from({length:30},(_,i)=>{
       const rowFromBottom=Math.floor(i/6),step=i%6,row=4-rowFromBottom,column=rowFromBottom%2===0?step:5-step;
       const pawns=s.track.map((pos,j)=>pos===i?`<i title="${escapeHtml(s.names[j])}" style="--pawn-color:${crocPawnChoices.find(p=>p.id===s.pawns[j])?.color||'#2586cc'}">♟</i>`:'').join('');
@@ -1658,10 +1833,11 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     const boardMarkup=`<div class="board-wrap"><div class="board-heading"><b>Игровое поле</b><span>Раунд ${s.round} · позиции: ${progress}</span></div><div class="board-track">${board}</div></div>`;
     const deckLabel=s.deckMode==='hard'?'СЛОЖНАЯ КОЛОДА':'ПРОСТАЯ КОЛОДА';
     const sideMarkup=s.cardHidden?'':`<aside class="croc-side"><div class="croc-side-tools"><div class="side-title">${deckLabel} · КАРТА ${String(s.card+1).padStart(2,'0')} / 100</div><button class="soft-button croc-flip-button" id="crocFlipCard" aria-pressed="${s.cardFaceUp}">${s.cardFaceUp?'Показать рубашку':'Перевернуть карту'}</button></div><div class="croc-card-flip-frame ${s.cardFaceUp?'is-face-up':'is-face-down'} ${s.cardFlipAnimating?'is-animating':''}" aria-live="polite">${s.cardFaceUp?`<div class="croc-card-front"><div class="croc-card-front-kicker">ЛИЦЕВАЯ СТОРОНА · 5 СЛОВ</div><div class="task-list">${cardRows}</div></div>`:`<div class="croc-card-back"><span class="croc-card-back-snow">❄</span><b>КАРТА ${String(s.card+1).padStart(2,'0')}</b><span>${s.deckMode==='hard'?'Сложная колода · прежний набор слов':'Простая колода · короткие слова'}</span><small>Переверните карту, чтобы увидеть пять заданий</small><div class="croc-card-back-flourish">✦　❄　✦　❄　✦</div></div>`}</div><div class="deck-status"><span>🂠 В колоде <b>${s.drawPile.length}</b></span><span>♻ В сбросе <b>${s.discardPile.length}</b></span></div><div class="components-note"><b>Комплект по референсу:</b><br>6 цветных фишек · 100 карточек по 5 слов · песочные часы на 60 секунд · поле с дорожкой от старта до финиша.</div><details class="croc-rules"><summary>Правила игры</summary><p>Разделитесь на команды по 2–3 человека, выберите фишки и жребием определите первый ход. В свой ход игрок команды берёт верхнюю карту, выбирает одно из пяти слов и объясняет его указанным способом, пока пересыпается песок. Если слово угадали, команда двигается вперёд на столько клеток, под каким номером было слово; карта отправляется в сброс. Если слово пропустить или не угадать, фишка остаётся на месте, а карта возвращается вниз колоды. Это слово нельзя повторно выбирать в текущем раунде, но другие слова с этой карты остаются доступными. После хода очередь переходит по часовой стрелке. Побеждает команда, первой достигшей финиша.</p></details></aside>`;
-    body.innerHTML=`${contestMarkup(s)}<div class="croc-projection-bar"><label class="croc-deck-control">Колода<select id="crocDeckSelect" aria-label="Выбрать колоду"><option value="simple" ${s.deckMode==='simple'?'selected':''}>Простая · короткие слова</option><option value="hard" ${s.deckMode==='hard'?'selected':''}>Сложная · прежний набор</option></select></label><span class="croc-hidden-status croc-deck-note">Смена колоды начнёт новую партию</span><button class="soft-button" id="crocCardView" aria-pressed="${s.cardHidden}">${s.cardHidden?'Показать карточку с заданиями':'Скрыть карточку с заданиями'}</button>${s.cardHidden?`<span class="croc-hidden-status">❄ Поле для проектора · ход: ${escapeHtml(s.names[s.active])} · таймер приостановлен</span>`:`<span class="croc-hidden-status">Спрячьте слова, если участники видят экран ведущего</span>`}</div><div class="croc-layout ${s.cardHidden?'board-only':''}"><section class="croc-main">${cardMarkup}${winMarkup}${boardMarkup}</section>${sideMarkup}</div>`;
+    body.innerHTML=`${contestMarkup(s)}${turnPanel}<div class="croc-projection-bar"><label class="croc-deck-control">Колода<select id="crocDeckSelect" aria-label="Выбрать колоду"><option value="simple" ${s.deckMode==='simple'?'selected':''}>Простая · короткие слова</option><option value="hard" ${s.deckMode==='hard'?'selected':''}>Сложная · прежний набор</option></select></label><span class="croc-hidden-status croc-deck-note">Смена колоды начнёт новую партию</span><button class="soft-button" id="crocCardView" aria-pressed="${s.cardHidden}">${s.cardHidden?'Показать карточку с заданиями':'Скрыть карточку с заданиями'}</button>${s.cardHidden?`<span class="croc-hidden-status">❄ Поле для проектора · ход: ${escapeHtml(s.names[s.active])} · таймер приостановлен</span>`:`<span class="croc-hidden-status">Спрячьте слова, если участники видят экран ведущего</span>`}</div><div class="croc-layout ${s.cardHidden?'board-only':''}"><section class="croc-main">${cardMarkup}${winMarkup}${boardMarkup}</section>${sideMarkup}</div>`;
     bindContest(s,()=>{if(s.timer)clearInterval(s.timer);s.timer=null;s.remaining=60;s.finished=false;s.roundBlocked={};s.turnsInRound=0;renderCroc();});
     if(s.finished){['#crocShow','#timerStart','#crocCorrect','#crocSkip'].forEach(id=>{const el=$(id);if(el)el.disabled=true;});document.querySelectorAll('[data-task]').forEach(el=>el.disabled=true);$('#crocAgain').addEventListener('click',()=>{if(s.timer)clearInterval(s.timer);s.timer=null;s.scores=Array(s.names.length).fill(0);s.track=Array(s.names.length).fill(0);s.active=Math.floor(Math.random()*s.names.length);s.round=1;s.turnsInRound=0;s.roundBlocked={};s.drawPile=shuffle(Array.from({length:100},(_,i)=>i));s.discardPile=[];s.card=s.drawPile.shift();s.task=0;s.finished=false;s.remaining=60;s.revealed=false;s.cardHidden=false;s.cardFaceUp=false;s.taskSelected=false;renderCroc();publishCroc(false);});}
     $('#crocCardView').addEventListener('click',()=>{if(!s.cardHidden){if(s.timer){clearInterval(s.timer);s.timer=null;}s.revealed=false;}s.cardHidden=!s.cardHidden;renderCroc();publishCroc(s.revealed);});
+    bindTurnSeats('croc',renderCroc);setupPlayerInvite();
     $('#crocFlipCard')?.addEventListener('click',()=>setCrocCardFace(s,!s.cardFaceUp));
     $('#crocDeckSelect').addEventListener('change',event=>{const nextDeck=event.target.value;if(nextDeck===s.deckMode)return;if(!window.confirm('Смена колоды начнёт новую партию и сбросит счёт. Продолжить?')){event.target.value=s.deckMode;return;}resetCrocDeck(s,nextDeck);renderCroc();publishCroc(false);notify(nextDeck==='hard'?'Началась партия со сложной колодой.':'Началась партия с простой колодой.');});
     $('#crocShow')?.addEventListener('click',()=>{s.revealed=!s.revealed;renderCroc();publishCroc(s.revealed);});
@@ -1681,7 +1857,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     s.remaining=60;s.revealed=false;s.cardFaceUp=false;s.taskSelected=false;renderCroc();publishCroc(false);
   }
   function toggleCrocTimer(){const s=crocState;if(s.timer){clearInterval(s.timer);s.timer=null;renderCroc();return;}if(!s.remaining){completeCrocTask(false,true);return;}s.timer=setInterval(()=>{s.remaining--;const t=$('#crocTimer');if(t){t.textContent=fmtTime(s.remaining);t.classList.toggle('urgent',s.remaining<=10);}publishCroc(s.revealed);if(s.remaining<=0){clearInterval(s.timer);s.timer=null;completeCrocTask(false,true);}},1000);$('#timerStart').textContent='Пауза';}
-  function publishCroc(revealed){const s=crocState,task=activeTask(),selected=s.taskSelected;publish({game:'croc',revealed:Boolean(revealed&&selected),gameLabel:'НОВОГОДНИЙ СУПЕРКРОКОДИЛ',word:selected?task.word:'',emoji:selected?task.emoji:'❄️',mode:selected?`${task.method.icon} ${task.method.name.toUpperCase()}`:'ВЫБЕРИТЕ СЛОВО',team:s.names[s.active],instruction:selected?task.method.hint:'Переверните карточку и выберите одно из пяти слов.',timer:s.remaining});}
+  function publishCroc(revealed){const s=crocState,task=activeTask(),selected=s.taskSelected;publish(withTurn('croc',{game:'croc',revealed:Boolean(revealed&&selected),gameLabel:'НОВОГОДНИЙ СУПЕРКРОКОДИЛ',word:selected?task.word:'',emoji:selected?task.emoji:'❄️',mode:selected?`${task.method.icon} ${task.method.name.toUpperCase()}`:'ВЫБЕРИТЕ СЛОВО',team:s.names[s.active],instruction:selected?task.method.hint:'Переверните карточку и выберите одно из пяти слов.',timer:s.remaining}));}
 
   const crosswordMusic={
     familyKaraoke:[
@@ -1815,7 +1991,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     }
     const topScore=Math.max(...s.scores);const topNames=s.names.filter((_,i)=>s.scores[i]===topScore).map(escapeHtml);
     const scoreSummary=s.finished?`<div class="quiz-finish">${topNames.length>1?'Ничья между':'Победитель:'} <b>${topNames.join(' и ')}</b> · ${topScore} баллов</div>`:'';
-    body.innerHTML=`${contestMarkup(s)}<div class="quiz-toolbar"><div class="quiz-turn"><span class="turn-flake">❄</span><span>Сейчас отвечает: <b>${escapeHtml(s.names[s.active])}</b></span><span class="quiz-remain">Осталось ${questions.length-s.used.length} из 70</span>${s.used.length===0&&s.mode==='teams'&&s.names.length>1?'<span class="first-team-pill">Первый ход — по жребию</span>':''}</div><button class="soft-button" id="quizRaffle" ${s.finished?'disabled':''}>Жребий ↻</button><button class="soft-button quiz-end-button" id="quizEnd" ${s.finished||s.selected!==null?'disabled':''}>Завершить игру</button><a class="soft-button quiz-download-button" href="assets/quiz-presentation.pptx" download="Новогодняя-викторина.pptx">↓ Скачать презентацию</a><details class="quiz-rules"><summary>Правила игры</summary><p>В PDF-версии играют две команды. Команды по очереди выбирают любую из 70 ячеек. За верный ответ — 1 балл и дополнительный ход; за ошибку — передача хода. Ведущий определяет правильность ответа. Завершить игру можно кнопкой «Завершить игру» на поле; если открыть все 70 вопросов, игра завершится автоматически. Побеждает команда с большим числом баллов. В личном режиме игроки отвечают по очереди.</p></details></div>${scoreSummary}${questionPanel}<div class="quiz-board-wrap"><div class="quiz-board-heading"><span>ИГРОВОЕ ПОЛЕ</span><small>Свободные вопросы можно выбирать в любом порядке</small></div><div class="quiz-board">${board}</div></div>`;
+    body.innerHTML=`${contestMarkup(s)}${turnHostPanel('quiz')}<div class="quiz-toolbar"><div class="quiz-turn"><span class="turn-flake">❄</span><span>Сейчас отвечает: <b>${escapeHtml(s.names[s.active])}</b></span><span class="quiz-remain">Осталось ${questions.length-s.used.length} из 70</span>${s.used.length===0&&s.mode==='teams'&&s.names.length>1?'<span class="first-team-pill">Первый ход — по жребию</span>':''}</div><button class="soft-button" id="quizRaffle" ${s.finished?'disabled':''}>Жребий ↻</button><button class="soft-button quiz-end-button" id="quizEnd" ${s.finished||s.selected!==null?'disabled':''}>Завершить игру</button><a class="soft-button quiz-download-button" href="assets/quiz-presentation.pptx" download="Новогодняя-викторина.pptx">↓ Скачать презентацию</a><details class="quiz-rules"><summary>Правила игры</summary><p>В PDF-версии играют две команды. Команды по очереди выбирают любую из 70 ячеек. За верный ответ — 1 балл и дополнительный ход; за ошибку — передача хода. Ведущий определяет правильность ответа. Завершить игру можно кнопкой «Завершить игру» на поле; если открыть все 70 вопросов, игра завершится автоматически. Побеждает команда с большим числом баллов. В личном режиме игроки отвечают по очереди.</p></details></div>${scoreSummary}${questionPanel}<div class="quiz-board-wrap"><div class="quiz-board-heading"><span>ИГРОВОЕ ПОЛЕ</span><small>Свободные вопросы можно выбирать в любом порядке</small></div><div class="quiz-board">${board}</div></div>`;
     bindContest(s,()=>{s.used=[];s.selected=null;s.selectedOption=null;s.revealed=false;s.answerResult=null;s.finished=false;if(s.mode==='teams'&&s.names.length>1)s.active=Math.floor(Math.random()*s.names.length);else s.active=0;renderQuiz();});
     document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{s.selected=Number(button.dataset.question);s.selectedOption=null;s.revealed=false;s.answerResult=null;renderQuiz();}));
     document.querySelectorAll('[data-option]').forEach(button=>button.addEventListener('click',()=>{s.selectedOption=Number(button.dataset.option);s.answerResult=s.selectedOption===q.correct;s.revealed=true;renderQuiz();}));
@@ -1826,6 +2002,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
     $('#quizRight')?.addEventListener('click',()=>completeQuizAnswer(true));
     $('#quizWrong')?.addEventListener('click',()=>completeQuizAnswer(false));
     $('#quizContinue')?.addEventListener('click',()=>completeQuizAnswer(Boolean(s.answerResult)));
+    bindTurnSeats('quiz',renderQuiz);setupPlayerInvite();
     $('#quizRestart')?.addEventListener('click',()=>{s.used=[];s.scores=Array(s.names.length).fill(0);s.active=s.names.length>1?Math.floor(Math.random()*s.names.length):0;s.selected=null;s.selectedOption=null;s.revealed=false;s.answerResult=null;s.finished=false;renderQuiz();});
     publishQuiz();
   }
@@ -1844,7 +2021,7 @@ function newMelodyState(version = 'russian') { return {version, catalogRevision:
   function publishQuiz() {
     const s=quizState;if(!s)return;
     const q=s.selected==null?null:s.questions[s.selected];
-    publish({game:'quiz',gameLabel:'НОВОГОДНЯЯ ВИКТОРИНА',questionNumber:q?.id||null,question:q?.question||'',type:q?.type||'',options:q?.options||[],questionImage:q?.image||'',revealed:Boolean(q&&s.revealed),answer:q&&s.revealed?q.answer:'',correctIndex:q&&s.revealed&&q.type==='choice'?q.correct:null,selectedOption:s.selectedOption,team:s.names[s.active],scores:s.names.map((name,i)=>({name,score:s.scores[i]})),remaining:s.questions.length-s.used.length,usedQuestions:s.used.slice(),selectedQuestion:s.selected==null?null:s.selected+1,finished:s.finished,instruction:q?'Ответьте вместе с командой!':'Выберите одну из оставшихся ячеек на поле.'});
+    publish(withTurn('quiz',{game:'quiz',gameLabel:'НОВОГОДНЯЯ ВИКТОРИНА',questionNumber:q?.id||null,question:q?.question||'',type:q?.type||'',options:q?.options||[],questionImage:q?.image||'',revealed:Boolean(q&&s.revealed),answer:q&&s.revealed?q.answer:'',correctIndex:q&&s.revealed&&q.type==='choice'?q.correct:null,selectedOption:s.selectedOption,team:s.names[s.active],scores:s.names.map((name,i)=>({name,score:s.scores[i]})),remaining:s.questions.length-s.used.length,usedQuestions:s.used.slice(),selectedQuestion:s.selected==null?null:s.selected+1,finished:s.finished,instruction:q?'Ответьте вместе с командой!':'Выберите одну из оставшихся ячеек на поле.'}));
   }
 
   function makeSnow(){

@@ -244,3 +244,42 @@ test('a detached melody seat is not re-seated by a later host re-render',async()
     assert.match(phone.document.querySelector('#playerInstructions').textContent,/без места|не назначен/i);
   }finally{for(const dom of doms)dom.window.close()}
 });
+
+test('a seating phone drives the quiz and memo on its turn, and the host rejects other turns',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();
+    const d=host.document;d.querySelector('[data-open="quiz"]').click();await wait();
+    const a=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
+    const b=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
+    for(const [w,name] of [[a,'Команда 1'],[b,'Команда 2']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#joinButton').click()}
+    await wait();await wait();
+    // The active team is announced on the host console; read it instead of guessing.
+    const activeName=host.__hostSync.state.turn?.names[host.__hostSync.state.turn.active];
+    const phones={'Команда 1':a,'Команда 2':b};
+    const driver=phones[activeName],other=activeName==='Команда 1'?b:a,otherName=activeName==='Команда 1'?'Команда 2':'Команда 1';
+    assert.equal(driver.document.querySelector('#playerHeading').textContent,'ВАША ОЧЕРЕДЬ!');
+    assert.match(other.document.querySelector('#playerHeading').textContent,new RegExp('Отвечает: '+activeName));
+    assert.equal(other.document.querySelectorAll('[data-quiz-cell]').length,0,'only the phone on its turn gets the board');
+    driver.document.querySelector('[data-quiz-cell]').click();await wait();
+    assert.ok(d.querySelector('.quiz-question-card'),'the host opens the chosen question');
+    assert.ok(driver.document.querySelectorAll('[data-quiz-option]').length>0,'the phone gets the answer options');
+    driver.document.querySelector('[data-quiz-option]').click();await wait();
+    assert.match(driver.document.querySelector('.phone-turn-done').textContent,/Верно|Не угадали/);
+    // A device that is not on its turn cannot drive the quiz.
+    const forged=[...host.__hostSync.members].find(m=>m.name===otherName);
+    forged.conn.other.send({type:'player-action',action:{kind:'turn-action',game:'quiz',action:{kind:'pick',value:69}}});await wait();await wait();
+    assert.ok(!d.querySelector('.quiz-question-card')?.textContent.includes(String(70)),'the host keeps the current question');
+    // Memo: the phone of the active player opens pairs.
+    d.querySelector('#backHome').click();d.querySelector('[data-open="memo"]').click();await wait();
+    const memoName=host.__hostSync.state.turn?.names[host.__hostSync.state.turn.active];
+    const memoDriver=memoName==='Команда 1'?a:b;
+    if(memoDriver.document.querySelector('#playerHeading').textContent==='ВАША ОЧЕРЕДЬ!'){
+      const tiles=memoDriver.document.querySelectorAll('[data-memo-tile]');
+      assert.ok(tiles.length>0,'the phone draws the memo grid');
+      tiles[0].click();tiles[1].click();await wait();await wait();
+      assert.equal(d.querySelectorAll('.memory-tile.revealed,.memory-tile.matched').length>=1,true,'the host flips the chosen pair');
+    }
+  }finally{for(const dom of doms)dom.window.close()}
+});
