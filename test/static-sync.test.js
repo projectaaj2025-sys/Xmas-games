@@ -167,7 +167,7 @@ test('melody buzzer accepts the first assigned phone, rejects stale and spectato
     const url=d.querySelector('#playerInviteUrl').textContent;const a=page('player.html',url,['static-sync.js','player.js']),b=page('player.html',url,['static-sync.js','player.js']),v=page('player.html',url,['static-sync.js','player.js']);
     for(const [w,name,role] of [[a,'Аня','player'],[b,'Борис','player'],[v,'Гость','viewer']]){w.document.querySelector('#playerName').value=name;w.document.querySelector('#phoneRole').value=role;w.document.querySelector('#joinButton').click()};await wait();await wait();
     for(const [i,name] of [[0,'Аня'],[1,'Борис']]){const m=[...host.__hostSync.members].find(m=>m.name===name),select=d.querySelector(`[data-melody-seat="${i}"]`);select.value=m.playerId;select.dispatchEvent(new host.Event('change',{bubbles:true}));}
-    d.querySelector('[data-melody-note="0"]').click();d.querySelector('#melodyBuzzOpen').click();await wait();const oldToken=host.__hostSync.state.buzz.token;
+    d.querySelector('[data-melody-note="0"]').click();await wait();const oldToken=host.__hostSync.state.buzz.token;
     assert.equal(a.document.querySelector('#melodyBuzz').disabled,false);assert.equal(v.document.querySelector('#melodyBuzz').disabled,true);
     a.document.querySelector('#melodyBuzz').click();b.document.querySelector('#melodyBuzz').click();await wait();await wait();
     assert.equal(host.__hostSync.state.buzz.active,0);assert.ok(d.querySelectorAll('.melody-player-score')[0].classList.contains('active'));assert.match(a.document.querySelector('#playerHeading').textContent,/отвечаете/);
@@ -176,5 +176,68 @@ test('melody buzzer accepts the first assigned phone, rejects stale and spectato
     b.document.querySelector('#melodyBuzz').click();await wait();assert.equal(host.__hostSync.state.buzz.active,1);d.querySelector('#melodyCorrect').click();await wait();assert.equal(host.__hostSync.state.scores[1].score,80);assert.equal(host.__hostSync.state.buzz.finished,true);
     d.querySelector('#melodyDone').click();d.querySelector('[data-melody-note="1"]').click();assert.ok(!d.querySelectorAll('.melody-player-score')[0].classList.contains('passed'));
     d.querySelector('[data-melody-answerer="2"]').click();d.querySelector('#melodyPass').click();assert.ok(d.querySelectorAll('.melody-player-score')[2].classList.contains('passed'));d.querySelector('[data-melody-unpass="2"]').click();assert.ok(!d.querySelectorAll('.melody-player-score')[2].classList.contains('passed'));await wait();await wait();
+  }finally{for(const dom of doms)dom.window.close()}
+});
+
+test('phones are seated automatically and can act on their turn without manual assignment',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();
+    host.FIELD_QUESTIONS=[{question:'Вопрос',answer:'БАРАБАН'}];const d=host.document;d.querySelector('[data-open="field"]').click();await wait();
+    const phone=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
+    phone.document.querySelector('#playerName').value='Аня';phone.document.querySelector('#joinButton').click();await wait();await wait();
+    const seat=d.querySelector('[data-field-seat="0"]');assert.ok(seat.value,'phone is seated without host action');assert.match(d.querySelector('.field-seat-status').textContent,/Аня/);
+    d.querySelector('#fieldStart').click();await wait();await wait();
+    assert.match(phone.document.querySelector('#playerHeading').textContent,/Ваш ход/);
+    const spin=phone.document.querySelector('[data-field-action="spin"]');assert.ok(spin,'the seated phone gets its own controls');assert.equal(spin.disabled,false);
+    // Detaching the phone sticks: the same phone is not re-seated by a later presence event.
+    const detach=d.querySelector('[data-field-player-seat="0"]');detach.value='';detach.dispatchEvent(new host.Event('change',{bubbles:true}));await wait();
+    await wait();assert.equal(host.__hostSync.state.players[0].id,'');
+    assert.equal(phone.document.querySelector('[data-field-action="spin"]'),null);
+    // Re-rendering after a detach must not silently re-seat the same phone again.
+    const answer=d.querySelector('#fieldAnswer');answer.value='Черновик';
+    d.querySelector('#fieldRefreshPlayers').click();await wait();
+    assert.equal(d.querySelector('[data-field-player-seat="0"]').value,'');
+    assert.equal(d.querySelector('#fieldAnswer').value,'Черновик');
+  }finally{for(const dom of doms)dom.window.close()}
+});
+
+test('a melody note opens the phone buzzers at once while the answer stays on the host console',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();const d=host.document;
+    d.querySelector('[data-open="melody"]').click();await wait();
+    const phone=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
+    phone.document.querySelector('#playerName').value='Аня';phone.document.querySelector('#joinButton').click();await wait();await wait();
+    assert.ok(d.querySelector('[data-melody-seat="0"]').value,'phone takes a free melody seat');
+    d.querySelector('[data-melody-note="0"]').click();await wait();await wait();
+    assert.equal(phone.document.querySelector('#melodyBuzz').disabled,false,'buzz is live while the clip plays');
+    assert.match(phone.document.querySelector('#playerHeading').textContent,/Нажмите|знаете/);
+    assert.equal(d.querySelector('.melody-answer').open,false,'host answer is hidden until stop or end');
+    phone.document.querySelector('#melodyBuzz').click();await wait();await wait();
+    assert.equal(host.__hostSync.state.buzz.active,0);
+    d.querySelector('#melodyStop').click();await wait();
+    assert.equal(d.querySelector('.melody-answer').open,true,'host sees the answer after stop');
+    assert.equal(host.__hostSync.state.answer,'','participants never receive the title');
+  }finally{for(const dom of doms)dom.window.close()}
+});
+
+test('a detached melody seat is not re-seated by a later host re-render',async()=>{
+  const Peer=fakeNetwork(),doms=[];
+  function page(file,url,scripts){const dom=new JSDOM(fs.readFileSync(file,'utf8'),{url,runScripts:'outside-only'});doms.push(dom);const w=dom.window;w.Peer=Peer;w.matchMedia=()=>({matches:true});w.fetch=async()=>({ok:false});w.confirm=()=>true;w.Audio=class{play(){return Promise.resolve()}pause(){}};for(const script of scripts){w.eval(fs.readFileSync(script,'utf8'));if(script==='static-sync.js'&&file==='index.html'){const Original=w.StaticSync;w.StaticSync=class extends Original{constructor(...args){super(...args);w.__hostSync=this}}}}return w;}
+  try{
+    const host=page('index.html','https://example.com/Xmas-games/',['assets/vendor/qrcode-generator-1.4.4.js','static-sync.js','quiz-data.js','crossword-data.js','melody-data.js','field-data.js','app.js']);await wait();const d=host.document;
+    d.querySelector('[data-open="melody"]').click();await wait();
+    const phone=page('player.html',d.querySelector('#playerInviteUrl').textContent,['static-sync.js','player.js']);
+    phone.document.querySelector('#playerName').value='Аня';phone.document.querySelector('#joinButton').click();await wait();await wait();
+    const seat=d.querySelector('[data-melody-seat="0"]');assert.ok(seat.value);
+    seat.value='';seat.dispatchEvent(new host.Event('change',{bubbles:true}));await wait();
+    assert.equal(d.querySelector('[data-melody-seat="0"]').value,'');
+    // Any ordinary host re-render (a name edit) must keep the seat empty.
+    const name=d.querySelector('[data-melody-name="0"]');name.value='Аня';name.dispatchEvent(new host.Event('change',{bubbles:true}));await wait();
+    assert.equal(d.querySelector('[data-melody-seat="0"]').value,'');
+    assert.match(phone.document.querySelector('#playerInstructions').textContent,/без места|не назначен/i);
   }finally{for(const dom of doms)dom.window.close()}
 });

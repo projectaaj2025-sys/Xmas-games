@@ -89,14 +89,14 @@
     let heading,description;
     if(phoneRole==='viewer'){heading='Вы зритель';description='Следите за игрой на экране ведущего.';}
     else if(state.mode){heading='Дополнительный раунд';description='В этом раунде игрой управляет ведущий.';}
-    else if(i<0){heading='Вы подключены';description='Попросите ведущего назначить ваш телефон на место игрока.';}
+    else if(i<0){heading='Телефон пока без места';description='Телефон не назначен на место. Попросите ведущего выбрать его в списке мест — или он продолжит ход за вас со своего экрана.';}
     else if(buzz.finished){heading='Ответ принят';description='Дождитесь следующей мелодии.';}
     else if(active){heading='Вы отвечаете!';description='Назовите мелодию. Ведущий оценит ответ.';}
     else if(passed){heading='Ход пропущен';description='Дождитесь следующей мелодии.';}
     else if(buzz.eligible?.[i]===false){heading='Ответ уже оценён';description='Дождитесь следующей мелодии.';}
     else if(buzz.active!==null&&buzz.active!==undefined){heading='Отвечает другой игрок';description='Дождитесь решения ведущего.';}
     else if(buzz.open){heading='Нажмите, если знаете!';description='Отвечает тот, чей сигнал первым получит ведущий.';}
-    else {heading='Ждём мелодию';description='Ведущий откроет кнопку ответа.';}
+    else {heading='Ждём мелодию';description='Кнопка «Я знаю!» включится сама, когда ведущий запустит следующую мелодию.';}
     $('#playerHeading').textContent=heading;$('#playerInstructions').textContent=description;
     if(melodyPendingToken && melodyPendingToken!==buzz.token){melodyPendingToken='';clearTimeout(melodyPendingTimer);}
     const enabled=phoneRole==='player'&&i>=0&&!passed&&buzz.eligible?.[i]!==false&&buzz.open&&typeof buzz.token==='string'&&!!buzz.token&&!melodyPendingToken&&socket?.readyState===WebSocket.OPEN;
@@ -107,11 +107,12 @@
   function renderFieldPhone(state){
     const existing=$('#phoneAnswer');const keep=existing && fieldPhonePhase===state.phase && fieldPhoneActive===state.activeId;const draft=keep?existing.value:'';const focused=keep&&document.activeElement===existing;
     fieldPhonePhase=state.phase;fieldPhoneActive=state.activeId;
+    const seatedPhone=state.phase!=='setup'&&(state.players||[]).some(p=>p.id&&p.id===playerId);
     const active=phoneRole==='player'&&state.activeId===playerId&&!!state.activeId;
     $('#playerCardFace').hidden=true;$('#playerActions').hidden=true;document.querySelector('.phone-reminder').hidden=true;$('#playerHint').textContent='';
     $('#playerTurn').textContent=`ПОЛЕ ЧУДЕС · ${state.round}`;
-    $('#playerHeading').textContent=phoneRole==='viewer'?'Вы зритель':active?'Ваш ход!':'Следим за игрой';
-    $('#playerInstructions').textContent=state.message||'Ждём начала тура.';
+    $('#playerHeading').textContent=phoneRole==='viewer'?'Вы зритель':active?'Ваш ход!':phoneRole==='player'&&!seatedPhone&&state.phase!=='setup'?'Телефон пока без места':'Следим за игрой';
+    $('#playerInstructions').textContent=phoneRole==='player'&&!seatedPhone&&state.phase!=='setup'?'Телефон подключён, но не назначен ни одному участнику. Попросите ведущего выбрать ваш телефон в блоке «Назначить или переподключить телефоны» — или пусть ведущий ходит за вас на своём экране.':(state.message||'Ждём начала тура.');
     const box=$('#fieldPhone');box.hidden=false;
     const board=(state.board||[]).map(t=>t.space?'<span class="phone-field-space"></span>':`<button class="phone-field-tile" data-plus="${t.index}" ${!active||state.phase!=='plus'||t.letter?'disabled':''}>${esc(t.letter||'')}</button>`).join('');
     let controls='';
