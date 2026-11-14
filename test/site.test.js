@@ -686,3 +686,22 @@ test('the participant screen «Вернуться к управлению» butt
     assert.notEqual(d.querySelector('#screenHint').textContent.includes('Переключитесь'),true);
   }finally{w.close()}
 });
+
+test('homepage hero text, badge, and meta description match the numbered games on the page',()=>{
+  const dom=new JSDOM(read('index.html'));
+  try{
+    const doc=dom.window.document;
+    const numberedGames=[...doc.querySelectorAll('.game-card .game-number')]
+      .filter(el=>/^\d+$/.test(el.textContent.trim()));
+    assert.equal(numberedGames.length,8);
+    assert.equal(doc.querySelector('.hero-sticker > span').textContent.trim(),String(numberedGames.length));
+    const lead=doc.querySelector('.hero-lead').textContent;
+    const metaDesc=doc.querySelector('meta[name="description"]').getAttribute('content');
+    assert.match(lead,/Восемь новогодних игр/);
+    assert.match(lead,/барабан/);
+    assert.match(lead,/мелоди/);
+    assert.match(metaDesc,/Восемь новогодних игр/);
+    assert.doesNotMatch(lead,/Пять новогодних игр/);
+    assert.doesNotMatch(metaDesc,/Пять новогодних игр/);
+  }finally{dom.window.close()}
+});
